@@ -64,7 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (userDoc.exists()) {
             console.log("AuthContext: User found in Firestore");
-            const data = userDoc.data() as Partial<User>;
+            const data = userDoc.data() as Partial<User> & { deletedAt?: string };
+
+            // Check if user has been deleted (soft delete)
+            if (data.deletedAt) {
+              console.log("AuthContext: User account has been deleted, signing out");
+              await signOut(auth);
+              setUser(null);
+              setLoading(false);
+              return;
+            }
 
             const nowIso = new Date().toISOString();
             const normalizedUser: User = {
@@ -144,6 +153,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Sign out the user immediately if not from allowed domain
         await signOut(auth);
         throw new Error(`Access restricted to @${ALLOWED_DOMAIN} accounts only.`);
+      }
+      
+      // Check if user has been deleted
+      const userDocRef = doc(db, 'users', result.user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        if (data.deletedAt) {
+          await signOut(auth);
+          throw new Error('Your account has been deactivated. Please contact an administrator.');
+        }
       }
       
       console.log("AuthContext: Popup login success", result.user.uid);
