@@ -15,30 +15,24 @@ export default function AuthPage() {
   const { loginWithGoogle, isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    console.log("AuthPage: Auth state:", { isAuthenticated, loading });
     if (isAuthenticated) {
-      console.log("AuthPage: Authenticated, redirecting to home...");
       router.push('/');
     }
   }, [isAuthenticated, loading, router]);
 
   const handleGoogleLogin = async () => {
-    console.log("AuthPage: Starting Google Login...");
     setIsLoading(true);
     setError(null);
     try {
-      console.log("AuthPage: Calling loginWithGoogle...");
       await loginWithGoogle();
-      console.log("AuthPage: Login successful (popup).");
-      // Force redirect if not handled by effect
-      router.push('/'); 
+      // Navigation is handled by the useEffect when isAuthenticated changes
     } catch (err: any) {
-      console.error("AuthPage: Login error:", err);
       let errorMessage = 'Google login failed';
       if (err.message) {
         errorMessage = err.message;
       }
       setError(errorMessage);
+    } finally {
       setIsLoading(false);
     }
   };

@@ -47,13 +47,12 @@ export default function AdminPanel() {
 
     const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
       const fetchedUsers: UserData[] = [];
-      snapshot.forEach((doc) => {
-        fetchedUsers.push({ id: doc.id, ...doc.data() } as UserData);
+      snapshot.forEach((docSnapshot) => {
+        fetchedUsers.push({ id: docSnapshot.id, ...docSnapshot.data() } as UserData);
       });
       setUsers(fetchedUsers);
       setLoading(false);
-    }, (error) => {
-      console.error("Error fetching users:", error);
+    }, () => {
       setLoading(false);
     });
 
@@ -91,8 +90,7 @@ export default function AdminPanel() {
         title: "Role Updated",
         description: "User role has been successfully updated.",
       });
-    } catch (error) {
-      console.error("Error updating role:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update user role.",
@@ -112,10 +110,22 @@ export default function AdminPanel() {
     }
 
     const targetUser = users.find(u => u.id === userId);
+    
+    // Only superadmins can delete superadmin accounts
     if (targetUser?.role === 'superadmin' && !hasRole('superadmin')) {
       toast({
         title: "Insufficient Permissions",
         description: "Only superadmins can delete superadmin accounts.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prevent deleting other superadmins (protect against accidental deletion)
+    if (targetUser?.role === 'superadmin') {
+      toast({
+        title: "Cannot Delete Superadmin",
+        description: "Superadmin accounts cannot be deleted. Demote to admin first if needed.",
         variant: "destructive",
       });
       return;
@@ -132,7 +142,6 @@ export default function AdminPanel() {
         description: `${userEmail} has been moved to deleted users.`,
       });
     } catch (error) {
-      console.error("Error deleting user:", error);
       toast({
         title: "Error",
         description: "Failed to delete user.",
@@ -154,8 +163,7 @@ export default function AdminPanel() {
         title: "User Restored",
         description: `${userEmail} has been restored to active users.`,
       });
-    } catch (error) {
-      console.error("Error restoring user:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to restore user.",

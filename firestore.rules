@@ -1,9 +1,101 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    // Helper function to get the current user's role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() in ['admin', 'superadmin'];
+    }
+    
+    function isSuperadmin() {
+      return isAuthenticated() && getUserRole() == 'superadmin';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users collection - strict access control
+    match /users/{userId} {
+      // Users can read their own profile, admins can read all users
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Allow user creation on first login (user creates their own doc)
+      allow create: if isOwner(userId);
+      
+      // Users can update their own profile EXCEPT role and deletedAt fields
+      // Admins can update any user's profile
+      // Only superadmins can modify role to/from superadmin or set deletedAt
+      allow update: if isOwner(userId) && 
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'deletedAt', 'deletedBy'])
+        || isAdmin() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'deletedAt', 'deletedBy'])
+        || isAdmin() && request.resource.data.role != 'superadmin' && resource.data.role != 'superadmin'
+        || isSuperadmin();
+    }
+    
+    // Company/Organization data - authenticated users can read, admins can write
+    match /companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Planning data (foundation, goals, etc.) - authenticated users can read/write
+    match /plans/{planId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /plans/{planId}/{subcollection=**} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Rocks - authenticated users can read/write
+    match /rocks/{rockId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Priorities - authenticated users can read/write
+    match /priorities/{priorityId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Metrics/KPIs - authenticated users can read/write
+    match /metrics/{metricId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // SWOT Analysis - authenticated users can read/write
+    match /swot/{swotId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Assessments - authenticated users can read/write
+    match /assessments/{assessmentId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Meetings - authenticated users can read/write
+    match /meetings/{meetingId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Settings - authenticated users can read, admins can write
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Catch-all for any other collections - require authentication
+    // This is more restrictive than before but allows flexibility
+    match /{collection}/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && collection != 'users';
     }
   }
 }
-

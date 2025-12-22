@@ -1,9 +1,10 @@
+"use client";
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   signOut, 
   onAuthStateChanged,
-  User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
   setPersistence,
@@ -40,7 +41,7 @@ interface AuthContextType {
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
-  checkAuth: () => Promise<void>; // Kept for compatibility, but largely handled by effect
+  checkAuth: () => Promise<void>;
   isAuthenticated: boolean;
   hasRole: (requiredRole: 'superadmin' | 'admin' | 'user') => boolean;
 }
@@ -54,27 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check if user is authenticated on mount using Firebase observer
   useEffect(() => {
-    console.log("AuthContext: Mounting and checking auth state...");
-    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("AuthContext: Auth state changed. User:", firebaseUser ? firebaseUser.uid : "null");
-      
       if (firebaseUser) {
-        // Manually set loading true during fetch
-        // setLoading(true); // Don't do this, it causes flicker
-        
         try {
           // Fetch user details from Firestore
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           
           if (userDoc.exists()) {
-            console.log("AuthContext: User found in Firestore");
             const data = userDoc.data() as Partial<User> & { deletedAt?: string };
 
             // Check if user has been deleted (soft delete)
             if (data.deletedAt) {
-              console.log("AuthContext: User account has been deleted, signing out");
               await signOut(auth);
               setUser(null);
               setLoading(false);
@@ -112,7 +104,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             setUser(normalizedUser);
           } else {
-            console.log("AuthContext: User not found in Firestore, creating new profile");
             const nowIso = new Date().toISOString();
             const userEmail = (firebaseUser.email ?? '').toLowerCase();
             
@@ -133,8 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await setDoc(userDocRef, newUser, { merge: true });
             setUser(newUser);
           }
-        } catch (error) {
-          console.error('AuthContext: Error fetching user details:', error);
+        } catch {
           setUser(null);
         }
       } else {
@@ -144,8 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-        console.log("AuthContext: Unsubscribing from auth listener");
-        unsubscribe();
+      unsubscribe();
     };
   }, []);
 
@@ -154,39 +143,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = async () => {
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        prompt: 'select_account',
-        hd: ALLOWED_DOMAIN // Hint to show only accounts from this domain
-      });
-      // Switch back to popup for better localhost reliability
-      const result = await signInWithPopup(auth, provider);
-      
-      // Verify the user's email domain
-      const email = result.user.email;
-      if (!email || !email.endsWith(`@${ALLOWED_DOMAIN}`)) {
-        // Sign out the user immediately if not from allowed domain
+    await setPersistence(auth, browserLocalPersistence);
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account',
+      hd: ALLOWED_DOMAIN // Hint to show only accounts from this domain
+    });
+    
+    const result = await signInWithPopup(auth, provider);
+    
+    // Verify the user's email domain
+    const email = result.user.email;
+    if (!email || !email.endsWith(`@${ALLOWED_DOMAIN}`)) {
+      // Sign out the user immediately if not from allowed domain
+      await signOut(auth);
+      throw new Error(`Access restricted to @${ALLOWED_DOMAIN} accounts only.`);
+    }
+    
+    // Check if user has been deleted
+    const userDocRef = doc(db, 'users', result.user.uid);
+    const userDoc = await getDoc(userDocRef);
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      if (data.deletedAt) {
         await signOut(auth);
-        throw new Error(`Access restricted to @${ALLOWED_DOMAIN} accounts only.`);
+        throw new Error('Your account has been deactivated. Please contact an administrator.');
       }
-      
-      // Check if user has been deleted
-      const userDocRef = doc(db, 'users', result.user.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        if (data.deletedAt) {
-          await signOut(auth);
-          throw new Error('Your account has been deactivated. Please contact an administrator.');
-        }
-      }
-      
-      console.log("AuthContext: Popup login success", result.user.uid);
-    } catch (error) {
-      console.error("Error initiating google login:", error);
-      throw error;
     }
   };
 
@@ -194,8 +176,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await signOut(auth);
       router.push('/auth');
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } catch {
+      // Logout failed silently
     }
   };
 
