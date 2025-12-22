@@ -12,7 +12,7 @@ export default function AuthPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { loginWithGoogle, loginAnonymously, isAuthenticated, loading } = useAuth();
+  const { loginWithGoogle, isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
     console.log("AuthPage: Auth state:", { isAuthenticated, loading });
@@ -43,25 +43,6 @@ export default function AuthPage() {
     }
   };
 
-  const handleAnonymousLogin = async () => {
-    console.log("AuthPage: Starting Anonymous Login...");
-    setIsLoading(true);
-    setError(null);
-    try {
-      await loginAnonymously();
-      console.log("AuthPage: Anonymous login successful.");
-      router.push('/');
-    } catch (err: any) {
-      console.error("AuthPage: Anonymous login error:", err);
-      let errorMessage = 'Anonymous login failed';
-      if (err.message) {
-        errorMessage = err.message;
-      }
-      setError(errorMessage);
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
@@ -78,32 +59,20 @@ export default function AuthPage() {
             </Alert>
           )}
           
-          <div className="flex flex-col space-y-2">
-            <Button 
-              variant="outline" 
-              type="button" 
-              className="w-full py-6 text-base"
-              disabled={isLoading}
-              onClick={handleGoogleLogin}
-            >
-              <FcGoogle className="mr-2 h-5 w-5" />
-              Sign in with Google
-            </Button>
-
-            <Button
-              variant="secondary"
-              type="button"
-              className="w-full py-6 text-base"
-              disabled={isLoading}
-              onClick={handleAnonymousLogin}
-            >
-              Continue as guest
-            </Button>
-          </div>
+          <Button 
+            variant="outline" 
+            type="button" 
+            className="w-full py-6 text-base"
+            disabled={isLoading}
+            onClick={handleGoogleLogin}
+          >
+            <FcGoogle className="mr-2 h-5 w-5" />
+            Sign in with Google
+          </Button>
 
         </CardContent>
         <CardFooter className="text-center text-sm text-muted-foreground flex justify-center">
-          <p>Guest mode is for testing only</p>
+          <p>Access restricted to Small Giants team members</p>
         </CardFooter>
       </Card>
     </div>

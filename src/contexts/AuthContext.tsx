@@ -6,14 +6,14 @@ import {
   User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   setPersistence,
-  browserLocalPersistence,
-  signInAnonymously
+  browserLocalPersistence
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+
+// Allowed email domain for Google sign-in
+const ALLOWED_DOMAIN = 'smallgiantsonline.com';
 
 export interface User {
   // Canonical user id used across the app
@@ -33,7 +33,6 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
-  loginAnonymously: () => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>; // Kept for compatibility, but largely handled by effect
   isAuthenticated: boolean;
@@ -133,24 +132,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setPersistence(auth, browserLocalPersistence);
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
-        prompt: 'select_account'
+        prompt: 'select_account',
+        hd: ALLOWED_DOMAIN // Hint to show only accounts from this domain
       });
       // Switch back to popup for better localhost reliability
       const result = await signInWithPopup(auth, provider);
+      
+      // Verify the user's email domain
+      const email = result.user.email;
+      if (!email || !email.endsWith(`@${ALLOWED_DOMAIN}`)) {
+        // Sign out the user immediately if not from allowed domain
+        await signOut(auth);
+        throw new Error(`Access restricted to @${ALLOWED_DOMAIN} accounts only.`);
+      }
+      
       console.log("AuthContext: Popup login success", result.user.uid);
     } catch (error) {
       console.error("Error initiating google login:", error);
-      throw error;
-    }
-  };
-
-  const loginAnonymously = async () => {
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-      const result = await signInAnonymously(auth);
-      console.log("AuthContext: Anonymous login success", result.user.uid);
-    } catch (error) {
-      console.error("Error initiating anonymous login:", error);
       throw error;
     }
   };
@@ -183,7 +181,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     loginWithGoogle,
-    loginAnonymously,
     logout,
     checkAuth,
     isAuthenticated: !!user,
