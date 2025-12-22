@@ -15,6 +15,12 @@ import { auth, db } from '@/lib/firebase';
 // Allowed email domain for Google sign-in
 const ALLOWED_DOMAIN = 'smallgiantsonline.com';
 
+// Emails that should automatically be granted superadmin role
+const SUPERADMIN_EMAILS = [
+  'patrick@smallgiantsonline.com',
+  'danielle@smallgiantsonline.com',
+];
+
 export interface User {
   // Canonical user id used across the app
   uid: string;
@@ -76,11 +82,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             const nowIso = new Date().toISOString();
+            const userEmail = (data.email ?? firebaseUser.email ?? '').toLowerCase();
+            
+            // Check if user should be auto-granted superadmin
+            const isSuperadminEmail = SUPERADMIN_EMAILS.includes(userEmail);
+            const role = isSuperadminEmail ? 'superadmin' : (data.role ?? 'user') as User['role'];
+            
             const normalizedUser: User = {
               uid: data.uid ?? data.id ?? firebaseUser.uid,
               id: data.id ?? data.uid ?? firebaseUser.uid,
-              email: (data.email ?? firebaseUser.email ?? '') || '',
-              role: (data.role ?? 'user') as User['role'],
+              email: userEmail,
+              role: role,
               name:
                 data.name ??
                 firebaseUser.displayName ??
@@ -91,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               isAnonymous: data.isAnonymous ?? firebaseUser.isAnonymous,
             };
 
-            // Ensure important fields exist / update lastLogin
+            // Ensure important fields exist / update lastLogin (and role if superadmin)
             await setDoc(
               userDocRef,
               { ...normalizedUser, updatedAt: nowIso, lastLogin: nowIso },
@@ -102,11 +114,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else {
             console.log("AuthContext: User not found in Firestore, creating new profile");
             const nowIso = new Date().toISOString();
+            const userEmail = (firebaseUser.email ?? '').toLowerCase();
+            
+            // Check if new user should be auto-granted superadmin
+            const isSuperadminEmail = SUPERADMIN_EMAILS.includes(userEmail);
+            
             const newUser: User = {
               uid: firebaseUser.uid,
               id: firebaseUser.uid,
-              email: firebaseUser.email ?? '',
-              role: 'user',
+              email: userEmail,
+              role: isSuperadminEmail ? 'superadmin' : 'user',
               name: firebaseUser.displayName ?? (firebaseUser.isAnonymous ? 'Guest' : undefined),
               createdAt: nowIso,
               updatedAt: nowIso,
