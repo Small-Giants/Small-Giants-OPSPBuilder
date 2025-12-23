@@ -49,14 +49,12 @@ export default function PriorityTrackerExample() {
   ]);
 
   const handlePriorityUpdate = (updatedPriority: typeof priorities[0]) => {
-    console.log('Priority updated:', updatedPriority);
     setPriorities(prev => 
       prev.map(p => p.id === updatedPriority.id ? updatedPriority : p)
     );
   };
 
   const handleAddPriority = (newPriority: Omit<typeof priorities[0], 'id'>) => {
-    console.log('Adding priority:', newPriority);
     const priority = {
       ...newPriority,
       id: `p${Date.now()}`

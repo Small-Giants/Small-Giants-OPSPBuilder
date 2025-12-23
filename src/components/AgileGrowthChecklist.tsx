@@ -77,7 +77,6 @@ export default function AgileGrowthChecklist() {
       }
       setIsLoading(false);
     }, (error) => {
-      console.error("Error fetching checklist:", error);
       setIsLoading(false);
       toast({
         title: "Error",
@@ -184,7 +183,6 @@ export default function AgileGrowthChecklist() {
           duration: 1000
         });
       } catch (error) {
-        console.error("Error updating score:", error);
         toast({
           title: "Error",
           description: "Failed to save score",

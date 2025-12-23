@@ -138,8 +138,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
         }
       },
       (error) => {
-        console.error("ScalabilityRoadmap: foundation snapshot error", error);
-      }
+        }
     );
 
     // 2. Roadmap main (BHAG, 3-year targets, one-year strategy, etc.)

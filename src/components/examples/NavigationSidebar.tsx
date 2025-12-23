@@ -10,8 +10,7 @@ export default function NavigationSidebarExample() {
   };
 
   const handleNavigate = (itemId: string) => {
-    console.log(`Navigating to: ${itemId}`);
-  };
+    };
 
   return (
     <div className="h-screen">
@@ -19,7 +18,7 @@ export default function NavigationSidebarExample() {
         currentUser={currentUser}
         activeItemId="exec-summary"
         onNavigate={handleNavigate}
-        onLogout={() => console.log("Logout clicked")}
+        onLogout={() => }
       />
     </div>
   );

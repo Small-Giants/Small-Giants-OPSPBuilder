@@ -46,7 +46,6 @@ export default function JustGetItDone() {
       setItems(fetchedItems);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching just-get-it-done items:", error);
       setLoading(false);
     });
 
@@ -66,7 +65,6 @@ export default function JustGetItDone() {
       setNewItemText("");
       toast({ title: "Success", description: "Item added successfully" });
     } catch (error) {
-      console.error("Error adding item:", error);
       toast({ title: "Error", description: "Failed to add item", variant: "destructive" });
     }
   };
@@ -76,7 +74,6 @@ export default function JustGetItDone() {
       const docRef = doc(db, 'companies', DEFAULT_COMPANY_ID, 'just-get-it-done', item.id);
       await updateDoc(docRef, { completed: !item.completed });
     } catch (error) {
-      console.error("Error toggling complete:", error);
       toast({ title: "Error", description: "Failed to update item", variant: "destructive" });
     }
   };
@@ -96,7 +93,6 @@ export default function JustGetItDone() {
       setEditingText("");
       toast({ title: "Success", description: "Item updated successfully" });
     } catch (error) {
-      console.error("Error updating item:", error);
       toast({ title: "Error", description: "Failed to update item", variant: "destructive" });
     }
   };
@@ -112,7 +108,6 @@ export default function JustGetItDone() {
       await deleteDoc(docRef);
       toast({ title: "Success", description: "Item deleted successfully" });
     } catch (error) {
-      console.error("Error deleting item:", error);
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
     }
   };

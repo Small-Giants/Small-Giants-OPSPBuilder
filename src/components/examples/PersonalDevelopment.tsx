@@ -16,12 +16,10 @@ export default function PersonalDevelopmentExample() {
   ]);
 
   const handleLearningUpdate = (items: typeof learning) => {
-    console.log('Learning updated:', items);
     setLearning(items);
   };
 
   const handleDevelopmentUpdate = (items: typeof development) => {
-    console.log('Development updated:', items);
     setDevelopment(items);
   };
 

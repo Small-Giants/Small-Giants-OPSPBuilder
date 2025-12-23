@@ -64,7 +64,6 @@ export default function IndividualRocks() {
         apply();
       },
       (error) => {
-        console.error("Error fetching rocks:", error);
         setLoading(false);
       }
     );
@@ -132,7 +131,6 @@ export default function IndividualRocks() {
       setEditingRock(null);
       toast({ title: "Success", description: "Rock updated successfully" });
     } catch (error) {
-      console.error("Error updating rock:", error);
       toast({ title: "Error", description: "Failed to update rock", variant: "destructive" });
     }
   };

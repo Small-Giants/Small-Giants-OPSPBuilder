@@ -59,7 +59,6 @@ export default function OpspFullCanvas({ data }: OpspFullCanvasProps) {
         }
       },
       (error) => {
-        console.error("OpspFullCanvas: foundation snapshot error", error);
         setFoundationData(null);
       }
     );

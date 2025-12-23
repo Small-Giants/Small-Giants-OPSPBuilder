@@ -160,7 +160,6 @@ export default function ThreeYear() {
       setEditValue("");
       toast({ title: "Success", description: "Saved successfully" });
     } catch (error) {
-      console.error(error);
       toast({ title: "Error", description: "Failed to save", variant: "destructive" });
     }
   };
@@ -189,7 +188,6 @@ export default function ThreeYear() {
       setNewRockForm({ text: "", assigneeId: "", assigneeName: "", quarter: "Q1", year: selectedYear, priority: false });
       toast({ title: "Success", description: "Rock added" });
     } catch (error) {
-      console.error(error);
       toast({ title: "Error", description: "Failed to add rock", variant: "destructive" });
     }
   };
@@ -211,7 +209,6 @@ export default function ThreeYear() {
       setEditingRock(null);
       toast({ title: "Success", description: "Rock updated" });
     } catch (error) {
-      console.error(error);
       toast({ title: "Error", description: "Failed to update rock", variant: "destructive" });
     }
   };
@@ -221,7 +218,6 @@ export default function ThreeYear() {
       await deleteDoc(doc(db, 'companies', companyId, 'rocks', rockId));
       toast({ title: "Success", description: "Rock deleted" });
     } catch (error) {
-       console.error(error);
        toast({ title: "Error", description: "Failed to delete rock", variant: "destructive" });
     }
   };

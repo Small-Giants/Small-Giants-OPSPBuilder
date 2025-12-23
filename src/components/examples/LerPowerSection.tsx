@@ -15,12 +15,10 @@ export default function LerPowerSectionExample() {
   });
 
   const handleLerUpdate = (data: typeof lerData) => {
-    console.log('LER updated:', data);
     setLerData(data);
   };
 
   const handlePowerUpdate = (data: typeof powerOfOne) => {
-    console.log('Power of One updated:', data);
     setPowerOfOne(data);
   };
 

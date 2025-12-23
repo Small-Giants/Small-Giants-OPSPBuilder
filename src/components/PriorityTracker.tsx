@@ -87,7 +87,6 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
         setLoading(false);
       },
       (error) => {
-        console.error("Error fetching priorities:", error);
         setLoading(false);
       }
     );
@@ -141,7 +140,6 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
       setShowAddForm(false);
       toast({ title: "Success", description: "Item added successfully" });
     } catch (error) {
-      console.error("Error adding priority:", error);
       toast({ title: "Error", description: "Failed to add item", variant: "destructive" });
     }
   };
@@ -152,7 +150,6 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
       const { id, ...data } = priority;
       await updateDoc(priorityRef, data);
     } catch (error) {
-      console.error("Error updating priority:", error);
       toast({ title: "Error", description: "Failed to update item", variant: "destructive" });
     }
   };

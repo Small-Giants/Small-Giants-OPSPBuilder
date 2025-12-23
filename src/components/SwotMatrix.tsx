@@ -90,7 +90,6 @@ export default function SwotMatrix({ data, onUpdate }: SwotMatrixProps) {
         }
       },
       (e) => {
-        console.error("Error loading SWOT:", e);
         useLegacy = selectedYear === LEGACY_PLAN_YEAR;
       }
     );

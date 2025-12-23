@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { DownloadIcon, TrendingUpIcon, FileTextIcon } from "lucide-react";
+import { TrendingUpIcon, FileTextIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import AdminPanel from "@/components/AdminPanel";
 import IndividualRocks from "@/components/IndividualRocks";
@@ -44,18 +43,22 @@ export default function MainApp() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Listen for navigation events from ScalabilityRoadmap
+  // Navigation handler - memoized for use in event listeners
+  const handleNavigate = useCallback((itemId: string) => {
+    setCurrentView(itemId);
+  }, []);
+
+  // Listen for navigation events from child components (e.g., ScalabilityRoadmap)
   useEffect(() => {
-    const handleNavigateEvent = (e: any) => {
-      setCurrentView(e.detail);
+    const handleNavigateEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        handleNavigate(customEvent.detail);
+      }
     };
     window.addEventListener('navigate', handleNavigateEvent);
     return () => window.removeEventListener('navigate', handleNavigateEvent);
-  }, []);
-
-  const handleNavigate = (itemId: string) => {
-    setCurrentView(itemId);
-  };
+  }, [handleNavigate]);
 
   const handleExportPDF = () => {
     setShowExportModal(true);
@@ -154,7 +157,7 @@ export default function MainApp() {
                   <YearSwitcher />
                 </div>
                 
-                {/* Stages of Growth Card */}
+                {/* Stages of Growth Card - TODO: Make stage dynamic from company settings */}
                 <div className="flex items-center gap-3">
                   <Button
                     variant="ghost"
@@ -164,7 +167,7 @@ export default function MainApp() {
                     data-testid="button-stages-of-growth"
                   >
                     <TrendingUpIcon className="w-4 h-4 mr-1.5 text-accent" />
-                    <span className="text-xs">Stage 4</span>
+                    <span className="text-xs">Stages of Growth</span>
                   </Button>
                   
                   <div className="h-4 w-px bg-border" />

@@ -232,7 +232,6 @@ export default function Foundation() {
       }
       setIsLoading(false);
     }, (error) => {
-      console.error("Error fetching foundation data:", error);
       setIsError(true);
       setIsLoading(false);
     });
@@ -250,7 +249,6 @@ export default function Foundation() {
         duration: 1500,
       });
     } catch (error: any) {
-      console.error("Error saving foundation data:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to save foundation data",

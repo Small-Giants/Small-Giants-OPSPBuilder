@@ -25,7 +25,6 @@ export default function SwotMatrixExample() {
   });
 
   const handleUpdate = (newData: typeof swotData) => {
-    console.log('SWOT data updated:', newData);
     setSwotData(newData);
   };
 

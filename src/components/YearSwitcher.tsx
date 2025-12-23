@@ -31,6 +31,35 @@ import {
 } from "firebase/firestore";
 import { Loader2, PlusIcon } from "lucide-react";
 
+// Types for Firestore data
+interface PriorityData {
+  planYear?: number;
+  title?: string;
+  description?: string;
+  type?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+interface MetricData {
+  planYear?: number;
+  name?: string;
+  unit?: string;
+  targetValue?: number;
+  currentValue?: number;
+  data?: unknown[];
+  trend?: string;
+  createdAt?: string;
+}
+
+interface SwotData {
+  strengths?: string[];
+  weaknesses?: string[];
+  opportunities?: string[];
+  threats?: string[];
+}
+
 export default function YearSwitcher() {
   const { companyId, selectedYear, setSelectedYear, availableYears } = usePlanYear();
   const { toast } = useToast();
@@ -120,9 +149,9 @@ export default function YearSwitcher() {
       // 3) Carry over selections
       if (carryPriorities) {
         const prioritiesSnap = await getDocs(collection(db, "companies", companyId, "priorities"));
-        const toCreate: any[] = [];
+        const toCreate: PriorityData[] = [];
         prioritiesSnap.forEach((d) => {
-          const data = d.data() as any;
+          const data = d.data() as PriorityData;
           const planYear = typeof data.planYear === "number" ? data.planYear : selectedYear;
           if (planYear !== selectedYear) return;
           const { createdAt, updatedAt, ...rest } = data;
@@ -140,9 +169,9 @@ export default function YearSwitcher() {
 
       if (carryKpis) {
         const metricsSnap = await getDocs(collection(db, "companies", companyId, "metrics"));
-        const toCreate: any[] = [];
+        const toCreate: MetricData[] = [];
         metricsSnap.forEach((d) => {
-          const data = d.data() as any;
+          const data = d.data() as MetricData;
           const planYear = typeof data.planYear === "number" ? data.planYear : selectedYear;
           if (planYear !== selectedYear) return;
           toCreate.push({
@@ -168,7 +197,7 @@ export default function YearSwitcher() {
 
         const fromSnap = await getDoc(fromRef);
         const legacySnap = fromSnap.exists() ? null : await getDoc(legacyRef);
-        const source = (fromSnap.exists() ? fromSnap.data() : legacySnap?.data()) as any;
+        const source = (fromSnap.exists() ? fromSnap.data() : legacySnap?.data()) as SwotData | undefined;
 
         if (source) {
           await setDoc(
@@ -193,10 +222,11 @@ export default function YearSwitcher() {
       });
       setOpen(false);
       resetWizard();
-    } catch (e: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Please try again.";
       toast({
         title: "Failed to create year",
-        description: e?.message ?? "Please try again.",
+        description: message,
         variant: "destructive",
       });
       setIsCreating(false);

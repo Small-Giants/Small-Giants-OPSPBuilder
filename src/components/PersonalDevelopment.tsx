@@ -55,7 +55,6 @@ export default function PersonalDevelopment({ }: PersonalDevelopmentProps) {
       }
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching personal development data:", error);
       setLoading(false);
     });
 
@@ -70,7 +69,6 @@ export default function PersonalDevelopment({ }: PersonalDevelopmentProps) {
         development: newDevelopment
       }, { merge: true });
     } catch (error) {
-      console.error("Error saving personal development data:", error);
       toast({
         title: "Error",
         description: "Failed to save data",

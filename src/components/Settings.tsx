@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +11,7 @@ import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUserProfile } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || "");
@@ -22,15 +24,18 @@ export default function Settings() {
     try {
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, { name });
+      // Update local state so UI reflects the change immediately
+      updateUserProfile({ name });
       toast({
         title: "Success",
         description: "Your name has been updated",
       });
       setIsEditing(false);
-    } catch (error: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update name";
       toast({
         title: "Error",
-        description: error.message || "Failed to update name",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -46,7 +51,7 @@ export default function Settings() {
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (error: any) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to logout",

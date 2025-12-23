@@ -47,7 +47,6 @@ export default function OpspCanvasExample() {
   ]);
 
   const handleSectionUpdate = (sectionId: string, content: string | string[]) => {
-    console.log(`Updating section ${sectionId}:`, content);
     setSections(prev => prev.map(section => 
       section.id === sectionId 
         ? { 

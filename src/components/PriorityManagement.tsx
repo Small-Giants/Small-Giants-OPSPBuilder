@@ -150,7 +150,6 @@ export default function PriorityManagement() {
       setNewForm({ title: "", description: "", type: "priority", executiveChampion: "", successStatement: "", owner: "", dueDate: "", planYear: selectedYear });
       toast({ title: "Success", description: "Priority created" });
     } catch (error) {
-      console.error(error);
       toast({ title: "Error", description: "Failed to create priority", variant: "destructive" });
     }
   };
@@ -176,7 +175,6 @@ export default function PriorityManagement() {
       setEditingId(null);
       toast({ title: "Success", description: "Priority updated" });
     } catch (error) {
-      console.error(error);
       toast({ title: "Error", description: "Failed to update priority", variant: "destructive" });
     }
   };
@@ -186,7 +184,6 @@ export default function PriorityManagement() {
       await deleteDoc(doc(db, 'companies', companyId, 'priorities', id));
       toast({ title: "Success", description: "Priority deleted" });
     } catch (error) {
-      console.error(error);
       toast({ title: "Error", description: "Failed to delete priority", variant: "destructive" });
     }
   };
@@ -220,7 +217,6 @@ export default function PriorityManagement() {
       setNewRockForm({ text: "", assigneeId: "", assigneeName: "", quarter: "Q1", year: selectedYear, priority: false });
       toast({ title: "Success", description: "Rock added" });
     } catch (error) {
-      console.error(error);
       toast({ title: "Error", description: "Failed to add rock", variant: "destructive" });
     }
   };
@@ -253,7 +249,6 @@ export default function PriorityManagement() {
       setEditingRock(null);
       toast({ title: "Success", description: "Rock updated" });
     } catch (error) {
-      console.error(error);
       toast({ title: "Error", description: "Failed to update rock", variant: "destructive" });
     }
   };
@@ -263,7 +258,6 @@ export default function PriorityManagement() {
       await deleteDoc(doc(db, 'companies', companyId, 'rocks', rockId));
       toast({ title: "Success", description: "Rock deleted" });
     } catch (error) {
-       console.error(error);
        toast({ title: "Error", description: "Failed to delete rock", variant: "destructive" });
     }
   };

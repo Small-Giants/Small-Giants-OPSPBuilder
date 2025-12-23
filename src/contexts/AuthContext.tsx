@@ -42,6 +42,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  updateUserProfile: (updates: Partial<Pick<User, 'name'>>) => void;
   isAuthenticated: boolean;
   hasRole: (requiredRole: 'superadmin' | 'admin' | 'user') => boolean;
 }
@@ -196,12 +197,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return userLevel >= requiredLevel;
   };
 
+  // Update local user state after profile changes (e.g., name update)
+  const updateUserProfile = (updates: Partial<Pick<User, 'name'>>) => {
+    if (user) {
+      setUser({ ...user, ...updates });
+    }
+  };
+
   const value = {
     user,
     loading,
     loginWithGoogle,
     logout,
     checkAuth,
+    updateUserProfile,
     isAuthenticated: !!user,
     hasRole,
   };

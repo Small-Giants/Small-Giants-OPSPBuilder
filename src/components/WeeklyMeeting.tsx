@@ -270,7 +270,6 @@ export default function WeeklyMeeting() {
       await addDoc(meetingsRef, newMeeting);
       toast({ title: "Meeting started", description: "Your weekly meeting has begun." });
     } catch (error) {
-      console.error("Error starting meeting:", error);
       toast({ title: "Error", description: "Failed to start meeting", variant: "destructive" });
     }
   };
@@ -289,7 +288,6 @@ export default function WeeklyMeeting() {
       });
       toast({ title: "Meeting ended", description: "Meeting notes have been saved." });
     } catch (error) {
-      console.error("Error ending meeting:", error);
       toast({ title: "Error", description: "Failed to end meeting", variant: "destructive" });
     }
   };
@@ -305,8 +303,7 @@ export default function WeeklyMeeting() {
         notes: meetingNotes,
       });
     } catch (error) {
-      console.error("Error saving meeting:", error);
-    }
+      }
   };
 
   // Auto-save meeting state

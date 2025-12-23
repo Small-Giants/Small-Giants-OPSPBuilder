@@ -14,7 +14,6 @@ export default function AssessmentCardExample() {
   const averageScore = assessmentItems.reduce((sum, item) => sum + item.score, 0) / assessmentItems.length;
 
   const handleScoreChange = (itemId: string, score: number) => {
-    console.log(`Score changed for ${itemId}: ${score}`);
     setAssessmentItems(prev => 
       prev.map(item => 
         item.id === itemId ? { ...item, score } : item
@@ -23,8 +22,7 @@ export default function AssessmentCardExample() {
   };
 
   const handleSubmit = () => {
-    console.log('Assessment submitted:', assessmentItems);
-  };
+    };
 
   return (
     <div className="p-6">

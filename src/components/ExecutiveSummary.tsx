@@ -139,7 +139,6 @@ export default function ExecutiveSummary({
       doc(db, "companies", companyId, "roadmap", "foundation"),
       (snap) => setFoundation(snap.exists() ? (snap.data() as any) : null),
       (err) => {
-        console.error("ExecutiveSummary: foundation snapshot error", err);
         setFoundation(null);
       }
     );
@@ -149,7 +148,6 @@ export default function ExecutiveSummary({
       doc(db, "companies", companyId, "roadmap", "main"),
       (snap) => setRoadmapMain(snap.exists() ? (snap.data() as any) : null),
       (err) => {
-        console.error("ExecutiveSummary: roadmap main snapshot error", err);
         setRoadmapMain(null);
       }
     );
@@ -179,7 +177,6 @@ export default function ExecutiveSummary({
         }
       },
       (err) => {
-        console.error("ExecutiveSummary: one-year snapshot error", err);
         shouldUseLegacy = selectedYear === LEGACY_PLAN_YEAR;
         if (!shouldUseLegacy) setOneYear(null);
       }

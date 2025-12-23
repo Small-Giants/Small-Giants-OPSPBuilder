@@ -6,7 +6,6 @@ export default function AuthCardExample() {
   const [user, setUser] = useState<any>(null);
 
   const handleSignIn = async (provider: 'google' | 'microsoft') => {
-    console.log(`Signing in with ${provider}`);
     // Simulate authentication
     setTimeout(() => {
       setUser({
@@ -21,7 +20,6 @@ export default function AuthCardExample() {
   };
 
   const handleSignOut = () => {
-    console.log('Signing out');
     setUser(null);
   };
 

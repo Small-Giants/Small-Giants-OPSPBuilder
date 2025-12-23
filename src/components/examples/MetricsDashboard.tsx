@@ -67,14 +67,12 @@ export default function MetricsDashboardExample() {
   ]);
 
   const handleMetricUpdate = (updatedMetric: typeof metrics[0]) => {
-    console.log('Metric updated:', updatedMetric);
     setMetrics(prev => 
       prev.map(m => m.id === updatedMetric.id ? updatedMetric : m)
     );
   };
 
   const handleAddMetric = (newMetric: Omit<typeof metrics[0], 'id'>) => {
-    console.log('Adding metric:', newMetric);
     const metric = {
       ...newMetric,
       id: `m${Date.now()}`

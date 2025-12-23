@@ -816,11 +816,13 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
       } else {
         throw new Error("Could not open print window. Please allow popups.");
       }
-    } catch (error: any) {
-      console.error("Export error:", error);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to generate export. Please try again.";
       toast({
         title: "Export failed",
-        description: error.message || "Failed to generate export. Please try again.",
+        description: message.includes("popup") 
+          ? "Popup was blocked. Please allow popups for this site, or use 'Download HTML' instead."
+          : message,
         variant: "destructive",
       });
       setIsGenerating(false);

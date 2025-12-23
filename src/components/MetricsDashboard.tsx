@@ -81,7 +81,6 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
         apply();
       },
       (error) => {
-        console.error("Error fetching metrics:", error);
         setLoading(false);
       }
     );
@@ -194,7 +193,6 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
       setShowAddForm(false);
       toast({ title: "Success", description: "KPI added successfully" });
     } catch (error) {
-      console.error("Error adding metric:", error);
       toast({ title: "Error", description: "Failed to add KPI", variant: "destructive" });
     }
   };
@@ -231,7 +229,6 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
       setCheckInValues({});
       toast({ title: "Check-in complete", description: "All KPIs have been updated." });
     } catch (error) {
-      console.error("Error during check-in:", error);
       toast({ title: "Error", description: "Failed to save check-in", variant: "destructive" });
     }
   };
@@ -252,7 +249,6 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
         setEditForm(null);
         toast({ title: "Success", description: "KPI updated successfully" });
       } catch (error) {
-        console.error("Error updating metric:", error);
         toast({ title: "Error", description: "Failed to update KPI", variant: "destructive" });
       }
     }
@@ -268,7 +264,6 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
       await deleteDoc(doc(db, 'companies', companyId, 'metrics', metricId));
       toast({ title: "Success", description: "KPI deleted successfully" });
     } catch (error) {
-      console.error("Error deleting metric:", error);
       toast({ title: "Error", description: "Failed to delete KPI", variant: "destructive" });
     }
   };

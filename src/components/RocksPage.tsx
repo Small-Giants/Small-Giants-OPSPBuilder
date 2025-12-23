@@ -60,7 +60,7 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
   const { companyId, selectedYear } = usePlanYear();
   
   const [myRocks, setMyRocks] = useState<Rock[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<Array<{ id: string; name?: string; email?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'quarter' | 'status'>('status');
   const [displayMode, setDisplayMode] = useState<'list' | 'grid' | 'kanban'>('list');
@@ -103,7 +103,6 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
         apply();
       },
       (error) => {
-        console.error("Error fetching rocks:", error);
         setLoading(false);
       }
     );
@@ -131,16 +130,24 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
     };
   }, [companyId, selectedYear]);
 
-  // Fetch users for assignee dropdown
+  // Fetch users for assignee dropdown - only active (non-deleted) users
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const fetchedUsers: any[] = [];
-      snapshot.forEach((doc) => {
-        fetchedUsers.push({ id: doc.id, ...doc.data() });
+      const fetchedUsers: Array<{ id: string; name?: string; email?: string; deletedAt?: string }> = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        // Only include non-deleted users
+        if (!data.deletedAt) {
+          fetchedUsers.push({ 
+            id: docSnap.id, 
+            name: data.name,
+            email: data.email 
+          });
+        }
       });
       setUsers(fetchedUsers);
-    }, (error) => {
-      console.error("Error fetching users:", error);
+    }, () => {
+      // Error handled silently
     });
     return () => unsubscribe();
   }, []);
@@ -168,7 +175,6 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
       });
       toast({ title: "Success", description: "Rock created successfully" });
     } catch (error) {
-      console.error("Error adding rock:", error);
       toast({ title: "Error", description: "Failed to create rock", variant: "destructive" });
     }
   };
@@ -185,7 +191,6 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
       setEditingRock(null);
       toast({ title: "Success", description: "Rock updated successfully" });
     } catch (error) {
-      console.error("Error updating rock:", error);
       toast({ title: "Error", description: "Failed to update rock", variant: "destructive" });
     }
   };
@@ -196,7 +201,6 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
       await deleteDoc(rockRef);
       toast({ title: "Success", description: "Rock deleted successfully" });
     } catch (error) {
-      console.error("Error deleting rock:", error);
       toast({ title: "Error", description: "Failed to delete rock", variant: "destructive" });
     }
   };
@@ -240,7 +244,6 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
         const rockRef = doc(db, 'companies', companyId, 'rocks', draggedRock.id);
         await updateDoc(rockRef, updates);
       } catch (error) {
-        console.error("Error moving rock:", error);
         toast({ title: "Error", description: "Failed to move rock", variant: "destructive" });
       }
     }
