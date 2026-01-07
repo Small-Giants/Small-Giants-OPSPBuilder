@@ -20,6 +20,7 @@ const ALLOWED_DOMAIN = 'smallgiantsonline.com';
 const SUPERADMIN_EMAILS = [
   'patrick@smallgiantsonline.com',
   'danielle@smallgiantsonline.com',
+  'jenns@smallgiantsonline.com',
 ];
 
 export interface User {
