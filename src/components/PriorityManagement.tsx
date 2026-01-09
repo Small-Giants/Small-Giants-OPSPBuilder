@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,68 @@ import {
   TrendingUpIcon,
   TargetIcon,
   ChevronDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  GripVertical
 } from "lucide-react";
 import { ActionMenu } from "@/components/ui/ActionMenu";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, type Unsubscribe } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, type Unsubscribe, writeBatch } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Sortable wrapper component for priority/capability items
+interface SortableItemProps {
+  id: string;
+  children: React.ReactNode;
+}
+
+function SortableItem({ id, children }: SortableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center cursor-grab active:cursor-grabbing z-10 text-muted-foreground hover:text-foreground"
+      >
+        <GripVertical className="h-4 w-4" />
+      </div>
+      <div className="pl-8">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function PriorityManagement() {
   const { toast } = useToast();
@@ -41,6 +97,18 @@ export default function PriorityManagement() {
   const [loading, setLoading] = useState(true);
 
   const yearOptions = Array.from(new Set<number>([...availableYears, selectedYear, selectedYear + 1])).sort((a, b) => a - b);
+
+  // DnD Kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     let unsubPrioritiesYear: Unsubscribe | undefined;
@@ -138,11 +206,18 @@ export default function PriorityManagement() {
   const handleAdd = async () => {
     if (!newForm.title.trim()) return;
 
+    // Calculate the next sortOrder based on existing items of the same type
+    const sameTypeItems = prioritiesData.filter(p => p.type === newForm.type);
+    const maxSortOrder = sameTypeItems.reduce((max, item) => 
+      Math.max(max, item.sortOrder ?? 0), 0
+    );
+
     try {
       await addDoc(collection(db, 'companies', companyId, 'priorities'), {
         ...newForm,
         planYear: newForm.planYear ?? selectedYear,
         companyId,
+        sortOrder: maxSortOrder + 1,
         createdAt: new Date().toISOString()
       });
       
@@ -278,8 +353,72 @@ export default function PriorityManagement() {
     return grouped;
   };
   
-  const capabilities = prioritiesWithRocks.filter((p: any) => p.type === 'capability');
-  const annualPriorities = prioritiesWithRocks.filter((p: any) => p.type === 'priority');
+  // Sort by sortOrder (or createdAt as fallback)
+  const capabilities = useMemo(() => 
+    prioritiesWithRocks
+      .filter((p: any) => p.type === 'capability')
+      .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [prioritiesWithRocks]
+  );
+  
+  const annualPriorities = useMemo(() => 
+    prioritiesWithRocks
+      .filter((p: any) => p.type === 'priority')
+      .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [prioritiesWithRocks]
+  );
+
+  // Handle drag end for capabilities
+  const handleCapabilitiesDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = capabilities.findIndex((c: any) => c.id === active.id);
+    const newIndex = capabilities.findIndex((c: any) => c.id === over.id);
+    
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(capabilities, oldIndex, newIndex);
+    
+    // Batch update sortOrder in Firestore
+    try {
+      const batch = writeBatch(db);
+      reordered.forEach((item: any, index: number) => {
+        const docRef = doc(db, 'companies', companyId, 'priorities', item.id);
+        batch.update(docRef, { sortOrder: index });
+      });
+      await batch.commit();
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to reorder capabilities", variant: "destructive" });
+    }
+  };
+
+  // Handle drag end for priorities
+  const handlePrioritiesDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = annualPriorities.findIndex((p: any) => p.id === active.id);
+    const newIndex = annualPriorities.findIndex((p: any) => p.id === over.id);
+    
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(annualPriorities, oldIndex, newIndex);
+    
+    // Batch update sortOrder in Firestore
+    try {
+      const batch = writeBatch(db);
+      reordered.forEach((item: any, index: number) => {
+        const docRef = doc(db, 'companies', companyId, 'priorities', item.id);
+        batch.update(docRef, { sortOrder: index });
+      });
+      await batch.commit();
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to reorder priorities", variant: "destructive" });
+    }
+  };
   
   if (loading) {
     return (
@@ -434,15 +573,26 @@ export default function PriorityManagement() {
               <h3 className="text-lg font-semibold mb-3 flex items-center">
                 <TrendingUpIcon className="h-5 w-5 mr-2 text-primary" />
                 Capabilities
+                <span className="ml-2 text-xs text-muted-foreground font-normal">(drag to reorder)</span>
               </h3>
-              <div className="space-y-3">
-                {capabilities.length === 0 ? (
-                  <div className="text-muted-foreground text-sm py-4 text-center">
-                    No capabilities added yet. Click "Add New" to create one.
-                  </div>
-                ) : (
-                  capabilities.map((capability: any) => (
-                    <Card key={capability.id} className="hover-elevate group">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleCapabilitiesDragEnd}
+              >
+                <SortableContext
+                  items={capabilities.map((c: any) => c.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {capabilities.length === 0 ? (
+                      <div className="text-muted-foreground text-sm py-4 text-center">
+                        No capabilities added yet. Click "Add New" to create one.
+                      </div>
+                    ) : (
+                      capabilities.map((capability: any) => (
+                        <SortableItem key={capability.id} id={capability.id}>
+                          <Card className="hover-elevate group">
                       <CardContent className="pt-4">
                         {editingId === capability.id ? (
                           <div className="space-y-3">
@@ -813,24 +963,38 @@ export default function PriorityManagement() {
                         )}
                       </CardContent>
                     </Card>
-                  ))
-                )}
-              </div>
+                  </SortableItem>
+                      ))
+                    )}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
             
             <div>
               <h3 className="text-lg font-semibold mb-3 flex items-center">
                 <TargetIcon className="h-5 w-5 mr-2 text-primary" />
                 Annual Priorities
+                <span className="ml-2 text-xs text-muted-foreground font-normal">(drag to reorder)</span>
               </h3>
-              <div className="space-y-3">
-                {annualPriorities.length === 0 ? (
-                  <div className="text-muted-foreground text-sm py-4 text-center">
-                    No annual priorities added yet. Click "Add New" to create one.
-                  </div>
-                ) : (
-                  annualPriorities.map((priority: any) => (
-                    <Card key={priority.id} className="hover-elevate group">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handlePrioritiesDragEnd}
+              >
+                <SortableContext
+                  items={annualPriorities.map((p: any) => p.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {annualPriorities.length === 0 ? (
+                      <div className="text-muted-foreground text-sm py-4 text-center">
+                        No annual priorities added yet. Click "Add New" to create one.
+                      </div>
+                    ) : (
+                      annualPriorities.map((priority: any) => (
+                        <SortableItem key={priority.id} id={priority.id}>
+                          <Card className="hover-elevate group">
                       <CardContent className="pt-4">
                         {editingId === priority.id ? (
                            <div className="space-y-3">
@@ -976,9 +1140,12 @@ export default function PriorityManagement() {
                         )}
                       </CardContent>
                     </Card>
-                  ))
-                )}
-              </div>
+                  </SortableItem>
+                      ))
+                    )}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
           </div>
         </CardContent>
