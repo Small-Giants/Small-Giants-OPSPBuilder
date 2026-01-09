@@ -52,6 +52,12 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
     
+    // Deeper nested company subcollections (e.g., companies/x/users/y/tools/z)
+    // Used by AgileGrowthChecklist and similar features
+    match /companies/{companyId}/{path=**} {
+      allow read, write: if isAuthenticated();
+    }
+    
     // Planning data (foundation, goals, etc.) - authenticated users can read/write
     match /plans/{planId} {
       allow read, write: if isAuthenticated();
