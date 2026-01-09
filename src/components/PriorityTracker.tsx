@@ -79,10 +79,12 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
       (snapshot) => {
         const items: Priority[] = [];
         snapshot.forEach((d) => items.push({ id: d.id, ...(d.data() as any) }));
-        const filtered = items.filter((p: any) => {
-          const planYear = typeof p.planYear === "number" ? p.planYear : LEGACY_PLAN_YEAR;
-          return planYear === selectedYear;
-        });
+        const filtered = items
+          .filter((p: any) => {
+            const planYear = typeof p.planYear === "number" ? p.planYear : LEGACY_PLAN_YEAR;
+            return planYear === selectedYear;
+          })
+          .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         setPriorities(filtered);
         setLoading(false);
       },

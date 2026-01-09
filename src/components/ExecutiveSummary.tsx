@@ -197,7 +197,11 @@ export default function ExecutiveSummary({
 
     // Priorities (year + legacy for 2025)
     const prioritiesById = new Map<string, Priority>();
-    const applyPriorities = () => setPriorities(Array.from(prioritiesById.values()));
+    const applyPriorities = () => {
+      const sorted = Array.from(prioritiesById.values())
+        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      setPriorities(sorted);
+    };
     const prioritiesCol = collection(db, "companies", companyId, "priorities");
     const qPrioritiesYear = query(
       prioritiesCol,

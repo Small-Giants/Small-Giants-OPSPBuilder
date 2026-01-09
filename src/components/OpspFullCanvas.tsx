@@ -89,10 +89,12 @@ export default function OpspFullCanvas({ data }: OpspFullCanvasProps) {
     const unsubPriorities = onSnapshot(collection(db, 'companies', companyId, 'priorities'), (snapshot) => {
       const items: any[] = [];
       snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-      const filtered = items.filter((p) => {
-        const planYear = typeof p.planYear === "number" ? p.planYear : LEGACY_PLAN_YEAR;
-        return planYear === selectedYear;
-      });
+      const filtered = items
+        .filter((p) => {
+          const planYear = typeof p.planYear === "number" ? p.planYear : LEGACY_PLAN_YEAR;
+          return planYear === selectedYear;
+        })
+        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
       setPriorities(filtered);
     });
 
