@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { ActionMenu } from "@/components/ui/ActionMenu";
 import { db } from "@/lib/firebase";
-import { doc, collection, onSnapshot, updateDoc, addDoc, deleteDoc, query, where, type Unsubscribe } from "firebase/firestore";
+import { doc, collection, onSnapshot, updateDoc, addDoc, deleteDoc, setDoc, query, where, type Unsubscribe } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
 
 export default function ThreeYear() {
@@ -146,14 +146,11 @@ export default function ThreeYear() {
   const handleSave = async (fieldPath: string) => {
     try {
       const roadmapRef = doc(db, 'companies', companyId, 'roadmap', 'main');
-      // Use setDoc with merge: true to ensure document exists if it hasn't been created yet
-      // But updateDoc is fine if we assume initialized. Let's use updateDoc and handle error if needed?
-      // Better: check existence or just use setDoc with merge.
-      // I'll import setDoc to be safe.
-      // But wait, I only imported updateDoc. I'll use updateDoc for now, assuming main doc exists (it should from other components).
-      // Actually, I should probably use setDoc({ ... }, { merge: true }) in general for singletons.
-      // I'll stick to updateDoc for simplicity as Foundation likely initialized it.
-      await updateDoc(roadmapRef, { [fieldPath]: editValue });
+      // Use setDoc with merge: true to create document if it doesn't exist
+      await setDoc(roadmapRef, { 
+        [fieldPath]: editValue,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
       
       setRoadmapData(prev => ({ ...prev, [fieldPath]: editValue }));
       setEditingField(null);
