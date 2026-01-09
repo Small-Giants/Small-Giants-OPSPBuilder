@@ -586,7 +586,9 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
 
     // 1-Year Section
     if (selectedSections.includes("one-year") && (oneYearData || priorities.length > 0)) {
-      const annualPriorities = priorities.filter((p) => p.type === "priority");
+      const annualPriorities = priorities
+        .filter((p) => p.type === "priority")
+        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
       content += `
     <div class="section">
@@ -652,7 +654,9 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
 
     // Capabilities Section
     if (selectedSections.includes("capabilities")) {
-      const capabilities = priorities.filter((p) => p.type === "capability");
+      const capabilities = priorities
+        .filter((p) => p.type === "capability")
+        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
       if (capabilities.length > 0) {
         content += `
     <div class="section">

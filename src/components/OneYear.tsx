@@ -505,7 +505,10 @@ export default function OneYear() {
     return grouped;
   };
 
-  const annualPriorities = priorities.filter((p: any) => p.type === 'priority');
+  // Sort priorities by sortOrder to match Priority Management ordering
+  const annualPriorities = priorities
+    .filter((p: any) => p.type === 'priority')
+    .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   const prioritiesWithRocks = annualPriorities.map(p => ({
       ...p,
       rocks: rocks.filter(r => r.priorityId === p.id)

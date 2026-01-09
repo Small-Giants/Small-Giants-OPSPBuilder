@@ -75,10 +75,12 @@ export default function ThreeYear() {
     const unsubCaps = onSnapshot(qCaps, (snapshot) => {
       const items: any[] = [];
       snapshot.forEach((d) => items.push({ id: d.id, ...d.data() }));
-      const filtered = items.filter((p) => {
-        const planYear = typeof p.planYear === "number" ? p.planYear : LEGACY_PLAN_YEAR;
-        return planYear === selectedYear;
-      });
+      const filtered = items
+        .filter((p) => {
+          const planYear = typeof p.planYear === "number" ? p.planYear : LEGACY_PLAN_YEAR;
+          return planYear === selectedYear;
+        })
+        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)); // Sort by sortOrder
       setCapabilities(filtered);
     });
     

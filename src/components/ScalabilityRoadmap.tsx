@@ -186,8 +186,13 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
     const prioritiesById = new Map<string, any>();
     const applyPriorities = () => {
       const items = Array.from(prioritiesById.values());
-      const capabilities = items.filter((p) => p.type === "capability");
-      const annualPriorities = items.filter((p) => p.type === "priority");
+      // Sort by sortOrder to match Priority Management ordering
+      const capabilities = items
+        .filter((p) => p.type === "capability")
+        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      const annualPriorities = items
+        .filter((p) => p.type === "priority")
+        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
       setRawPriorities(items);
       setRoadmapData((prev) => ({
