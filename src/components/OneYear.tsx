@@ -256,25 +256,30 @@ export default function OneYear() {
       normalizedPath = 'criticalNumbers.' + fieldPath.substring('criticalnumbers.'.length);
     }
     
-    // Optimistic update logic for local state
-    let newData: any;
-    setOneYearData(prev => {
-        // Deep clone
-        const nextState = JSON.parse(JSON.stringify(prev));
-        
-        if (normalizedPath.includes('.')) {
-            const pathParts = normalizedPath.split('.');
-            let current = nextState;
-            for (let i = 0; i < pathParts.length - 1; i++) {
-                current = current[pathParts[i]];
-            }
-            current[pathParts[pathParts.length - 1]] = editValue;
-        } else {
-            nextState[normalizedPath] = editValue;
+    // Compute the new state synchronously to ensure consistent data for both UI and Firestore
+    const computeNewState = () => {
+      const nextState = JSON.parse(JSON.stringify(oneYearData));
+      
+      if (normalizedPath.includes('.')) {
+        const pathParts = normalizedPath.split('.');
+        let current = nextState;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          if (current[pathParts[i]] === undefined) {
+            current[pathParts[i]] = {};
+          }
+          current = current[pathParts[i]];
         }
-        newData = nextState;
-        return nextState;
-    });
+        current[pathParts[pathParts.length - 1]] = editValue;
+      } else {
+        nextState[normalizedPath] = editValue;
+      }
+      return nextState;
+    };
+
+    const newData = computeNewState();
+    
+    // Update local state
+    setOneYearData(newData);
 
     // Prepare data for Firestore
     const dataToSave: any = {};
@@ -282,17 +287,6 @@ export default function OneYear() {
     if (normalizedPath === 'onePhraseStrategy') {
       dataToSave.onePhraseStrategy = editValue;
     } else if (normalizedPath.startsWith('oneYearGoals.')) {
-      // We need to save the whole object for oneYearGoals if we store it as JSON string
-      // or simpler if we store as map.
-      // The previous code stringified it.
-      // Let's store as object in Firestore for better querying/updates, but 
-      // if we stick to previous schema logic, oneYearGoal is a string field in Postgres.
-      // In Firestore, let's store 'oneYearGoal' as a Map (object) if possible, or stringify to match legacy.
-      // Given the code in useEffect parses it, let's stringify it to be safe with existing logic,
-      // OR better, let's migrate to storing as Object in Firestore 'roadmap/main' document.
-      // I'll store it as an object 'oneYearGoal' in Firestore.
-      // But wait, `useEffect` logic: `const goalData = typeof data.oneYearGoal === 'string' ? JSON.parse... : data.oneYearGoal;`
-      // So it handles both. I'll save as object.
       dataToSave.oneYearGoal = newData.oneYearGoals; 
     } else if (normalizedPath.startsWith('criticalNumbers.')) {
       dataToSave.criticalNumbers = newData.criticalNumbers;
