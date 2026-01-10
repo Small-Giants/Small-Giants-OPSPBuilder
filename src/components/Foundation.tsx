@@ -475,7 +475,7 @@ export default function Foundation() {
     
     return (
       <div className="flex gap-2 items-start group">
-        <p className={`flex-1 ${multiline ? 'text-sm leading-relaxed' : 'text-lg font-medium'} text-foreground ${!value ? 'opacity-50 italic' : ''}`}>
+        <p className={`flex-1 ${multiline ? 'text-sm leading-relaxed whitespace-pre-wrap' : 'text-lg font-medium'} text-foreground ${!value ? 'opacity-50 italic' : ''}`}>
           {displayValue}
         </p>
         <Button

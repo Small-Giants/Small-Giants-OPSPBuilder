@@ -151,10 +151,9 @@ export default function SwotMatrix({ data, onUpdate }: SwotMatrixProps) {
 
   const [editingSection, setEditingSection] = useState<keyof SwotData | null>(null);
   const [newItemText, setNewItemText] = useState("");
-  const [confirmAdd, setConfirmAdd] = useState(false);
 
   const addItem = (section: keyof SwotData) => {
-    if (!newItemText.trim() || !confirmAdd) return;
+    if (!newItemText.trim()) return;
     
     const newItem: SwotItem = {
       id: `${section}_${Date.now()}`,
@@ -168,7 +167,6 @@ export default function SwotMatrix({ data, onUpdate }: SwotMatrixProps) {
 
     update(updatedData);
     setNewItemText("");
-    setConfirmAdd(false);
     setEditingSection(null);
   };
 
@@ -183,22 +181,26 @@ export default function SwotMatrix({ data, onUpdate }: SwotMatrixProps) {
   const getSectionConfig = (section: keyof SwotData) => {
     const configs = {
       strengths: { 
-        title: "Strengths", 
+        title: "Strengths",
+        singular: "Strength",
         color: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800",
         badgeColor: "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700"
       },
       weaknesses: { 
-        title: "Weaknesses", 
+        title: "Weaknesses",
+        singular: "Weakness",
         color: "bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800",
         badgeColor: "bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-700"
       },
       opportunities: { 
-        title: "Opportunities", 
+        title: "Opportunities",
+        singular: "Opportunity",
         color: "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800",
         badgeColor: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700"
       },
       threats: { 
-        title: "Threats", 
+        title: "Threats",
+        singular: "Threat",
         color: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800",
         badgeColor: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700"
       }
@@ -228,7 +230,7 @@ export default function SwotMatrix({ data, onUpdate }: SwotMatrixProps) {
               className="flex items-center gap-2 p-2 bg-background/50 rounded-md hover:bg-background/80 transition-all"
             >
               <GripVerticalIcon className="w-4 h-4 text-muted-foreground cursor-move" />
-              <span className="flex-1 text-sm text-foreground">{item.text}</span>
+              <span className="flex-1 text-sm text-foreground whitespace-pre-wrap">{item.text}</span>
               <Button
                 size="sm"
                 variant="ghost"
@@ -247,15 +249,15 @@ export default function SwotMatrix({ data, onUpdate }: SwotMatrixProps) {
                 <Input
                   value={newItemText}
                   onChange={(e) => setNewItemText(e.target.value)}
-                  placeholder={`Add ${section.slice(0, -1)}`}
+                  placeholder={`Add ${config.singular}`}
                   className="flex-1"
-                  onKeyDown={(e) => e.key === 'Enter' && confirmAdd && addItem(section)}
+                  onKeyDown={(e) => e.key === 'Enter' && addItem(section)}
                   data-testid={`input-new-${section}`}
                 />
                 <Button
                   size="sm"
                   onClick={() => addItem(section)}
-                  disabled={!confirmAdd || !newItemText.trim()}
+                  disabled={!newItemText.trim()}
                   data-testid={`button-add-${section}`}
                 >
                   <PlusIcon className="w-4 h-4" />
@@ -266,25 +268,11 @@ export default function SwotMatrix({ data, onUpdate }: SwotMatrixProps) {
                   onClick={() => {
                     setEditingSection(null);
                     setNewItemText("");
-                    setConfirmAdd(false);
                   }}
                   data-testid={`button-cancel-${section}`}
                 >
                   <XIcon className="w-4 h-4" />
                 </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id={`confirm-${section}`}
-                  checked={confirmAdd}
-                  onChange={(e) => setConfirmAdd(e.target.checked)}
-                  className="rounded border-border bg-background"
-                  data-testid={`checkbox-confirm-${section}`}
-                />
-                <label htmlFor={`confirm-${section}`} className="text-xs text-muted-foreground">
-                  Confirm to add this item
-                </label>
               </div>
             </div>
           ) : (
@@ -296,7 +284,7 @@ export default function SwotMatrix({ data, onUpdate }: SwotMatrixProps) {
               data-testid={`button-edit-${section}`}
             >
               <PlusIcon className="w-4 h-4 mr-2" />
-              Add {config.title.slice(0, -1)}
+              Add {config.singular}
             </Button>
           )}
         </CardContent>

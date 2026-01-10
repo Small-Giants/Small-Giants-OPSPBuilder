@@ -292,7 +292,7 @@ export default function ThreeYear() {
       
       return (
         <div className="flex gap-2 items-start group">
-          <p className={`flex-1 ${multiline ? 'text-sm leading-relaxed' : 'text-lg font-medium'} text-foreground`}>{value || "Click to add..."}</p>
+          <p className={`flex-1 ${multiline ? 'text-sm leading-relaxed whitespace-pre-wrap' : 'text-lg font-medium'} text-foreground`}>{value || "Click to add..."}</p>
           <ActionMenu
             onEdit={() => handleEdit(fieldPath, value)}
             onDelete={() => {}}

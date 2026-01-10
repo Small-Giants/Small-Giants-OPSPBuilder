@@ -446,7 +446,7 @@ export default function OneYear() {
     
     return (
       <div className="flex gap-2 items-start group">
-        <p className={`flex-1 ${multiline ? 'text-sm leading-relaxed' : 'text-lg font-medium'} text-foreground`}>
+        <p className={`flex-1 ${multiline ? 'text-sm leading-relaxed whitespace-pre-wrap' : 'text-lg font-medium'} text-foreground`}>
           {value || "-"}
         </p>
         <Button
