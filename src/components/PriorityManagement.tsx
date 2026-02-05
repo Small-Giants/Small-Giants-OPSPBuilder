@@ -568,409 +568,8 @@ export default function PriorityManagement() {
             </Card>
           )}
           
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center">
-                <TrendingUpIcon className="h-5 w-5 mr-2 text-primary" />
-                Capabilities
-                <span className="ml-2 text-xs text-muted-foreground font-normal">(drag to reorder)</span>
-              </h3>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleCapabilitiesDragEnd}
-              >
-                <SortableContext
-                  items={capabilities.map((c: any) => c.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-3">
-                    {capabilities.length === 0 ? (
-                      <div className="text-muted-foreground text-sm py-4 text-center">
-                        No capabilities added yet. Click "Add New" to create one.
-                      </div>
-                    ) : (
-                      capabilities.map((capability: any) => (
-                        <SortableItem key={capability.id} id={capability.id}>
-                          <Card className="hover-elevate group">
-                      <CardContent className="pt-4">
-                        {editingId === capability.id ? (
-                          <div className="space-y-3">
-                            <Input
-                              value={editForm.title}
-                              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                              placeholder="Title"
-                              data-testid={`input-edit-title-${capability.id}`}
-                            />
-                            <Textarea
-                              value={editForm.description}
-                              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                              placeholder="Description"
-                              rows={2}
-                              data-testid={`textarea-edit-description-${capability.id}`}
-                            />
-                            <div className="grid grid-cols-2 gap-3">
-                              <Input
-                                value={editForm.executiveChampion}
-                                onChange={(e) => setEditForm({ ...editForm, executiveChampion: e.target.value })}
-                                placeholder="Executive Champion"
-                                data-testid={`input-edit-exec-champion-${capability.id}`}
-                              />
-                              <Input
-                                value={editForm.successStatement}
-                                onChange={(e) => setEditForm({ ...editForm, successStatement: e.target.value })}
-                                placeholder="Success Statement"
-                                data-testid={`input-edit-success-statement-${capability.id}`}
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <Select
-                                value={editForm.owner || "unassigned"}
-                                onValueChange={(value) => setEditForm({ ...editForm, owner: value === "unassigned" ? "" : value })}
-                              >
-                                <SelectTrigger data-testid={`select-edit-owner-${capability.id}`}>
-                                  <SelectValue placeholder="Select owner/person responsible" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                                  {users.map((user: any) => (
-                                    <SelectItem key={user.id} value={user.name || user.email}>
-                                      {user.name || user.email}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Input
-                                value={editForm.dueDate}
-                                onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
-                                placeholder="Due Date/Quarter (e.g., Q1 2025)"
-                                data-testid={`input-edit-due-date-${capability.id}`}
-                              />
-                            </div>
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleCancelEdit}
-                                data-testid={`button-cancel-edit-${capability.id}`}
-                              >
-                                <XIcon className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={handleSaveEdit}
-                                data-testid={`button-save-edit-${capability.id}`}
-                              >
-                                <CheckIcon className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h4 className="font-medium">{capability.title}</h4>
-                                  <Badge variant="secondary" className="text-xs">
-                                    Capability
-                                  </Badge>
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {capability.description}
-                                </p>
-                                {(capability.executiveChampion || capability.successStatement) && (
-                                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                                    {capability.executiveChampion && (
-                                      <div>
-                                        <span className="font-medium text-muted-foreground">Champion: </span>
-                                        <span>{capability.executiveChampion}</span>
-                                      </div>
-                                    )}
-                                    {capability.successStatement && (
-                                      <div>
-                                        <span className="font-medium text-muted-foreground">Success: </span>
-                                        <span>{capability.successStatement}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                <div className="mt-2 flex items-center gap-2">
-                                  {capability.rocks && capability.rocks.length > 0 ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setExpandedCapability(
-                                        expandedCapability === capability.id ? null : capability.id
-                                      )}
-                                      className="text-xs p-0 h-auto hover:bg-transparent"
-                                      data-testid={`button-expand-rocks-${capability.id}`}
-                                    >
-                                      {expandedCapability === capability.id ? (
-                                        <ChevronDownIcon className="h-4 w-4 mr-1" />
-                                      ) : (
-                                        <ChevronRightIcon className="h-4 w-4 mr-1" />
-                                      )}
-                                      <span className="text-muted-foreground">
-                                        {capability.rocks.length} rocks
-                                      </span>
-                                    </Button>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">No rocks yet</span>
-                                  )}
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setAddingRockTo(capability.id);
-                                      setExpandedCapability(capability.id);
-                                    }}
-                                    className="text-xs h-6 px-2 border-dashed"
-                                    data-testid={`button-add-rock-to-capability-${capability.id}`}
-                                  >
-                                    <PlusIcon className="h-3 w-3 mr-1" />
-                                    Add Rock
-                                  </Button>
-                                </div>
-                              </div>
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <ActionMenu
-                                  onEdit={() => handleEdit(capability)}
-                                  onDelete={() => handleDelete(capability.id)}
-                                  testId={`action-menu-${capability.id}`}
-                                />
-                              </div>
-                            </div>
-                            
-                            {expandedCapability === capability.id && (
-                              <div className="mt-4 pl-4 border-l-2 border-muted space-y-2">
-                                {capability.rocks && capability.rocks.length > 0 ? (
-                                  capability.rocks.map((rock: any) => (
-                                  <div key={rock.id} className="flex items-start justify-between gap-2 p-2 rounded bg-muted/30">
-                                    {editingRock === rock.id ? (
-                                      <div className="flex-1 space-y-2">
-                                        <Input
-                                          value={editRockForm.text}
-                                          onChange={(e) => setEditRockForm({ ...editRockForm, text: e.target.value })}
-                                          placeholder="Rock text"
-                                          className="text-sm"
-                                          data-testid={`input-edit-rock-text-${rock.id}`}
-                                        />
-                                        <Select
-                                          value={editRockForm.assigneeId || "unassigned"}
-                                          onValueChange={(value) => setEditRockForm({ ...editRockForm, assigneeId: value === "unassigned" ? "" : value })}
-                                        >
-                                          <SelectTrigger className="text-sm" data-testid={`select-edit-rock-assignee-${rock.id}`}>
-                                            <SelectValue placeholder="Select assignee" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="unassigned">Unassigned</SelectItem>
-                                            {users.map((user: any) => (
-                                              <SelectItem key={user.id} value={user.id}>
-                                                {user.name || user.email}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <Select
-                                            value={editRockForm.quarter}
-                                            onValueChange={(value) => setEditRockForm({ ...editRockForm, quarter: value })}
-                                          >
-                                            <SelectTrigger className="text-sm" data-testid={`select-edit-rock-quarter-${rock.id}`}>
-                                              <SelectValue placeholder="Quarter" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectItem value="Q1">Q1</SelectItem>
-                                              <SelectItem value="Q2">Q2</SelectItem>
-                                              <SelectItem value="Q3">Q3</SelectItem>
-                                              <SelectItem value="Q4">Q4</SelectItem>
-                                            </SelectContent>
-                                          </Select>
-                                          <Select
-                                            value={editRockForm.year.toString()}
-                                            onValueChange={(value) => setEditRockForm({ ...editRockForm, year: parseInt(value) })}
-                                          >
-                                            <SelectTrigger className="text-sm" data-testid={`select-edit-rock-year-${rock.id}`}>
-                                              <SelectValue placeholder="Year" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              {yearOptions.map((y) => (
-                                                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                          <input
-                                            type="checkbox"
-                                            checked={editRockForm.priority}
-                                            onChange={(e) => setEditRockForm({ ...editRockForm, priority: e.target.checked })}
-                                            className="h-4 w-4 rounded border-input"
-                                            data-testid={`checkbox-edit-rock-priority-${rock.id}`}
-                                          />
-                                          <label className="text-sm text-muted-foreground">High Priority (Move to Top)</label>
-                                        </div>
-                                        <div className="flex gap-2">
-                                          <Button
-                                            variant="default"
-                                            size="sm"
-                                            onClick={handleSaveRock}
-                                            data-testid={`button-save-rock-${rock.id}`}
-                                          >
-                                            <CheckIcon className="h-3 w-3" />
-                                          </Button>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={handleCancelRockEdit}
-                                            data-testid={`button-cancel-edit-rock-${rock.id}`}
-                                          >
-                                            <XIcon className="h-3 w-3" />
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <>
-                                        <div className="flex-1">
-                                          <p className="text-sm">{rock.text}</p>
-                                          <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                                            <span>{rock.quarter} {rock.year}</span>
-                                            {rock.assigneeName && (
-                                              <span>• {rock.assigneeName}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                        <ActionMenu
-                                          onEdit={() => handleEditRock(rock)}
-                                          onDelete={() => handleDeleteRock(rock.id)}
-                                          testId={`action-menu-rock-${rock.id}`}
-                                        />
-                                      </>
-                                    )}
-                                  </div>
-                                  ))
-                                ) : (
-                                  <div className="text-center py-4 text-muted-foreground text-sm">
-                                    No rocks yet. Click "Add Rock" to get started.
-                                  </div>
-                                )}
-                                
-                                {addingRockTo === capability.id ? (
-                                  <div className="p-2 rounded bg-muted/50 space-y-2">
-                                    <Input
-                                      value={newRockForm.text}
-                                      onChange={(e) => setNewRockForm({ ...newRockForm, text: e.target.value })}
-                                      placeholder="Enter rock text..."
-                                      className="text-sm"
-                                      autoFocus
-                                      data-testid={`input-new-rock-text-${capability.id}`}
-                                    />
-                                    <Select
-                                      value={newRockForm.assigneeId || "unassigned"}
-                                      onValueChange={(value) => setNewRockForm({ ...newRockForm, assigneeId: value === "unassigned" ? "" : value })}
-                                    >
-                                      <SelectTrigger className="text-sm" data-testid={`select-new-rock-assignee-${capability.id}`}>
-                                        <SelectValue placeholder="Select assignee (optional)" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                                        {users.map((user: any) => (
-                                          <SelectItem key={user.id} value={user.id}>
-                                            {user.name || user.email}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <Select
-                                        value={newRockForm.quarter}
-                                        onValueChange={(value) => setNewRockForm({ ...newRockForm, quarter: value })}
-                                      >
-                                        <SelectTrigger className="text-sm" data-testid={`select-new-rock-quarter-${capability.id}`}>
-                                          <SelectValue placeholder="Quarter" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="Q1">Q1</SelectItem>
-                                          <SelectItem value="Q2">Q2</SelectItem>
-                                          <SelectItem value="Q3">Q3</SelectItem>
-                                          <SelectItem value="Q4">Q4</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                      <Select
-                                        value={newRockForm.year.toString()}
-                                        onValueChange={(value) => setNewRockForm({ ...newRockForm, year: parseInt(value) })}
-                                      >
-                                        <SelectTrigger className="text-sm" data-testid={`select-new-rock-year-${capability.id}`}>
-                                          <SelectValue placeholder="Year" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {yearOptions.map((y) => (
-                                            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <input
-                                        type="checkbox"
-                                        checked={newRockForm.priority}
-                                        onChange={(e) => setNewRockForm({ ...newRockForm, priority: e.target.checked })}
-                                        className="h-4 w-4 rounded border-input"
-                                        data-testid={`checkbox-new-rock-priority-${capability.id}`}
-                                      />
-                                      <label className="text-sm text-muted-foreground">High Priority (Move to Top)</label>
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={() => handleAddRock(capability.id)}
-                                        data-testid={`button-save-new-rock-${capability.id}`}
-                                      >
-                                        <CheckIcon className="h-3 w-3 mr-1" />
-                                        Add
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                          setAddingRockTo(null);
-                                          setNewRockForm({ text: "", assigneeId: "", assigneeName: "", quarter: "Q1", year: selectedYear, priority: false });
-                                        }}
-                                        data-testid={`button-cancel-new-rock-${capability.id}`}
-                                      >
-                                        <XIcon className="h-3 w-3 mr-1" />
-                                        Cancel
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setAddingRockTo(capability.id)}
-                                    className="w-full text-xs border-dashed"
-                                    data-testid={`button-add-rock-${capability.id}`}
-                                  >
-                                    <PlusIcon className="h-3 w-3 mr-1" />
-                                    Add Rock
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </SortableItem>
-                      ))
-                    )}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            </div>
-            
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Annual Priorities - Left Column */}
             <div>
               <h3 className="text-lg font-semibold mb-3 flex items-center">
                 <TargetIcon className="h-5 w-5 mr-2 text-primary" />
@@ -1141,6 +740,373 @@ export default function PriorityManagement() {
                       </CardContent>
                     </Card>
                   </SortableItem>
+                      ))
+                    )}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+            
+            {/* Capabilities - Right Column */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center">
+                <TrendingUpIcon className="h-5 w-5 mr-2 text-primary" />
+                Capabilities
+                <span className="ml-2 text-xs text-muted-foreground font-normal">(drag to reorder)</span>
+              </h3>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleCapabilitiesDragEnd}
+              >
+                <SortableContext
+                  items={capabilities.map((c: any) => c.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {capabilities.length === 0 ? (
+                      <div className="text-muted-foreground text-sm py-4 text-center">
+                        No capabilities added yet. Click "Add New" to create one.
+                      </div>
+                    ) : (
+                      capabilities.map((capability: any) => (
+                        <SortableItem key={capability.id} id={capability.id}>
+                          <Card className="hover-elevate group">
+                            <CardContent className="pt-4">
+                              {editingId === capability.id ? (
+                                <div className="space-y-3">
+                                  <Input
+                                    value={editForm.title}
+                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                    placeholder="Title"
+                                  />
+                                  <Textarea
+                                    value={editForm.description}
+                                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                    placeholder="Description"
+                                    rows={2}
+                                  />
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <Input
+                                      value={editForm.executiveChampion}
+                                      onChange={(e) => setEditForm({ ...editForm, executiveChampion: e.target.value })}
+                                      placeholder="Executive Champion"
+                                    />
+                                    <Input
+                                      value={editForm.successStatement}
+                                      onChange={(e) => setEditForm({ ...editForm, successStatement: e.target.value })}
+                                      placeholder="Success Statement"
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <Select
+                                      value={editForm.owner || "unassigned"}
+                                      onValueChange={(value) => setEditForm({ ...editForm, owner: value === "unassigned" ? "" : value })}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select owner" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                                        {users.map((user: any) => (
+                                          <SelectItem key={user.id} value={user.name || user.email}>
+                                            {user.name || user.email}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Input
+                                      value={editForm.dueDate}
+                                      onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
+                                      placeholder="Due Date/Quarter"
+                                    />
+                                  </div>
+                                  <div className="flex justify-end gap-2">
+                                    <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                                      <XIcon className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="default" size="sm" onClick={handleSaveEdit}>
+                                      <CheckIcon className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="font-medium">{capability.title}</h4>
+                                        <Badge variant="secondary" className="text-xs">
+                                          Capability
+                                        </Badge>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground">
+                                        {capability.description}
+                                      </p>
+                                      {(capability.executiveChampion || capability.successStatement) && (
+                                        <div className="mt-2 grid grid-cols-1 gap-2 text-xs">
+                                          {capability.executiveChampion && (
+                                            <div>
+                                              <span className="font-medium text-muted-foreground">Champion: </span>
+                                              <span>{capability.executiveChampion}</span>
+                                            </div>
+                                          )}
+                                          {capability.successStatement && (
+                                            <div>
+                                              <span className="font-medium text-muted-foreground">Success: </span>
+                                              <span>{capability.successStatement}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="mt-2 flex items-center gap-2">
+                                        {capability.rocks && capability.rocks.length > 0 ? (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setExpandedCapability(
+                                              expandedCapability === capability.id ? null : capability.id
+                                            )}
+                                            className="text-xs p-0 h-auto hover:bg-transparent"
+                                          >
+                                            {expandedCapability === capability.id ? (
+                                              <ChevronDownIcon className="h-4 w-4 mr-1" />
+                                            ) : (
+                                              <ChevronRightIcon className="h-4 w-4 mr-1" />
+                                            )}
+                                            <span className="text-muted-foreground">
+                                              {capability.rocks.length} rocks
+                                            </span>
+                                          </Button>
+                                        ) : (
+                                          <span className="text-xs text-muted-foreground">No rocks yet</span>
+                                        )}
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setAddingRockTo(capability.id);
+                                            setExpandedCapability(capability.id);
+                                          }}
+                                          className="text-xs h-6 px-2 border-dashed"
+                                        >
+                                          <PlusIcon className="h-3 w-3 mr-1" />
+                                          Add Rock
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <ActionMenu
+                                        onEdit={() => handleEdit(capability)}
+                                        onDelete={() => handleDelete(capability.id)}
+                                      />
+                                    </div>
+                                  </div>
+                                  
+                                  {expandedCapability === capability.id && (
+                                    <div className="mt-4 pl-4 border-l-2 border-muted space-y-2">
+                                      {capability.rocks && capability.rocks.length > 0 ? (
+                                        capability.rocks.map((rock: any) => (
+                                          <div key={rock.id} className="flex items-start justify-between gap-2 p-2 rounded bg-muted/30">
+                                            {editingRock === rock.id ? (
+                                              <div className="flex-1 space-y-2">
+                                                <Input
+                                                  value={editRockForm.text}
+                                                  onChange={(e) => setEditRockForm({ ...editRockForm, text: e.target.value })}
+                                                  placeholder="Rock text"
+                                                  className="text-sm"
+                                                />
+                                                <Select
+                                                  value={editRockForm.assigneeId || "unassigned"}
+                                                  onValueChange={(value) => setEditRockForm({ ...editRockForm, assigneeId: value === "unassigned" ? "" : value })}
+                                                >
+                                                  <SelectTrigger className="text-sm">
+                                                    <SelectValue placeholder="Select assignee" />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                                    {users.map((user: any) => (
+                                                      <SelectItem key={user.id} value={user.id}>
+                                                        {user.name || user.email}
+                                                      </SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                  <Select
+                                                    value={editRockForm.quarter}
+                                                    onValueChange={(value) => setEditRockForm({ ...editRockForm, quarter: value })}
+                                                  >
+                                                    <SelectTrigger className="text-sm">
+                                                      <SelectValue placeholder="Quarter" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                      <SelectItem value="Q1">Q1</SelectItem>
+                                                      <SelectItem value="Q2">Q2</SelectItem>
+                                                      <SelectItem value="Q3">Q3</SelectItem>
+                                                      <SelectItem value="Q4">Q4</SelectItem>
+                                                    </SelectContent>
+                                                  </Select>
+                                                  <Select
+                                                    value={editRockForm.year.toString()}
+                                                    onValueChange={(value) => setEditRockForm({ ...editRockForm, year: parseInt(value) })}
+                                                  >
+                                                    <SelectTrigger className="text-sm">
+                                                      <SelectValue placeholder="Year" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                      {yearOptions.map((y) => (
+                                                        <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                                                      ))}
+                                                    </SelectContent>
+                                                  </Select>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={editRockForm.priority}
+                                                    onChange={(e) => setEditRockForm({ ...editRockForm, priority: e.target.checked })}
+                                                    className="h-4 w-4 rounded border-input"
+                                                  />
+                                                  <label className="text-sm text-muted-foreground">High Priority</label>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                  <Button variant="default" size="sm" onClick={handleSaveRock}>
+                                                    <CheckIcon className="h-3 w-3" />
+                                                  </Button>
+                                                  <Button variant="ghost" size="sm" onClick={handleCancelRockEdit}>
+                                                    <XIcon className="h-3 w-3" />
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <>
+                                                <div className="flex-1">
+                                                  <p className="text-sm">{rock.text}</p>
+                                                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                                                    <span>{rock.quarter} {rock.year}</span>
+                                                    {rock.assigneeName && (
+                                                      <span>• {rock.assigneeName}</span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                                <ActionMenu
+                                                  onEdit={() => handleEditRock(rock)}
+                                                  onDelete={() => handleDeleteRock(rock.id)}
+                                                />
+                                              </>
+                                            )}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-center py-4 text-muted-foreground text-sm">
+                                          No rocks yet. Click "Add Rock" to get started.
+                                        </div>
+                                      )}
+                                      
+                                      {addingRockTo === capability.id ? (
+                                        <div className="p-2 rounded bg-muted/50 space-y-2">
+                                          <Input
+                                            value={newRockForm.text}
+                                            onChange={(e) => setNewRockForm({ ...newRockForm, text: e.target.value })}
+                                            placeholder="Enter rock text..."
+                                            className="text-sm"
+                                            autoFocus
+                                          />
+                                          <Select
+                                            value={newRockForm.assigneeId || "unassigned"}
+                                            onValueChange={(value) => setNewRockForm({ ...newRockForm, assigneeId: value === "unassigned" ? "" : value })}
+                                          >
+                                            <SelectTrigger className="text-sm">
+                                              <SelectValue placeholder="Select assignee (optional)" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="unassigned">Unassigned</SelectItem>
+                                              {users.map((user: any) => (
+                                                <SelectItem key={user.id} value={user.id}>
+                                                  {user.name || user.email}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                          <div className="grid grid-cols-2 gap-2">
+                                            <Select
+                                              value={newRockForm.quarter}
+                                              onValueChange={(value) => setNewRockForm({ ...newRockForm, quarter: value })}
+                                            >
+                                              <SelectTrigger className="text-sm">
+                                                <SelectValue placeholder="Quarter" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="Q1">Q1</SelectItem>
+                                                <SelectItem value="Q2">Q2</SelectItem>
+                                                <SelectItem value="Q3">Q3</SelectItem>
+                                                <SelectItem value="Q4">Q4</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                            <Select
+                                              value={newRockForm.year.toString()}
+                                              onValueChange={(value) => setNewRockForm({ ...newRockForm, year: parseInt(value) })}
+                                            >
+                                              <SelectTrigger className="text-sm">
+                                                <SelectValue placeholder="Year" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                {yearOptions.map((y) => (
+                                                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                          <div className="flex items-center space-x-2">
+                                            <input
+                                              type="checkbox"
+                                              checked={newRockForm.priority}
+                                              onChange={(e) => setNewRockForm({ ...newRockForm, priority: e.target.checked })}
+                                              className="h-4 w-4 rounded border-input"
+                                            />
+                                            <label className="text-sm text-muted-foreground">High Priority</label>
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <Button
+                                              variant="default"
+                                              size="sm"
+                                              onClick={() => handleAddRock(capability.id)}
+                                            >
+                                              <CheckIcon className="h-3 w-3 mr-1" />
+                                              Add
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => {
+                                                setAddingRockTo(null);
+                                                setNewRockForm({ text: "", assigneeId: "", assigneeName: "", quarter: "Q1", year: selectedYear, priority: false });
+                                              }}
+                                            >
+                                              <XIcon className="h-3 w-3 mr-1" />
+                                              Cancel
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => setAddingRockTo(capability.id)}
+                                          className="w-full text-xs border-dashed"
+                                        >
+                                          <PlusIcon className="h-3 w-3 mr-1" />
+                                          Add Rock
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </SortableItem>
                       ))
                     )}
                   </div>

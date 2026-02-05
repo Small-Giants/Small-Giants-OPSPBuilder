@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { TrendingUpIcon, TrendingDownIcon, PlusIcon, TargetIcon, PencilIcon, TrashIcon, CheckIcon, XIcon, Loader2, UserIcon, CalendarIcon, ClockIcon, AlertCircleIcon, RefreshCwIcon, MinusIcon } from "lucide-react";
+import { TrendingUpIcon, TrendingDownIcon, PlusIcon, TargetIcon, PencilIcon, TrashIcon, CheckIcon, XIcon, Loader2, UserIcon, CalendarIcon, ClockIcon, AlertCircleIcon, RefreshCwIcon, MinusIcon, LayoutGridIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, type Unsubscribe } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -29,7 +30,16 @@ interface Metric {
   cadence?: 'daily' | 'weekly' | 'monthly' | 'quarterly';
   lastUpdated?: string;
   status?: 'green' | 'yellow' | 'red';
+  priorityId?: string;
 }
+
+interface Priority {
+  id: string;
+  title: string;
+  type: string;
+}
+
+type GroupByOption = 'none' | 'owner' | 'status' | 'priority';
 
 interface MetricsDashboardProps {
   metrics?: Metric[]; // Kept for compatibility
@@ -41,14 +51,17 @@ interface MetricsDashboardProps {
 export default function MetricsDashboard({ }: MetricsDashboardProps) {
   const { toast } = useToast();
   const { companyId, selectedYear } = usePlanYear();
+  const { user } = useAuth();
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [priorities, setPriorities] = useState<Priority[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMetricId, setEditingMetricId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Metric | null>(null);
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [checkInValues, setCheckInValues] = useState<Record<string, number>>({});
+  const [groupBy, setGroupBy] = useState<GroupByOption>('none');
   const [newMetric, setNewMetric] = useState({
     name: "",
     unit: "",
@@ -58,8 +71,11 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
     trend: 'stable' as const,
     owner: "",
     cadence: 'weekly' as const,
-    status: 'green' as const
+    status: 'green' as const,
+    priorityId: ""
   });
+
+  const isSuperAdmin = user?.role === 'superadmin';
 
   useEffect(() => {
     let unsubYear: Unsubscribe | undefined;
@@ -119,6 +135,21 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
     return () => unsubscribe();
   }, []);
 
+  // Fetch priorities for grouping and linking
+  useEffect(() => {
+    const prioritiesRef = collection(db, 'companies', companyId, 'priorities');
+    const q = query(prioritiesRef, where("planYear", "==", selectedYear), where("type", "==", "priority"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedPriorities: Priority[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        fetchedPriorities.push({ id: doc.id, title: data.title, type: data.type });
+      });
+      setPriorities(fetchedPriorities);
+    });
+    return () => unsubscribe();
+  }, [companyId, selectedYear]);
+
   // Calculate derived status for metrics
   const metricsWithStatus = useMemo(() => {
     return metrics.map((metric) => {
@@ -127,6 +158,51 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
       return { ...metric, status };
     });
   }, [metrics]);
+
+  // Group metrics based on selected grouping
+  const groupedMetrics = useMemo(() => {
+    if (groupBy === 'none') {
+      return [{ key: 'all', label: '', metrics: metricsWithStatus }];
+    }
+
+    const groups: Map<string, { key: string; label: string; metrics: typeof metricsWithStatus }> = new Map();
+
+    metricsWithStatus.forEach((metric) => {
+      let key: string;
+      let label: string;
+
+      switch (groupBy) {
+        case 'owner':
+          key = metric.owner || 'unassigned';
+          label = metric.owner || 'Unassigned';
+          break;
+        case 'status':
+          key = metric.status || 'green';
+          label = (metric.status || 'green').charAt(0).toUpperCase() + (metric.status || 'green').slice(1);
+          break;
+        case 'priority':
+          key = metric.priorityId || 'unassigned';
+          const priority = priorities.find(p => p.id === metric.priorityId);
+          label = priority ? priority.title : 'Unassigned Priority';
+          break;
+        default:
+          key = 'all';
+          label = '';
+      }
+
+      if (!groups.has(key)) {
+        groups.set(key, { key, label, metrics: [] });
+      }
+      groups.get(key)!.metrics.push(metric);
+    });
+
+    // Sort groups - put unassigned at the end
+    return Array.from(groups.values()).sort((a, b) => {
+      if (a.key === 'unassigned') return 1;
+      if (b.key === 'unassigned') return -1;
+      return a.label.localeCompare(b.label);
+    });
+  }, [metricsWithStatus, groupBy, priorities]);
 
   // Check for stale data alerts
   const staleMetrics = useMemo(() => {
@@ -188,7 +264,8 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
         trend: 'stable',
         owner: "",
         cadence: 'weekly',
-        status: 'green'
+        status: 'green',
+        priorityId: ""
       });
       setShowAddForm(false);
       toast({ title: "Success", description: "KPI added successfully" });
@@ -278,12 +355,26 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-foreground">KPI Dashboard</h2>
           <p className="text-muted-foreground">Monitor your key performance indicators</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <LayoutGridIcon className="w-4 h-4 text-muted-foreground" />
+            <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByOption)}>
+              <SelectTrigger className="w-[160px]" data-testid="select-group-by">
+                <SelectValue placeholder="Group by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Grouping</SelectItem>
+                <SelectItem value="owner">Group by Owner</SelectItem>
+                <SelectItem value="status">Group by Status</SelectItem>
+                {isSuperAdmin && <SelectItem value="priority">Group by Priority</SelectItem>}
+              </SelectContent>
+            </Select>
+          </div>
           <Button 
             variant="outline"
             onClick={() => {
@@ -465,6 +556,24 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                   <SelectItem value="quarterly">Quarterly</SelectItem>
                 </SelectContent>
               </Select>
+              {isSuperAdmin && (
+                <Select
+                  value={newMetric.priorityId || "unassigned"}
+                  onValueChange={(value) => setNewMetric(prev => ({ ...prev, priorityId: value === "unassigned" ? "" : value }))}
+                >
+                  <SelectTrigger data-testid="select-new-metric-priority">
+                    <SelectValue placeholder="Link to Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">No Priority</SelectItem>
+                    {priorities.map((priority) => (
+                      <SelectItem key={priority.id} value={priority.id}>
+                        {priority.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="flex gap-2">
               <Button onClick={handleAddMetric} data-testid="button-save-new-metric">
@@ -482,18 +591,33 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {metricsWithStatus.map((metric) => {
-          const statusColors = {
-            green: "border-l-green-500",
-            yellow: "border-l-yellow-500",
-            red: "border-l-red-500"
-          };
-          const statusBgColors = {
-            green: "bg-green-50/50 dark:bg-green-950/20",
-            yellow: "bg-yellow-50/50 dark:bg-yellow-950/20",
-            red: "bg-red-50/50 dark:bg-red-950/20"
-          };
+      <div className="space-y-8">
+        {groupedMetrics.map((group) => (
+          <div key={group.key}>
+            {group.label && (
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  {groupBy === 'owner' && <UserIcon className="h-5 w-5 text-primary" />}
+                  {groupBy === 'status' && <TargetIcon className="h-5 w-5 text-primary" />}
+                  {groupBy === 'priority' && <TargetIcon className="h-5 w-5 text-primary" />}
+                  {group.label}
+                  <Badge variant="secondary" className="ml-2">{group.metrics.length}</Badge>
+                </h3>
+                <Separator className="mt-2" />
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {group.metrics.map((metric) => {
+                const statusColors = {
+                  green: "border-l-green-500",
+                  yellow: "border-l-yellow-500",
+                  red: "border-l-red-500"
+                };
+                const statusBgColors = {
+                  green: "bg-green-50/50 dark:bg-green-950/20",
+                  yellow: "bg-yellow-50/50 dark:bg-yellow-950/20",
+                  red: "bg-red-50/50 dark:bg-red-950/20"
+                };
           
           return (
           <Card key={metric.id} className={`hover-elevate group border-l-4 ${statusColors[metric.status || 'green']} ${statusBgColors[metric.status || 'green']}`} data-testid={`card-metric-${metric.id}`}>
@@ -583,7 +707,34 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                     {new Date(metric.lastUpdated).toLocaleDateString()}
                   </span>
                 )}
+                {metric.priorityId && (
+                  <span className="flex items-center gap-1">
+                    <TargetIcon className="h-3 w-3" />
+                    {priorities.find(p => p.id === metric.priorityId)?.title || 'Priority'}
+                  </span>
+                )}
               </div>
+              {/* Priority selector for superadmins when editing */}
+              {editingMetricId === metric.id && isSuperAdmin && (
+                <div className="mt-2">
+                  <Select
+                    value={editForm?.priorityId || "unassigned"}
+                    onValueChange={(value) => setEditForm(prev => prev ? {...prev, priorityId: value === "unassigned" ? "" : value} : null)}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Link to Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">No Priority</SelectItem>
+                      {priorities.map((priority) => (
+                        <SelectItem key={priority.id} value={priority.id}>
+                          {priority.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </CardHeader>
 
             <CardContent className="space-y-4">
@@ -694,7 +845,10 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
               </div>
             </CardContent>
           </Card>
-        );})}
+              );})}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
