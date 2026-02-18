@@ -27,6 +27,7 @@ interface Metric {
   data: MetricDataPoint[];
   trend: 'up' | 'down' | 'stable';
   owner?: string;
+  assignee?: string;
   cadence?: 'daily' | 'weekly' | 'monthly' | 'quarterly';
   lastUpdated?: string;
   status?: 'green' | 'yellow' | 'red';
@@ -53,7 +54,6 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
   const { companyId, selectedYear } = usePlanYear();
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<Metric[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -69,7 +69,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
     targetValue: 0,
     data: [] as MetricDataPoint[],
     trend: 'stable' as const,
-    owner: "",
+    assignee: "",
     cadence: 'weekly' as const,
     status: 'green' as const,
     priorityId: ""
@@ -123,18 +123,6 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
     };
   }, [companyId, selectedYear]);
 
-  // Fetch users for owner dropdown
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const fetchedUsers: any[] = [];
-      snapshot.forEach((doc) => {
-        fetchedUsers.push({ id: doc.id, ...doc.data() });
-      });
-      setUsers(fetchedUsers);
-    });
-    return () => unsubscribe();
-  }, []);
-
   // Fetch priorities for grouping and linking
   useEffect(() => {
     const prioritiesRef = collection(db, 'companies', companyId, 'priorities');
@@ -173,8 +161,8 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
 
       switch (groupBy) {
         case 'owner':
-          key = metric.owner || 'unassigned';
-          label = metric.owner || 'Unassigned';
+          key = metric.assignee || metric.owner || 'unassigned';
+          label = metric.assignee || metric.owner || 'Unassigned';
           break;
         case 'status':
           key = metric.status || 'green';
@@ -227,6 +215,15 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
     return Math.min((current / target) * 100, 100);
   };
 
+  const formatValueWithUnit = (value: number, unit: string) => {
+    const prefixSymbols = ['$', '€', '£', '¥'];
+    const trimmedUnit = unit.trim();
+    if (prefixSymbols.includes(trimmedUnit)) {
+      return `${trimmedUnit}${value.toLocaleString()}`;
+    }
+    return `${value.toLocaleString()}${trimmedUnit ? ` ${trimmedUnit}` : ''}`;
+  };
+
   const getTrendIcon = (trend: Metric['trend']) => {
     switch (trend) {
       case 'up': return <TrendingUpIcon className="w-4 h-4 text-green-600" />;
@@ -262,7 +259,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
         targetValue: 0,
         data: [],
         trend: 'stable',
-        owner: "",
+        assignee: "",
         cadence: 'weekly',
         status: 'green',
         priorityId: ""
@@ -369,7 +366,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No Grouping</SelectItem>
-                <SelectItem value="owner">Group by Owner</SelectItem>
+                <SelectItem value="owner">Group by Assignee</SelectItem>
                 <SelectItem value="status">Group by Status</SelectItem>
                 {isSuperAdmin && <SelectItem value="priority">Group by Priority</SelectItem>}
               </SelectContent>
@@ -472,7 +469,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                         className="h-8"
                       />
                       <span className="text-sm text-muted-foreground whitespace-nowrap">
-                        {metric.unit} / {metric.targetValue} target
+                        / {formatValueWithUnit(metric.targetValue, metric.unit)} target
                       </span>
                     </div>
                   </div>
@@ -526,22 +523,12 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                 onChange={(e) => setNewMetric(prev => ({ ...prev, targetValue: Number(e.target.value) }))}
                 data-testid="input-new-metric-target"
               />
-              <Select
-                value={newMetric.owner || "unassigned"}
-                onValueChange={(value) => setNewMetric(prev => ({ ...prev, owner: value === "unassigned" ? "" : value }))}
-              >
-                <SelectTrigger data-testid="select-new-metric-owner">
-                  <SelectValue placeholder="Select owner" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {users.map((user: any) => (
-                    <SelectItem key={user.id} value={user.name || user.email}>
-                      {user.name || user.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                placeholder="Assignee (e.g., Director name)"
+                value={newMetric.assignee}
+                onChange={(e) => setNewMetric(prev => ({ ...prev, assignee: e.target.value }))}
+                data-testid="input-new-metric-assignee"
+              />
               <Select
                 value={newMetric.cadence}
                 onValueChange={(value) => setNewMetric(prev => ({ ...prev, cadence: value as any }))}
@@ -687,12 +674,12 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                   )}
                 </div>
               </div>
-              {/* Owner and Last Updated */}
+              {/* Assignee and Last Updated */}
               <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                {metric.owner && (
+                {(metric.assignee || metric.owner) && (
                   <span className="flex items-center gap-1">
                     <UserIcon className="h-3 w-3" />
-                    {metric.owner}
+                    {metric.assignee || metric.owner}
                   </span>
                 )}
                 {metric.cadence && (
@@ -714,6 +701,18 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                   </span>
                 )}
               </div>
+              {/* Assignee field when editing */}
+              {editingMetricId === metric.id && (
+                <div className="mt-2">
+                  <Input
+                    placeholder="Assignee (e.g., Director name)"
+                    value={editForm?.assignee || ""}
+                    onChange={(e) => setEditForm(prev => prev ? {...prev, assignee: e.target.value} : null)}
+                    className="h-7 text-xs"
+                    data-testid={`input-edit-metric-assignee-${metric.id}`}
+                  />
+                </div>
+              )}
               {/* Priority selector for superadmins when editing */}
               {editingMetricId === metric.id && isSuperAdmin && (
                 <div className="mt-2">
@@ -758,12 +757,9 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                       />
                     </>
                   ) : (
-                    <>
-                      <span className="text-2xl font-bold text-foreground">
-                        {metric.currentValue.toLocaleString()}
-                      </span>
-                      <span className="text-sm text-muted-foreground">{metric.unit}</span>
-                    </>
+                    <span className="text-2xl font-bold text-foreground">
+                      {formatValueWithUnit(metric.currentValue, metric.unit)}
+                    </span>
                   )}
                 </div>
                 
@@ -780,7 +776,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                         data-testid={`input-edit-metric-target-${metric.id}`}
                       />
                     ) : (
-                      <span>{metric.targetValue.toLocaleString()}{metric.unit}</span>
+                      <span>{formatValueWithUnit(metric.targetValue, metric.unit)}</span>
                     )}
                   </div>
                   <Badge variant="outline" className={getTrendColor(metric.trend)}>
@@ -823,7 +819,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <Tooltip 
                         labelFormatter={(value) => `Date: ${value}`}
-                        formatter={(value: number) => [`${value.toLocaleString()}${metric.unit}`, metric.name]}
+                        formatter={(value: number) => [formatValueWithUnit(value, metric.unit), metric.name]}
                       />
                     </LineChart>
                   </ResponsiveContainer>
