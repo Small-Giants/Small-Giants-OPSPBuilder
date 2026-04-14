@@ -17,12 +17,12 @@
   overflow: hidden;
 }
 
-/* LIGHT MODE - Small Giants Branding */
+/* LIGHT MODE - Caliente Construction Branding */
 /* 
    1. White (Background)
-   2. Darker Team Color (Primary)
-   3. Lighter Teal (Secondary/Accent)
-   4. Red (Destructive)
+   2. Burgundy (Primary)
+   3. Crimson (Accent)
+   4. Red-orange (Destructive)
 */
 :root {
   --button-outline: rgba(0,0,0, .08);
@@ -35,81 +35,81 @@
   --elevate-1: rgba(0,0,0, .02);
   --elevate-2: rgba(0,0,0, .05);
 
-  /* Brand (Small Giants) — source of truth */
-  --brand-turquoise: 177 64% 52%; /* #35D3CC */
-  --brand-teal: 181 51% 40%; /* #319899 */
-  --brand-stormy: 193 14% 34%; /* #4A5D62 */
-  --brand-marigold: 35 84% 55%; /* #ED9C2C */
-  --brand-slate: 0 0% 45%; /* #727272 */
-  --brand-persimmon: 358 84% 60%; /* #EF454C */
+  /* Brand (Caliente Construction) — source of truth */
+  --brand-burgundy: 350 65% 28%;   /* #761C2A */
+  --brand-crimson: 355 70% 45%;    /* #C42333 */
+  --brand-charcoal: 350 10% 22%;   /* #3E3335 */
+  --brand-warm-gray: 350 8% 52%;   /* #8A7A7C */
+  --brand-slate: 350 5% 45%;       /* #787073 */
+  --brand-red-orange: 10 75% 50%;  /* #DF3A1E */
 
   --background: 0 0% 100%;
 
-  --foreground: var(--brand-stormy);
+  --foreground: var(--brand-charcoal);
 
-  --border: 200 20% 90%;
+  --border: 350 10% 90%;
 
   --card: 0 0% 100%;
 
-  --card-foreground: var(--brand-stormy);
+  --card-foreground: var(--brand-charcoal);
 
-  --card-border: 200 20% 92%;
+  --card-border: 350 10% 92%;
 
   --sidebar: 0 0% 98%;
 
-  --sidebar-foreground: var(--brand-stormy);
+  --sidebar-foreground: var(--brand-charcoal);
 
-  --sidebar-border: 200 20% 90%;
+  --sidebar-border: 350 10% 90%;
 
-  --sidebar-primary: var(--brand-stormy);
+  --sidebar-primary: var(--brand-burgundy);
 
   --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 177 64% 92%; /* Very light turquoise */
+  --sidebar-accent: 350 40% 95%; /* Very light burgundy tint */
 
-  --sidebar-accent-foreground: var(--brand-stormy);
+  --sidebar-accent-foreground: var(--brand-charcoal);
 
-  --sidebar-ring: var(--brand-teal);
+  --sidebar-ring: var(--brand-crimson);
 
   --popover: 0 0% 100%;
 
-  --popover-foreground: var(--brand-stormy);
+  --popover-foreground: var(--brand-charcoal);
 
-  --popover-border: 200 20% 92%;
+  --popover-border: 350 10% 92%;
 
-  --primary: var(--brand-teal);
+  --primary: var(--brand-burgundy);
 
   --primary-foreground: 0 0% 100%;
 
-  --secondary: var(--brand-marigold);
+  --secondary: var(--brand-warm-gray);
 
-  --secondary-foreground: var(--brand-stormy);
+  --secondary-foreground: 0 0% 100%;
 
-  --muted: 200 10% 96%;
+  --muted: 350 8% 96%;
 
-  --muted-foreground: 193 10% 45%;
+  --muted-foreground: 350 6% 45%;
 
-  --accent: var(--brand-turquoise);
+  --accent: var(--brand-crimson);
 
-  --accent-foreground: var(--brand-stormy);
+  --accent-foreground: 0 0% 100%;
 
-  --destructive: var(--brand-persimmon);
+  --destructive: var(--brand-red-orange);
 
   --destructive-foreground: 0 0% 100%;
 
-  --input: 200 20% 94%;
-  --ring: var(--brand-teal);
+  --input: 350 10% 94%;
+  --ring: var(--brand-crimson);
   
   /* Charts - adapted to palette */
-  --chart-1: var(--brand-teal);
-  --chart-2: var(--brand-turquoise);
-  --chart-3: var(--brand-marigold);
-  --chart-4: var(--brand-persimmon);
-  --chart-5: var(--brand-stormy);
+  --chart-1: var(--brand-burgundy);
+  --chart-2: var(--brand-crimson);
+  --chart-3: var(--brand-warm-gray);
+  --chart-4: var(--brand-red-orange);
+  --chart-5: var(--brand-charcoal);
 
   /* Typography - using Next.js font variables */
-  --font-sans: var(--font-dm-sans), "DM Sans", Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-serif: var(--font-roboto-slab), "Roboto Slab", ui-serif, Georgia, serif;
+  --font-sans: var(--font-montserrat), "Montserrat", Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-lora), "Lora", ui-serif, Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem; /* 8px */
   --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
@@ -164,67 +164,67 @@
   --elevate-1: rgba(255,255,255, .03);
   --elevate-2: rgba(255,255,255, .07);
 
-  --background: 193 18% 10%;
+  --background: 350 12% 10%;
 
   --foreground: 0 0% 95%;
 
-  --border: 193 18% 20%;
+  --border: 350 12% 20%;
 
-  --card: 193 18% 12%;
+  --card: 350 12% 12%;
 
   --card-foreground: 0 0% 95%;
 
-  --card-border: 193 18% 20%;
+  --card-border: 350 12% 20%;
 
-  --sidebar: 193 18% 11%;
+  --sidebar: 350 12% 11%;
 
   --sidebar-foreground: 0 0% 95%;
 
-  --sidebar-border: 193 18% 18%;
+  --sidebar-border: 350 12% 18%;
 
-  --sidebar-primary: var(--brand-turquoise);
+  --sidebar-primary: var(--brand-crimson);
 
   --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 193 18% 18%;
+  --sidebar-accent: 350 12% 18%;
 
   --sidebar-accent-foreground: 0 0% 95%;
 
-  --sidebar-ring: var(--brand-turquoise);
+  --sidebar-ring: var(--brand-crimson);
 
-  --popover: 193 18% 12%;
+  --popover: 350 12% 12%;
 
   --popover-foreground: 0 0% 95%;
 
-  --popover-border: 193 18% 20%;
+  --popover-border: 350 12% 20%;
 
-  --primary: var(--brand-turquoise);
+  --primary: var(--brand-crimson);
 
-  --primary-foreground: 193 18% 10%;
+  --primary-foreground: 350 12% 10%;
 
-  --secondary: var(--brand-marigold);
+  --secondary: var(--brand-warm-gray);
 
-  --secondary-foreground: 193 18% 10%;
+  --secondary-foreground: 350 12% 10%;
 
-  --muted: 193 18% 16%;
+  --muted: 350 12% 16%;
 
-  --muted-foreground: 193 12% 65%;
+  --muted-foreground: 350 8% 65%;
 
-  --accent: var(--brand-teal);
+  --accent: var(--brand-burgundy);
 
   --accent-foreground: 0 0% 100%;
 
-  --destructive: var(--brand-persimmon);
+  --destructive: var(--brand-red-orange);
 
   --destructive-foreground: 0 0% 100%;
 
-  --input: 193 18% 20%;
-  --ring: var(--brand-turquoise);
-  --chart-1: var(--brand-turquoise);
-  --chart-2: var(--brand-teal);
-  --chart-3: var(--brand-marigold);
-  --chart-4: var(--brand-persimmon);
-  --chart-5: 193 12% 70%;
+  --input: 350 12% 20%;
+  --ring: var(--brand-crimson);
+  --chart-1: var(--brand-crimson);
+  --chart-2: var(--brand-burgundy);
+  --chart-3: var(--brand-warm-gray);
+  --chart-4: var(--brand-red-orange);
+  --chart-5: 350 8% 70%;
 
   --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
   --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.4), 0px 1px 2px -1px rgba(0, 0, 0, 0.4);
@@ -267,23 +267,23 @@
  * need to be distinguished from eachother visually.
  */
 @layer utilities {
-  /* Small Giants Gradient Text Utility */
+  /* Caliente Gradient Text Utility */
   .text-gradient-brand {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
   }
 
   /* Brand gradients (use sparingly for hero/banner surfaces) */
-  .bg-gradient-brand-teal-turquoise {
-    background-image: linear-gradient(45deg, hsl(var(--brand-teal)), hsl(var(--brand-turquoise)));
+  .bg-gradient-brand-burgundy-crimson {
+    background-image: linear-gradient(45deg, hsl(var(--brand-burgundy)), hsl(var(--brand-crimson)));
   }
-  .bg-gradient-brand-turquoise-gold {
-    background-image: linear-gradient(45deg, hsl(var(--brand-turquoise)), hsl(var(--brand-marigold)));
+  .bg-gradient-brand-crimson-warm {
+    background-image: linear-gradient(45deg, hsl(var(--brand-crimson)), hsl(var(--brand-warm-gray)));
   }
-  .bg-gradient-brand-teal-turquoise-gold {
-    background-image: linear-gradient(45deg, hsl(var(--brand-teal)), hsl(var(--brand-turquoise)), hsl(var(--brand-marigold)));
+  .bg-gradient-brand-burgundy-crimson-warm {
+    background-image: linear-gradient(45deg, hsl(var(--brand-burgundy)), hsl(var(--brand-crimson)), hsl(var(--brand-warm-gray)));
   }
-  .bg-gradient-brand-teal-turquoise-persimmon {
-    background-image: linear-gradient(45deg, hsl(var(--brand-teal)), hsl(var(--brand-turquoise)), hsl(var(--brand-persimmon)));
+  .bg-gradient-brand-burgundy-crimson-charcoal {
+    background-image: linear-gradient(45deg, hsl(var(--brand-burgundy)), hsl(var(--brand-crimson)), hsl(var(--brand-charcoal)));
   }
 
   /* Status colors for R/Y/G system */

@@ -135,7 +135,7 @@ export default function OpspFullCanvas({ data }: OpspFullCanvasProps) {
   // Foundation data comes from roadmap/foundation document
   // Roadmap data (BHAG, targets) comes from roadmap/main document
   const displayData = {
-    companyName: roadmap.companyName || "Small Giants",
+    companyName: roadmap.companyName || "Caliente Construction",
     planYear: String(selectedYear),
     bhag: {
       years: "10-30",

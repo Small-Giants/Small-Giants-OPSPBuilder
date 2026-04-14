@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
-import { DM_Sans, Roboto_Slab } from "next/font/google";
+import { Montserrat, Lora } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
-const dmSans = DM_Sans({
+const montserrat = Montserrat({
   subsets: ["latin"],
-  variable: "--font-dm-sans",
+  variable: "--font-montserrat",
   display: "swap",
 });
 
-const robotoSlab = Roboto_Slab({
+const lora = Lora({
   subsets: ["latin"],
-  variable: "--font-roboto-slab",
+  variable: "--font-lora",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Scalability Roadmap | Small Giants",
+  title: "Scalability Roadmap | Caliente Construction",
   description: "7 Attributes of Agile Growth Strategic Planning Tool",
 };
 
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${robotoSlab.variable}`}>
+    <html lang="en" className={`${montserrat.variable} ${lora.variable}`}>
       <body className="antialiased">
         <Providers>{children}</Providers>
       </body>

@@ -452,7 +452,7 @@ export default function ExecutiveSummary({
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-brand-teal-turquoise p-6 text-white">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-brand-burgundy-crimson p-6 text-white">
         <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
           <SparklesIcon className="w-full h-full" />
         </div>
@@ -684,7 +684,7 @@ export default function ExecutiveSummary({
           <CardContent className="space-y-4">
             {/* Critical Number Highlight */}
             {criticalNumber && (
-              <div className="rounded-lg bg-gradient-brand-turquoise-gold p-4 text-white">
+              <div className="rounded-lg bg-gradient-brand-crimson-warm p-4 text-white">
                 <div className="flex items-center gap-2 text-xs text-white/80 mb-1">
                   <ZapIcon className="h-3 w-3" />
                   Critical Number
@@ -761,7 +761,7 @@ export default function ExecutiveSummary({
       </div>
 
       {/* Weekly Meeting Quick Action */}
-      <Card className="bg-gradient-brand-teal-turquoise text-white border-0">
+      <Card className="bg-gradient-brand-burgundy-crimson text-white border-0">
         <CardContent className="py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

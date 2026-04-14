@@ -41,7 +41,7 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Small Giants</CardTitle>
+          <CardTitle className="text-2xl font-bold">Caliente Construction</CardTitle>
           <CardDescription>
             Strategic Planning Platform
           </CardDescription>
@@ -66,7 +66,7 @@ export default function AuthPage() {
 
         </CardContent>
         <CardFooter className="text-center text-sm text-muted-foreground flex justify-center">
-          <p>Access restricted to Small Giants team members</p>
+          <p>Access restricted to Caliente Construction team members</p>
         </CardFooter>
       </Card>
     </div>

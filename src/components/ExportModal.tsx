@@ -207,7 +207,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
   <meta charset="UTF-8">
   <title>Strategic Roadmap - ${selectedYear}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap');
     
     * {
       margin: 0;
@@ -216,8 +216,8 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     }
     
     body {
-      font-family: 'DM Sans', sans-serif;
-      color: #4A5D62;
+      font-family: 'Montserrat', sans-serif;
+      color: #3E3335;
       line-height: 1.5;
       background: #fff;
     }
@@ -235,7 +235,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     }
     
     .header {
-      background: linear-gradient(45deg, #319899, #35D3CC);
+      background: linear-gradient(45deg, #761C2A, #C42333);
       color: white;
       padding: 30px 40px;
       border-radius: 12px;
@@ -243,7 +243,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     }
     
     .header h1 {
-      font-family: 'Roboto Slab', serif;
+      font-family: 'Lora', serif;
       font-size: 28px;
       font-weight: 700;
       margin-bottom: 8px;
@@ -272,11 +272,11 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     }
     
     .section-title {
-      font-family: 'Roboto Slab', serif;
+      font-family: 'Lora', serif;
       font-size: 18px;
       font-weight: 600;
-      color: #319899;
-      border-bottom: 2px solid #35D3CC;
+      color: #761C2A;
+      border-bottom: 2px solid #C42333;
       padding-bottom: 8px;
       margin-bottom: 16px;
     }
@@ -300,7 +300,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     
     .card-content {
       font-size: 15px;
-      color: #4A5D62;
+      color: #3E3335;
     }
     
     .card-content.empty {
@@ -322,7 +322,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     
     .value-card {
       background: #fff;
-      border-left: 4px solid #35D3CC;
+      border-left: 4px solid #C42333;
       padding: 12px 16px;
       border-radius: 0 8px 8px 0;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -331,7 +331,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     .value-card h4 {
       font-size: 14px;
       font-weight: 600;
-      color: #4A5D62;
+      color: #3E3335;
       margin-bottom: 4px;
     }
     
@@ -352,7 +352,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
       display: inline-block;
       width: 24px;
       height: 24px;
-      background: #319899;
+      background: #761C2A;
       color: #fff;
       text-align: center;
       line-height: 24px;
@@ -364,7 +364,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     
     .priority-item .title {
       font-weight: 600;
-      color: #4A5D62;
+      color: #3E3335;
     }
     
     .priority-item .description {
@@ -404,7 +404,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     
     .rock-text .text {
       font-size: 14px;
-      color: #4A5D62;
+      color: #3E3335;
     }
     
     .rock-text .meta {
@@ -431,7 +431,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     .kpi-value {
       font-size: 24px;
       font-weight: 700;
-      color: #319899;
+      color: #761C2A;
     }
     
     .kpi-unit {
@@ -468,7 +468,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     }
     
     .footer .logo {
-      color: #319899;
+      color: #761C2A;
       font-weight: 600;
     }
     
@@ -668,7 +668,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
             return `
         <div class="card" style="margin-bottom: 16px;">
           <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
-            <span style="background: #319899; color: white; width: 20px; height: 20px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;">${idx + 1}</span>
+            <span style="background: #761C2A; color: white; width: 20px; height: 20px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;">${idx + 1}</span>
             ${c.title || "-"}
           </div>
           <div class="card-content">${c.description || ""}</div>
@@ -766,7 +766,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     // Footer
     content += `
     <div class="footer">
-      <div class="logo">Small Giants</div>
+      <div class="logo">Caliente Construction</div>
       <div>7 Attributes of Agile Growth Framework</div>
     </div>
   </div>

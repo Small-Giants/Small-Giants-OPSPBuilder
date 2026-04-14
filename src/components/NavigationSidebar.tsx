@@ -123,18 +123,18 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
           {!isCollapsed ? (
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-gradient-brand-teal-turquoise flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">SG</span>
+                <div className="h-8 w-8 rounded-lg bg-gradient-brand-burgundy-crimson flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">CC</span>
                 </div>
                 <div>
-                  <h1 className="text-base font-bold text-sidebar-foreground tracking-tight">Small Giants</h1>
+                  <h1 className="text-base font-bold text-sidebar-foreground tracking-tight">Caliente Construction</h1>
                   <p className="text-[10px] text-muted-foreground leading-tight">7 Attributes of Agile Growth</p>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="h-8 w-8 rounded-lg bg-gradient-brand-teal-turquoise flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">SG</span>
+            <div className="h-8 w-8 rounded-lg bg-gradient-brand-burgundy-crimson flex items-center justify-center mx-auto">
+              <span className="text-white font-bold text-sm">CC</span>
             </div>
           )}
           <Button

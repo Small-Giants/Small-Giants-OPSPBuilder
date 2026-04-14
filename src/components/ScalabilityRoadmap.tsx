@@ -31,7 +31,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
   const { companyId, selectedYear } = usePlanYear();
   
   const [roadmapData, setRoadmapData] = useState({
-    companyName: "Small Giants",
+    companyName: "Caliente Construction",
     threeHagDate: "",
     oneYearDate: "",
     
@@ -161,7 +161,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
 
         setRoadmapData(prev => ({
           ...prev,
-          companyName: data.companyName || "Small Giants",
+          companyName: data.companyName || "Caliente Construction",
           threeHagDate: data.threeHagDate || "",
           oneYearDate: data.oneYearDate || "",
           threeYear: {
@@ -818,7 +818,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
       )}
 
       <div className="mt-8 text-center">
-        <p className="text-xs text-muted-foreground">Interactive Strategic Planning Tool by Small Giants</p>
+        <p className="text-xs text-muted-foreground">Interactive Strategic Planning Tool by Caliente Construction</p>
       </div>
     </div>
   );
