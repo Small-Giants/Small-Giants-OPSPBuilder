@@ -22,7 +22,7 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, onSnapshot, collection } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 
-const DEFAULT_COMPANY_ID = 'default-company'; // Using a simpler ID for demo
+const DEFAULT_COMPANY_ID = 'caliente';
 
 interface ChecklistItem {
   itemId: string;

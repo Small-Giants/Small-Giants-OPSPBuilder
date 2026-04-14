@@ -8,7 +8,7 @@ import { db } from "@/lib/firebase";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
-const DEFAULT_COMPANY_ID = "default-company";
+const DEFAULT_COMPANY_ID = "caliente";
 
 interface LearningItem {
   id: string;

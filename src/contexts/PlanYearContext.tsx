@@ -20,7 +20,7 @@ type PlanYearContextValue = {
 
 const PlanYearContext = createContext<PlanYearContextValue | undefined>(undefined);
 
-const DEFAULT_COMPANY_ID = "default-company";
+const DEFAULT_COMPANY_ID = "caliente";
 // Used to treat legacy data (no planYear field) as belonging to this year.
 // Firestore queries with `where('planYear','==',null)` match missing fields as well.
 export const LEGACY_PLAN_YEAR = 2025;

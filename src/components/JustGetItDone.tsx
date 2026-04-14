@@ -23,7 +23,7 @@ interface JustGetItDoneItem {
   createdAt: string;
 }
 
-const DEFAULT_COMPANY_ID = "default-company";
+const DEFAULT_COMPANY_ID = "caliente";
 
 export default function JustGetItDone() {
   const { toast } = useToast();
