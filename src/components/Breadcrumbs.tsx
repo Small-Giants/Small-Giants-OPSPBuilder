@@ -2,31 +2,31 @@
 
 import { ChevronRightIcon, HomeIcon } from "lucide-react";
 import { usePlanYear } from "@/contexts/PlanYearContext";
+import { useLabels } from "@/hooks/use-labels";
 import { Badge } from "@/components/ui/badge";
 
 interface BreadcrumbsProps {
   currentView: string;
 }
 
-// Map view IDs to readable labels and their section
-const viewConfig: Record<string, { label: string; section: "plan" | "execute" | "admin" }> = {
-  "exec-summary": { label: "Executive Summary", section: "plan" },
-  "wizard": { label: "Planning Wizard", section: "plan" },
-  "canvas": { label: "Roadmap Canvas", section: "plan" },
-  "foundation": { label: "Foundation", section: "plan" },
-  "three-year": { label: "Three Year", section: "plan" },
-  "one-year": { label: "One Year", section: "plan" },
-  "priority-management": { label: "Priorities & Capabilities", section: "plan" },
-  "swot": { label: "SWOT Analysis", section: "plan" },
-  "priorities": { label: "Priority Execution", section: "execute" },
-  "metrics": { label: "KPI Dashboard", section: "execute" },
-  "rocks": { label: "My Rocks", section: "execute" },
-  "assessments": { label: "Agile Growth Checklist", section: "execute" },
-  "just-get-it-done": { label: "Just Get It Done", section: "execute" },
-  "personal": { label: "Personal Development", section: "execute" },
-  "weekly-meeting": { label: "Weekly Meeting", section: "execute" },
-  "admin": { label: "Admin Panel", section: "admin" },
-  "settings": { label: "Settings", section: "admin" },
+const viewSections: Record<string, "plan" | "execute" | "admin"> = {
+  "exec-summary": "plan",
+  "wizard": "plan",
+  "canvas": "plan",
+  "foundation": "plan",
+  "three-year": "plan",
+  "one-year": "plan",
+  "priority-management": "plan",
+  "swot": "plan",
+  "priorities": "execute",
+  "metrics": "execute",
+  "rocks": "execute",
+  "assessments": "execute",
+  "just-get-it-done": "execute",
+  "personal": "execute",
+  "weekly-meeting": "execute",
+  "admin": "admin",
+  "settings": "admin",
 };
 
 function getCurrentQuarter(): string {
@@ -39,7 +39,10 @@ function getCurrentQuarter(): string {
 
 export default function Breadcrumbs({ currentView }: BreadcrumbsProps) {
   const { selectedYear } = usePlanYear();
-  const config = viewConfig[currentView] || { label: currentView, section: "plan" };
+  const { getLabel } = useLabels();
+  const section = viewSections[currentView] || "plan";
+  const label = getLabel(`nav.${currentView}`, currentView);
+  const config = { label, section };
   const currentQuarter = getCurrentQuarter();
 
   const sectionLabels = {

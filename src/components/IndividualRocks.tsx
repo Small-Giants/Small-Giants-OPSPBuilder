@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
 import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, updateDoc, query, where, type Unsubscribe } from "firebase/firestore";
+import { UserCombobox } from "@/components/ui/user-combobox";
+import { useActiveUsers } from "@/hooks/use-active-users";
 
 interface Rock {
   id: string;
@@ -30,7 +32,7 @@ export default function IndividualRocks() {
   const { companyId, selectedYear, availableYears } = usePlanYear();
   
   const [rocks, setRocks] = useState<Rock[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const { users } = useActiveUsers();
   const [loading, setLoading] = useState(true);
   
   // State for editing
@@ -92,14 +94,6 @@ export default function IndividualRocks() {
 
   const yearOptions = Array.from(new Set<number>([...availableYears, selectedYear, selectedYear + 1])).sort((a, b) => a - b);
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const u: any[] = [];
-      snapshot.forEach(d => u.push({ id: d.id, ...d.data() }));
-      setUsers(u);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const handleEditRock = (rock: Rock) => {
     setEditingRock(rock.id);
@@ -129,9 +123,9 @@ export default function IndividualRocks() {
       });
       
       setEditingRock(null);
-      toast({ title: "Success", description: "Rock updated successfully" });
+      toast({ title: "Success", description: "Tactic updated successfully" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update rock", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to update tactic", variant: "destructive" });
     }
   };
 
@@ -172,10 +166,10 @@ export default function IndividualRocks() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl text-foreground">
             <UserIcon className="w-6 h-6" />
-            My Rocks - {user?.name || user?.email || 'Current User'}
+            My Tactics - {user?.name || user?.email || 'Current User'}
           </CardTitle>
           <div className="text-sm text-muted-foreground">
-            Total rocks assigned to you: {myRocks.length}
+            Total tactics assigned to you: {myRocks.length}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -193,7 +187,7 @@ export default function IndividualRocks() {
                     <FlameIcon className="w-5 h-5 text-accent" />
                     <span className="font-semibold text-lg text-foreground">{quarter}</span>
                     <Badge variant="secondary">
-                      {quarterRocks.length} rock{quarterRocks.length !== 1 ? 's' : ''}
+                      {quarterRocks.length} tactic{quarterRocks.length !== 1 ? 's' : ''}
                     </Badge>
                   </div>
                   {expandedQuarters[quarter] ? (
@@ -212,7 +206,7 @@ export default function IndividualRocks() {
                             <Input
                               value={editForm.text || ""}
                               onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
-                              placeholder="Rock description"
+                              placeholder="Tactic description"
                             />
                             
                             <div className="grid grid-cols-2 gap-3">
@@ -246,22 +240,12 @@ export default function IndividualRocks() {
                               </Select>
                             </div>
                             
-                            <Select
-                              value={editForm.assigneeId || "unassigned"}
-                              onValueChange={(value) => setEditForm({ ...editForm, assigneeId: value === "unassigned" ? "" : value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Reassign to" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="unassigned">Unassigned</SelectItem>
-                                {users.map((u: any) => (
-                                  <SelectItem key={u.id} value={u.id}>
-                                    {u.name || u.email}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <UserCombobox
+                              value={editForm.assigneeId || ""}
+                              onValueChange={(v) => setEditForm({ ...editForm, assigneeId: v })}
+                              placeholder="Reassign to"
+                              valueMode="id"
+                            />
                             
                             <div className="flex items-center space-x-2">
                               <input
@@ -313,7 +297,7 @@ export default function IndividualRocks() {
           
           {myRocks.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-muted-foreground text-lg">No rocks assigned to you yet.</p>
+              <p className="text-muted-foreground text-lg">No tactics assigned to you yet.</p>
             </div>
           )}
         </CardContent>

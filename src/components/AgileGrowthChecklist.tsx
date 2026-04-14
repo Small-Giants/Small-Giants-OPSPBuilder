@@ -124,8 +124,8 @@ export default function AgileGrowthChecklist() {
         category: 'execution',
         items: [
           { itemId: 'e1', text: 'The executive team and key managers meet annually to determine the single most important metric to drive organizational success.' },
-          { itemId: 'e2', text: 'The executive team and key managers meet annually and quarterly to set 3-5 priorities that drive the critical metric, culture, and profit.' },
-          { itemId: 'e3', text: 'Every leader, manager and key contributor in the organization has a 13-week sprint plan to execute their personal priorities each week.' },
+          { itemId: 'e2', text: 'The executive team and key managers meet annually and quarterly to set 3-5 strategic objectives that drive the critical metric, culture, and profit.' },
+          { itemId: 'e3', text: 'Every leader, manager and key contributor in the organization has a 13-week sprint plan to execute their personal strategic objectives each week.' },
           { itemId: 'e4', text: 'The organization has a clear and visible communication flow to include quarterly team meetings, monthly briefings, weekly leadership meetings, daily huddles, and key metrics (KPIs).' },
           { itemId: 'e5', text: 'Working teams solve business problems using collective intelligence, participation, measurement, fun, and rewards.' }
         ]
@@ -226,7 +226,7 @@ export default function AgileGrowthChecklist() {
       },
       execution: {
         title: 'Execution',
-        description: 'The organization has annual, quarterly, and personal priorities that are visible, measured, and activated with a 13-week sprint.',
+        description: 'The organization has annual, quarterly, and personal strategic objectives that are visible, measured, and activated with a 13-week sprint.',
         icon: <RocketIcon className="w-5 h-5" />,
         color: 'text-orange-500'
       },

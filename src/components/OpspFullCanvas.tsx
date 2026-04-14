@@ -483,10 +483,10 @@ export default function OpspFullCanvas({ data }: OpspFullCanvasProps) {
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-foreground mb-3">Quarterly Rocks</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Quarterly Tactics</h4>
               <div className="space-y-2">
                 {Object.values(quarterlyRocks).flat().length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">No priority rocks defined</p>
+                  <p className="text-xs text-muted-foreground italic">No priority tactics defined</p>
                 ) : (
                   Object.values(quarterlyRocks).flat().slice(0, 5).map((rock: any) => (
                     <div key={rock.id} className="flex justify-between items-center p-2 bg-muted rounded">
@@ -495,7 +495,7 @@ export default function OpspFullCanvas({ data }: OpspFullCanvasProps) {
                         <p className="text-xs text-muted-foreground">Owner: {rock.assignee}</p>
                       </div>
                       <Badge variant="secondary">
-                        Priority
+                        Strategic Objective
                       </Badge>
                     </div>
                   ))

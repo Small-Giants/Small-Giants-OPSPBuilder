@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { EditableTitle } from "@/components/ui/editable-title";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -184,13 +185,16 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
     <div className="w-full max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">
-            {isCapabilityView ? 'Capability Management' : 'Priority Execution'}
-          </h2>
+          <EditableTitle
+            labelKey="page.priorities.title"
+            fallback={isCapabilityView ? 'Capability Management' : 'Strategic Objective Execution'}
+            as="h2"
+            className="text-2xl font-bold text-foreground"
+          />
           <p className="text-muted-foreground">
             {isCapabilityView 
               ? 'Track progress on your strategic capabilities' 
-              : 'Track progress on your annual priorities'}
+              : 'Track progress on your annual strategic objectives'}
           </p>
         </div>
         <Button 
@@ -198,18 +202,18 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
           data-testid="button-add-priority"
         >
           <PlusIcon className="w-4 h-4 mr-2" />
-          Add {isCapabilityView ? 'Capability' : 'Priority'}
+          Add {isCapabilityView ? 'Capability' : 'Strategic Objective'}
         </Button>
       </div>
 
       {showAddForm && (
         <Card className="border-2 border-dashed border-border">
           <CardHeader>
-            <CardTitle>Add New {isCapabilityView ? 'Capability' : 'Priority'}</CardTitle>
+            <CardTitle>Add New {isCapabilityView ? 'Capability' : 'Strategic Objective'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Input
-              placeholder={`${isCapabilityView ? 'Capability' : 'Priority'} title`}
+              placeholder={`${isCapabilityView ? 'Capability' : 'Strategic Objective'} title`}
               value={newPriority.title}
               onChange={(e) => setNewPriority(prev => ({ ...prev, title: e.target.value }))}
               data-testid="input-new-priority-title"
@@ -236,7 +240,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
             </div>
             <div className="flex gap-2">
               <Button onClick={handleAddPriority} data-testid="button-save-new-priority">
-                Save {isCapabilityView ? 'Capability' : 'Priority'}
+                Save {isCapabilityView ? 'Capability' : 'Strategic Objective'}
               </Button>
               <Button 
                 variant="outline" 
@@ -271,7 +275,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span>Progress {priority.rocks && priority.rocks.length > 0 ? '(from rocks)' : ''}</span>
+                  <span>Progress {priority.rocks && priority.rocks.length > 0 ? '(from tactics)' : ''}</span>
                   <span className="font-medium">
                     {priority.rocks && priority.rocks.length > 0 
                       ? Math.round((priority.rocks.filter(r => r.status === 'complete').length / priority.rocks.length) * 100)
@@ -299,7 +303,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
 
               {priority.rocks && priority.rocks.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Associated Rocks:</h4>
+                  <h4 className="text-sm font-medium">Associated Tactics:</h4>
                   <div className="space-y-1">
                     {priority.rocks.map((rock) => (
                       <div key={rock.id} className="flex items-center justify-between text-xs bg-muted p-2 rounded">
@@ -327,7 +331,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
 
               {priority.subPriorities.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Sub-priorities:</h4>
+                  <h4 className="text-sm font-medium">Sub-objectives:</h4>
                   {priority.subPriorities.map((sub) => (
                     <div key={sub.id} className="flex items-center gap-2">
                       <input

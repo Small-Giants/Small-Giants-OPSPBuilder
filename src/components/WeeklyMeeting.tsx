@@ -110,7 +110,7 @@ function getCurrentQuarter(): string {
 
 const STEPS: { key: MeetingStep; label: string; icon: React.ReactNode }[] = [
   { key: "scoreboard", label: "Scoreboard", icon: <BarChart3Icon className="h-4 w-4" /> },
-  { key: "rocks", label: "Rocks Review", icon: <TargetIcon className="h-4 w-4" /> },
+  { key: "rocks", label: "Tactics Review", icon: <TargetIcon className="h-4 w-4" /> },
   { key: "issues", label: "Issues", icon: <AlertTriangleIcon className="h-4 w-4" /> },
   { key: "decisions", label: "Decisions", icon: <LightbulbIcon className="h-4 w-4" /> },
   { key: "todos", label: "To-Dos", icon: <ListTodoIcon className="h-4 w-4" /> },
@@ -460,7 +460,7 @@ export default function WeeklyMeeting() {
   const renderRocks = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">{currentQuarter} Rocks Review</h3>
+        <h3 className="text-lg font-semibold">{currentQuarter} Tactics Review</h3>
         <div className="flex items-center gap-2">
           <Badge variant="outline">
             {rocksComplete}/{quarterRocks.length} complete
@@ -474,7 +474,7 @@ export default function WeeklyMeeting() {
       {quarterRocks.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <TargetIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>No rocks for {currentQuarter}.</p>
+          <p>No tactics for {currentQuarter}.</p>
         </div>
       ) : (
         <div className="space-y-2">

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EditableTitle } from "@/components/ui/editable-title";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +24,8 @@ import { ActionMenu } from "@/components/ui/ActionMenu";
 import { db } from "@/lib/firebase";
 import { doc, collection, onSnapshot, updateDoc, addDoc, deleteDoc, setDoc, query, where, type Unsubscribe } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import { UserCombobox } from "@/components/ui/user-combobox";
+import { useActiveUsers } from "@/hooks/use-active-users";
 
 export default function ThreeYear() {
   const { toast } = useToast();
@@ -40,7 +43,7 @@ export default function ThreeYear() {
   
   const [capabilities, setCapabilities] = useState<any[]>([]);
   const [rocks, setRocks] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const { users } = useActiveUsers();
   const [loading, setLoading] = useState(true);
 
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -84,18 +87,9 @@ export default function ThreeYear() {
       setCapabilities(filtered);
     });
     
-    // 3. Users
-    const usersRef = collection(db, 'users');
-    const unsubUsers = onSnapshot(usersRef, (snapshot) => {
-        const u: any[] = [];
-        snapshot.forEach(d => u.push({ id: d.id, ...d.data() }));
-        setUsers(u);
-    });
-
     return () => {
       unsubRoadmap();
       unsubCaps();
-      unsubUsers();
     };
   }, [companyId, selectedYear]);
 
@@ -165,7 +159,7 @@ export default function ThreeYear() {
 
   const handleAddRock = async (capabilityId: string) => {
     if (!newRockForm.text.trim()) {
-      toast({ title: "Error", description: "Rock text is required", variant: "destructive" });
+      toast({ title: "Error", description: "Tactic text is required", variant: "destructive" });
       return;
     }
     
@@ -185,9 +179,9 @@ export default function ThreeYear() {
       
       setAddingRockTo(null);
       setNewRockForm({ text: "", assigneeId: "", assigneeName: "", quarter: "Q1", year: selectedYear, priority: false });
-      toast({ title: "Success", description: "Rock added" });
+      toast({ title: "Success", description: "Tactic added" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to add rock", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to add tactic", variant: "destructive" });
     }
   };
 
@@ -206,18 +200,18 @@ export default function ThreeYear() {
       });
       
       setEditingRock(null);
-      toast({ title: "Success", description: "Rock updated" });
+      toast({ title: "Success", description: "Tactic updated" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update rock", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to update tactic", variant: "destructive" });
     }
   };
   
   const handleDeleteRock = async (rockId: string) => {
     try {
       await deleteDoc(doc(db, 'companies', companyId, 'rocks', rockId));
-      toast({ title: "Success", description: "Rock deleted" });
+      toast({ title: "Success", description: "Tactic deleted" });
     } catch (error) {
-       toast({ title: "Error", description: "Failed to delete rock", variant: "destructive" });
+       toast({ title: "Error", description: "Failed to delete tactic", variant: "destructive" });
     }
   };
 
@@ -326,8 +320,13 @@ export default function ThreeYear() {
     <div className="space-y-6">
        <div className="border-b border-border pb-4">
         <div className="flex items-center gap-3 mb-2">
-          <TargetIcon className="w-6 h-6 text-muted-foreground" />
-          <h1 className="text-2xl font-bold text-foreground">THREE YEAR</h1>
+          <EditableTitle
+            labelKey="page.three-year.title"
+            fallback="Three Year"
+            icon={<TargetIcon className="w-6 h-6 text-muted-foreground" />}
+            as="h1"
+            className="text-2xl font-bold text-foreground"
+          />
         </div>
         <p className="text-sm text-muted-foreground">
           Define your 3-year vision, capabilities, and quarterly execution plan
@@ -385,7 +384,7 @@ export default function ThreeYear() {
              <div className="space-y-4">
               {capabilitiesWithRocks.length === 0 ? (
                 <div className="text-muted-foreground text-sm py-4 text-center">
-                  No capabilities added yet. Add capabilities from the Priority Management page.
+                  No capabilities added yet. Add capabilities from the Strategic Objective & Capability Management page.
                 </div>
               ) : (
                  capabilitiesWithRocks.map((capability: any, idx: number) => {
@@ -422,11 +421,11 @@ export default function ThreeYear() {
                                   <ChevronRightIcon className="h-4 w-4 mr-1" />
                                 )}
                                 <span className="text-muted-foreground">
-                                  {totalRocks} rocks
+                                  {totalRocks} tactics
                                 </span>
                               </Button>
                             ) : (
-                              <span className="text-xs text-muted-foreground">No rocks yet</span>
+                              <span className="text-xs text-muted-foreground">No tactics yet</span>
                             )}
                              <Button
                               variant="outline"
@@ -438,7 +437,7 @@ export default function ThreeYear() {
                               className="text-xs h-6 px-2 border-dashed border-border text-muted-foreground hover:bg-accent"
                             >
                               <PlusIcon className="h-3 w-3 mr-1" />
-                              Add Rock
+                              Add Tactic
                             </Button>
                            </div>
                         </div>
@@ -456,21 +455,20 @@ export default function ThreeYear() {
                                       <Badge className="bg-accent text-accent-foreground text-[10px] px-2 py-0 h-5">
                                         {quarter}
                                       </Badge>
-                                      <span className="text-xs text-muted-foreground">{quarterRocks.length} {quarterRocks.length === 1 ? 'rock' : 'rocks'}</span>
+                                      <span className="text-xs text-muted-foreground">{quarterRocks.length} {quarterRocks.length === 1 ? 'tactic' : 'tactics'}</span>
                                    </div>
                                    
                                    {quarterRocks.map((rock: any) => (
                                        <div key={rock.id} className="flex items-start justify-between gap-2 p-2 rounded bg-background">
                                           {editingRock === rock.id ? (
                                              <div className="flex-1 space-y-2">
-                                                <Input value={editRockForm.text} onChange={(e) => setEditRockForm({...editRockForm, text: e.target.value})} placeholder="Rock text" className="bg-background border-border text-foreground text-sm" />
-                                                <Select value={editRockForm.assigneeId || "unassigned"} onValueChange={(v) => setEditRockForm({...editRockForm, assigneeId: v === "unassigned" ? "" : v})}>
-                                                    <SelectTrigger className="bg-background border-border text-foreground text-sm"><SelectValue placeholder="Assignee" /></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                                                        {users.map(u => <SelectItem key={u.id} value={u.id}>{u.name || u.email}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
+                                                <Input value={editRockForm.text} onChange={(e) => setEditRockForm({...editRockForm, text: e.target.value})} placeholder="Tactic text" className="bg-background border-border text-foreground text-sm" />
+                                                <UserCombobox
+                                                    value={editRockForm.assigneeId || ""}
+                                                    onValueChange={(v) => setEditRockForm({...editRockForm, assigneeId: v})}
+                                                    placeholder="Assignee"
+                                                    valueMode="id"
+                                                />
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <Select value={editRockForm.quarter} onValueChange={(v) => setEditRockForm({...editRockForm, quarter: v})}>
                                                         <SelectTrigger className="bg-background border-border text-foreground text-sm"><SelectValue placeholder="Quarter" /></SelectTrigger>
@@ -514,14 +512,13 @@ export default function ThreeYear() {
                                    
                                    {addingRockTo === capability.id && quarter === newRockForm.quarter && (
                                       <div className="p-2 rounded bg-muted space-y-2 border border-border">
-                                         <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New rock..." autoFocus className="bg-background border-border text-foreground text-sm" />
-                                          <Select value={newRockForm.assigneeId || "unassigned"} onValueChange={(v) => setNewRockForm({...newRockForm, assigneeId: v === "unassigned" ? "" : v})}>
-                                              <SelectTrigger className="bg-background border-border text-foreground text-sm"><SelectValue placeholder="Assignee" /></SelectTrigger>
-                                              <SelectContent>
-                                                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                                                  {users.map(u => <SelectItem key={u.id} value={u.id}>{u.name || u.email}</SelectItem>)}
-                                              </SelectContent>
-                                          </Select>
+                                         <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New tactic..." autoFocus className="bg-background border-border text-foreground text-sm" />
+                                          <UserCombobox
+                                              value={newRockForm.assigneeId || ""}
+                                              onValueChange={(v) => setNewRockForm({...newRockForm, assigneeId: v})}
+                                              placeholder="Assignee"
+                                              valueMode="id"
+                                          />
                                           <div className="flex items-center space-x-2">
                                               <input type="checkbox" checked={newRockForm.priority} onChange={(e) => setNewRockForm({ ...newRockForm, priority: e.target.checked })} className="h-4 w-4 rounded border-input" />
                                               <label className="text-sm text-muted-foreground">High Priority</label>
@@ -547,7 +544,7 @@ export default function ThreeYear() {
                               className="w-full text-xs border-dashed border-border text-muted-foreground hover:bg-accent"
                             >
                               <PlusIcon className="h-3 w-3 mr-1" />
-                              Add Rock
+                              Add Tactic
                             </Button>
                            )}
                         </div>

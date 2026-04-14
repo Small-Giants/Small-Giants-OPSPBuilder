@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { EditableTitle } from "@/components/ui/editable-title";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,8 @@ import { ActionMenu } from "@/components/ui/ActionMenu";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, type Unsubscribe, writeBatch } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import { UserCombobox } from "@/components/ui/user-combobox";
+import { useActiveUsers } from "@/hooks/use-active-users";
 import {
   DndContext,
   closestCenter,
@@ -93,7 +96,7 @@ export default function PriorityManagement() {
   
   const [prioritiesData, setPrioritiesData] = useState<any[]>([]);
   const [rocksData, setRocksData] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const { users } = useActiveUsers();
   const [loading, setLoading] = useState(true);
 
   const yearOptions = Array.from(new Set<number>([...availableYears, selectedYear, selectedYear + 1])).sort((a, b) => a - b);
@@ -173,18 +176,11 @@ export default function PriorityManagement() {
       );
     }
 
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const items: any[] = [];
-      snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-      setUsers(items);
-    });
-
     return () => {
       unsubPrioritiesYear?.();
       unsubPrioritiesLegacy?.();
       unsubRocksYear?.();
       unsubRocksLegacy?.();
-      unsubUsers();
     };
   }, [companyId, selectedYear]);
 
@@ -223,9 +219,9 @@ export default function PriorityManagement() {
       
       setShowAddForm(false);
       setNewForm({ title: "", description: "", type: "priority", executiveChampion: "", successStatement: "", owner: "", dueDate: "", planYear: selectedYear });
-      toast({ title: "Success", description: "Priority created" });
+      toast({ title: "Success", description: "Strategic Objective created" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to create priority", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to create strategic objective", variant: "destructive" });
     }
   };
 
@@ -248,18 +244,18 @@ export default function PriorityManagement() {
     try {
       await updateDoc(doc(db, 'companies', companyId, 'priorities', editingId), editForm);
       setEditingId(null);
-      toast({ title: "Success", description: "Priority updated" });
+      toast({ title: "Success", description: "Strategic Objective updated" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update priority", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to update strategic objective", variant: "destructive" });
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'companies', companyId, 'priorities', id));
-      toast({ title: "Success", description: "Priority deleted" });
+      toast({ title: "Success", description: "Strategic Objective deleted" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to delete priority", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to delete strategic objective", variant: "destructive" });
     }
   };
 
@@ -270,7 +266,7 @@ export default function PriorityManagement() {
 
   const handleAddRock = async (priorityId: string) => {
     if (!newRockForm.text.trim()) {
-      toast({ title: "Error", description: "Rock text is required", variant: "destructive" });
+      toast({ title: "Error", description: "Tactic text is required", variant: "destructive" });
       return;
     }
     
@@ -290,9 +286,9 @@ export default function PriorityManagement() {
       
       setAddingRockTo(null);
       setNewRockForm({ text: "", assigneeId: "", assigneeName: "", quarter: "Q1", year: selectedYear, priority: false });
-      toast({ title: "Success", description: "Rock added" });
+      toast({ title: "Success", description: "Tactic added" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to add rock", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to add tactic", variant: "destructive" });
     }
   };
 
@@ -322,18 +318,18 @@ export default function PriorityManagement() {
         priority: editRockForm.priority
       });
       setEditingRock(null);
-      toast({ title: "Success", description: "Rock updated" });
+      toast({ title: "Success", description: "Tactic updated" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update rock", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to update tactic", variant: "destructive" });
     }
   };
 
   const handleDeleteRock = async (rockId: string) => {
     try {
       await deleteDoc(doc(db, 'companies', companyId, 'rocks', rockId));
-      toast({ title: "Success", description: "Rock deleted" });
+      toast({ title: "Success", description: "Tactic deleted" });
     } catch (error) {
-       toast({ title: "Error", description: "Failed to delete rock", variant: "destructive" });
+       toast({ title: "Error", description: "Failed to delete tactic", variant: "destructive" });
     }
   };
   
@@ -416,14 +412,14 @@ export default function PriorityManagement() {
       });
       await batch.commit();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to reorder priorities", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to reorder strategic objectives", variant: "destructive" });
     }
   };
   
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-muted-foreground">Loading priorities...</div>
+        <div className="text-muted-foreground">Loading strategic objectives...</div>
       </div>
     );
   }
@@ -433,9 +429,14 @@ export default function PriorityManagement() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle>Priority & Capability Management</CardTitle>
+            <CardTitle>
+              <EditableTitle
+                labelKey="page.priority-management.title"
+                fallback="Strategic Objective & Capability Management"
+              />
+            </CardTitle>
             <CardDescription>
-              Manage your strategic priorities and capabilities that feed into the roadmap canvas
+              Manage your strategic objectives and capabilities that feed into the roadmap canvas
             </CardDescription>
           </div>
           <Button
@@ -464,7 +465,7 @@ export default function PriorityManagement() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="priority">Annual Priority</SelectItem>
+                          <SelectItem value="priority">Annual Strategic Objective</SelectItem>
                           <SelectItem value="capability">Capability</SelectItem>
                         </SelectContent>
                       </Select>
@@ -512,22 +513,12 @@ export default function PriorityManagement() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-1 block">Owner/Person Responsible</label>
-                      <Select
-                        value={newForm.owner || "unassigned"}
-                        onValueChange={(value) => setNewForm({ ...newForm, owner: value === "unassigned" ? "" : value })}
-                      >
-                        <SelectTrigger data-testid="select-priority-owner">
-                          <SelectValue placeholder="Select owner/person responsible" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="unassigned">Unassigned</SelectItem>
-                          {users.map((user: any) => (
-                            <SelectItem key={user.id} value={user.name || user.email}>
-                              {user.name || user.email}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <UserCombobox
+                        value={newForm.owner || ""}
+                        onValueChange={(v) => setNewForm({ ...newForm, owner: v })}
+                        placeholder="Select owner/person responsible"
+                        valueMode="name"
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-1 block">Due Date/Quarter</label>
@@ -573,7 +564,7 @@ export default function PriorityManagement() {
             <div>
               <h3 className="text-lg font-semibold mb-3 flex items-center">
                 <TargetIcon className="h-5 w-5 mr-2 text-primary" />
-                Annual Priorities
+                Annual Strategic Objectives
                 <span className="ml-2 text-xs text-muted-foreground font-normal">(drag to reorder)</span>
               </h3>
               <DndContext
@@ -588,7 +579,7 @@ export default function PriorityManagement() {
                   <div className="space-y-3">
                     {annualPriorities.length === 0 ? (
                       <div className="text-muted-foreground text-sm py-4 text-center">
-                        No annual priorities added yet. Click "Add New" to create one.
+                        No annual strategic objectives added yet. Click "Add New" to create one.
                       </div>
                     ) : (
                       annualPriorities.map((priority: any) => (
@@ -605,13 +596,12 @@ export default function PriorityManagement() {
                                 <Input value={editForm.successStatement} onChange={(e) => setEditForm({...editForm, successStatement: e.target.value})} placeholder="Success Statement" />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                                <Select value={editForm.owner || "unassigned"} onValueChange={(v) => setEditForm({...editForm, owner: v === "unassigned" ? "" : v})}>
-                                    <SelectTrigger><SelectValue placeholder="Owner" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                                        {users.map(u => <SelectItem key={u.id} value={u.name || u.email}>{u.name || u.email}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                                <UserCombobox
+                                    value={editForm.owner || ""}
+                                    onValueChange={(v) => setEditForm({...editForm, owner: v})}
+                                    placeholder="Owner"
+                                    valueMode="name"
+                                />
                                 <Input value={editForm.dueDate} onChange={(e) => setEditForm({...editForm, dueDate: e.target.value})} placeholder="Due Date" />
                             </div>
                             <div className="flex justify-end gap-2">
@@ -625,7 +615,7 @@ export default function PriorityManagement() {
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h4 className="font-medium">{priority.title}</h4>
-                                        <Badge variant="outline" className="text-xs">Priority</Badge>
+                                        <Badge variant="outline" className="text-xs">Strategic Objective</Badge>
                                     </div>
                                     <p className="text-sm text-muted-foreground">{priority.description}</p>
                                     {(priority.executiveChampion || priority.successStatement) && (
@@ -638,10 +628,10 @@ export default function PriorityManagement() {
                                         {priority.rocks && priority.rocks.length > 0 ? (
                                             <Button variant="ghost" size="sm" onClick={() => setExpandedPriority(expandedPriority === priority.id ? null : priority.id)} className="text-xs p-0 h-auto hover:bg-transparent">
                                                 {expandedPriority === priority.id ? <ChevronDownIcon className="h-4 w-4 mr-1" /> : <ChevronRightIcon className="h-4 w-4 mr-1" />}
-                                                <span className="text-muted-foreground">{priority.rocks.length} rocks</span>
+                                                <span className="text-muted-foreground">{priority.rocks.length} tactics</span>
                                             </Button>
-                                        ) : <span className="text-xs text-muted-foreground">No rocks yet</span>}
-                                        <Button variant="outline" size="sm" onClick={() => { setAddingRockTo(priority.id); setExpandedPriority(priority.id); }} className="text-xs h-6 px-2 border-dashed"><PlusIcon className="h-3 w-3 mr-1" />Add Rock</Button>
+                                        ) : <span className="text-xs text-muted-foreground">No tactics yet</span>}
+                                        <Button variant="outline" size="sm" onClick={() => { setAddingRockTo(priority.id); setExpandedPriority(priority.id); }} className="text-xs h-6 px-2 border-dashed"><PlusIcon className="h-3 w-3 mr-1" />Add Tactic</Button>
                                     </div>
                                 </div>
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -662,18 +652,20 @@ export default function PriorityManagement() {
                                                         <div key={quarter} className="space-y-2">
                                                             <div className="flex items-center gap-2">
                                                                 <Badge variant="secondary" className="text-xs">{quarter}</Badge>
-                                                                <span className="text-xs text-muted-foreground">{quarterRocks.length} rocks</span>
+                                                                <span className="text-xs text-muted-foreground">{quarterRocks.length} tactics</span>
                                                             </div>
                                                             {quarterRocks.map((rock: any) => (
                                                                 <div key={rock.id} className="flex items-start justify-between gap-2 p-2 rounded bg-muted/30">
                                                                     {editingRock === rock.id ? (
                                                                         // Edit Rock Form
                                                                         <div className="flex-1 space-y-2">
-                                                                            <Input value={editRockForm.text} onChange={(e) => setEditRockForm({...editRockForm, text: e.target.value})} placeholder="Rock text" className="text-sm" />
-                                                                            <Select value={editRockForm.assigneeId || "unassigned"} onValueChange={(v) => setEditRockForm({...editRockForm, assigneeId: v === "unassigned" ? "" : v})}>
-                                                                                <SelectTrigger className="text-sm"><SelectValue placeholder="Assignee" /></SelectTrigger>
-                                                                                <SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{users.map(u => <SelectItem key={u.id} value={u.id}>{u.name || u.email}</SelectItem>)}</SelectContent>
-                                                                            </Select>
+                                                                            <Input value={editRockForm.text} onChange={(e) => setEditRockForm({...editRockForm, text: e.target.value})} placeholder="Tactic text" className="text-sm" />
+                                                                            <UserCombobox
+                                                                                value={editRockForm.assigneeId || ""}
+                                                                                onValueChange={(v) => setEditRockForm({...editRockForm, assigneeId: v})}
+                                                                                placeholder="Assignee"
+                                                                                valueMode="id"
+                                                                            />
                                                                             <div className="grid grid-cols-2 gap-2">
                                                                                 <Select value={editRockForm.quarter} onValueChange={(v) => setEditRockForm({...editRockForm, quarter: v})}><SelectTrigger className="text-sm"><SelectValue placeholder="Quarter" /></SelectTrigger><SelectContent><SelectItem value="Q1">Q1</SelectItem><SelectItem value="Q2">Q2</SelectItem><SelectItem value="Q3">Q3</SelectItem><SelectItem value="Q4">Q4</SelectItem></SelectContent></Select>
                                                                                 <Select value={editRockForm.year.toString()} onValueChange={(v) => setEditRockForm({...editRockForm, year: parseInt(v)})}><SelectTrigger className="text-sm"><SelectValue placeholder="Year" /></SelectTrigger><SelectContent>{yearOptions.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}</SelectContent></Select>
@@ -698,11 +690,13 @@ export default function PriorityManagement() {
                                                             ))}
                                                             {addingRockTo === priority.id && quarter === newRockForm.quarter && (
                                                                 <div className="p-2 rounded bg-muted/50 space-y-2">
-                                                                    <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New rock..." autoFocus className="text-sm" />
-                                                                    <Select value={newRockForm.assigneeId || "unassigned"} onValueChange={(v) => setNewRockForm({...newRockForm, assigneeId: v === "unassigned" ? "" : v})}>
-                                                                        <SelectTrigger className="text-sm"><SelectValue placeholder="Assignee" /></SelectTrigger>
-                                                                        <SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{users.map(u => <SelectItem key={u.id} value={u.id}>{u.name || u.email}</SelectItem>)}</SelectContent>
-                                                                    </Select>
+                                                                    <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New tactic..." autoFocus className="text-sm" />
+                                                                    <UserCombobox
+                                                                        value={newRockForm.assigneeId || ""}
+                                                                        onValueChange={(v) => setNewRockForm({...newRockForm, assigneeId: v})}
+                                                                        placeholder="Assignee"
+                                                                        valueMode="id"
+                                                                    />
                                                                     <div className="grid grid-cols-2 gap-2">
                                                                         <Select value={newRockForm.quarter} onValueChange={(v) => setNewRockForm({...newRockForm, quarter: v})}><SelectTrigger className="text-sm"><SelectValue placeholder="Quarter" /></SelectTrigger><SelectContent><SelectItem value="Q1">Q1</SelectItem><SelectItem value="Q2">Q2</SelectItem><SelectItem value="Q3">Q3</SelectItem><SelectItem value="Q4">Q4</SelectItem></SelectContent></Select>
                                                                         <Select value={newRockForm.year.toString()} onValueChange={(v) => setNewRockForm({...newRockForm, year: parseInt(v)})}><SelectTrigger className="text-sm"><SelectValue placeholder="Year" /></SelectTrigger><SelectContent>{yearOptions.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}</SelectContent></Select>
@@ -715,15 +709,20 @@ export default function PriorityManagement() {
                                                     );
                                                 })
                                             })()}
-                                            {priority.rocks.length === 0 && addingRockTo !== priority.id && <div className="text-center py-4 text-muted-foreground text-sm">No rocks yet.</div>}
-                                            {addingRockTo !== priority.id && <Button variant="outline" size="sm" onClick={() => { setAddingRockTo(priority.id); setNewRockForm({...newRockForm, quarter: "Q1"}); }} className="w-full text-xs border-dashed"><PlusIcon className="h-3 w-3 mr-1" />Add Rock</Button>}
+                                            {priority.rocks.length === 0 && addingRockTo !== priority.id && <div className="text-center py-4 text-muted-foreground text-sm">No tactics yet.</div>}
+                                            {addingRockTo !== priority.id && <Button variant="outline" size="sm" onClick={() => { setAddingRockTo(priority.id); setNewRockForm({...newRockForm, quarter: "Q1"}); }} className="w-full text-xs border-dashed"><PlusIcon className="h-3 w-3 mr-1" />Add Tactic</Button>}
                                         </div>
                                     )}
                                     {(!priority.rocks || priority.rocks.length === 0) && addingRockTo === priority.id && (
                                         <div className="mt-4 pl-4 border-l-2 border-muted">
                                              <div className="p-2 rounded bg-muted/50 space-y-2">
-                                                <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New rock..." autoFocus className="text-sm" />
-                                                <Select value={newRockForm.assigneeId || "unassigned"} onValueChange={(v) => setNewRockForm({...newRockForm, assigneeId: v === "unassigned" ? "" : v})}><SelectTrigger className="text-sm"><SelectValue placeholder="Assignee" /></SelectTrigger><SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{users.map(u => <SelectItem key={u.id} value={u.id}>{u.name || u.email}</SelectItem>)}</SelectContent></Select>
+                                                <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New tactic..." autoFocus className="text-sm" />
+                                                <UserCombobox
+                                                    value={newRockForm.assigneeId || ""}
+                                                    onValueChange={(v) => setNewRockForm({...newRockForm, assigneeId: v})}
+                                                    placeholder="Assignee"
+                                                    valueMode="id"
+                                                />
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <Select value={newRockForm.quarter} onValueChange={(v) => setNewRockForm({...newRockForm, quarter: v})}><SelectTrigger className="text-sm"><SelectValue placeholder="Quarter" /></SelectTrigger><SelectContent><SelectItem value="Q1">Q1</SelectItem><SelectItem value="Q2">Q2</SelectItem><SelectItem value="Q3">Q3</SelectItem><SelectItem value="Q4">Q4</SelectItem></SelectContent></Select>
                                                     <Select value={newRockForm.year.toString()} onValueChange={(v) => setNewRockForm({...newRockForm, year: parseInt(v)})}><SelectTrigger className="text-sm"><SelectValue placeholder="Year" /></SelectTrigger><SelectContent>{yearOptions.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}</SelectContent></Select>
@@ -799,22 +798,12 @@ export default function PriorityManagement() {
                                     />
                                   </div>
                                   <div className="grid grid-cols-2 gap-3">
-                                    <Select
-                                      value={editForm.owner || "unassigned"}
-                                      onValueChange={(value) => setEditForm({ ...editForm, owner: value === "unassigned" ? "" : value })}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select owner" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                                        {users.map((user: any) => (
-                                          <SelectItem key={user.id} value={user.name || user.email}>
-                                            {user.name || user.email}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                                    <UserCombobox
+                                      value={editForm.owner || ""}
+                                      onValueChange={(v) => setEditForm({ ...editForm, owner: v })}
+                                      placeholder="Select owner"
+                                      valueMode="name"
+                                    />
                                     <Input
                                       value={editForm.dueDate}
                                       onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
@@ -875,11 +864,11 @@ export default function PriorityManagement() {
                                               <ChevronRightIcon className="h-4 w-4 mr-1" />
                                             )}
                                             <span className="text-muted-foreground">
-                                              {capability.rocks.length} rocks
+                                              {capability.rocks.length} tactics
                                             </span>
                                           </Button>
                                         ) : (
-                                          <span className="text-xs text-muted-foreground">No rocks yet</span>
+                                          <span className="text-xs text-muted-foreground">No tactics yet</span>
                                         )}
                                         <Button
                                           variant="outline"
@@ -891,7 +880,7 @@ export default function PriorityManagement() {
                                           className="text-xs h-6 px-2 border-dashed"
                                         >
                                           <PlusIcon className="h-3 w-3 mr-1" />
-                                          Add Rock
+                                          Add Tactic
                                         </Button>
                                       </div>
                                     </div>
@@ -913,25 +902,15 @@ export default function PriorityManagement() {
                                                 <Input
                                                   value={editRockForm.text}
                                                   onChange={(e) => setEditRockForm({ ...editRockForm, text: e.target.value })}
-                                                  placeholder="Rock text"
+                                                  placeholder="Tactic text"
                                                   className="text-sm"
                                                 />
-                                                <Select
-                                                  value={editRockForm.assigneeId || "unassigned"}
-                                                  onValueChange={(value) => setEditRockForm({ ...editRockForm, assigneeId: value === "unassigned" ? "" : value })}
-                                                >
-                                                  <SelectTrigger className="text-sm">
-                                                    <SelectValue placeholder="Select assignee" />
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                                                    {users.map((user: any) => (
-                                                      <SelectItem key={user.id} value={user.id}>
-                                                        {user.name || user.email}
-                                                      </SelectItem>
-                                                    ))}
-                                                  </SelectContent>
-                                                </Select>
+                                                <UserCombobox
+                                                  value={editRockForm.assigneeId || ""}
+                                                  onValueChange={(v) => setEditRockForm({ ...editRockForm, assigneeId: v })}
+                                                  placeholder="Select assignee"
+                                                  valueMode="id"
+                                                />
                                                 <div className="grid grid-cols-2 gap-2">
                                                   <Select
                                                     value={editRockForm.quarter}
@@ -1000,7 +979,7 @@ export default function PriorityManagement() {
                                         ))
                                       ) : (
                                         <div className="text-center py-4 text-muted-foreground text-sm">
-                                          No rocks yet. Click "Add Rock" to get started.
+                                          No tactics yet. Click "Add Tactic" to get started.
                                         </div>
                                       )}
                                       
@@ -1009,26 +988,16 @@ export default function PriorityManagement() {
                                           <Input
                                             value={newRockForm.text}
                                             onChange={(e) => setNewRockForm({ ...newRockForm, text: e.target.value })}
-                                            placeholder="Enter rock text..."
+                                            placeholder="Enter tactic text..."
                                             className="text-sm"
                                             autoFocus
                                           />
-                                          <Select
-                                            value={newRockForm.assigneeId || "unassigned"}
-                                            onValueChange={(value) => setNewRockForm({ ...newRockForm, assigneeId: value === "unassigned" ? "" : value })}
-                                          >
-                                            <SelectTrigger className="text-sm">
-                                              <SelectValue placeholder="Select assignee (optional)" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectItem value="unassigned">Unassigned</SelectItem>
-                                              {users.map((user: any) => (
-                                                <SelectItem key={user.id} value={user.id}>
-                                                  {user.name || user.email}
-                                                </SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
+                                          <UserCombobox
+                                            value={newRockForm.assigneeId || ""}
+                                            onValueChange={(v) => setNewRockForm({ ...newRockForm, assigneeId: v })}
+                                            placeholder="Select assignee (optional)"
+                                            valueMode="id"
+                                          />
                                           <div className="grid grid-cols-2 gap-2">
                                             <Select
                                               value={newRockForm.quarter}
@@ -1097,7 +1066,7 @@ export default function PriorityManagement() {
                                           className="w-full text-xs border-dashed"
                                         >
                                           <PlusIcon className="h-3 w-3 mr-1" />
-                                          Add Rock
+                                          Add Tactic
                                         </Button>
                                       )}
                                     </div>

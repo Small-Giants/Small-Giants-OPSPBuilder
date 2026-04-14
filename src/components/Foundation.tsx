@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { EditableTitle } from "@/components/ui/editable-title";
 import { useToast } from "@/hooks/use-toast";
 import { 
   RocketIcon,
@@ -699,8 +700,13 @@ export default function Foundation() {
     <div className="space-y-6">
       <div className="border-b border-border pb-4">
         <div className="flex items-center gap-3 mb-2">
-          <BuildingIcon className="w-6 h-6 text-muted-foreground" />
-          <h1 className="text-2xl font-bold text-foreground">Foundation</h1>
+          <EditableTitle
+            labelKey="page.foundation.title"
+            fallback="Foundation"
+            icon={<BuildingIcon className="w-6 h-6 text-muted-foreground" />}
+            as="h1"
+            className="text-2xl font-bold text-foreground"
+          />
         </div>
         <p className="text-sm text-muted-foreground">
           Define your organization's core identity and fundamental principles

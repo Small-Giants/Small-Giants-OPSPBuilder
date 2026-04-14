@@ -171,7 +171,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
         case 'priority':
           key = metric.priorityId || 'unassigned';
           const priority = priorities.find(p => p.id === metric.priorityId);
-          label = priority ? priority.title : 'Unassigned Priority';
+          label = priority ? priority.title : 'Unassigned Strategic Objective';
           break;
         default:
           key = 'all';
@@ -368,7 +368,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                 <SelectItem value="none">No Grouping</SelectItem>
                 <SelectItem value="owner">Group by Assignee</SelectItem>
                 <SelectItem value="status">Group by Status</SelectItem>
-                {isSuperAdmin && <SelectItem value="priority">Group by Priority</SelectItem>}
+                {isSuperAdmin && <SelectItem value="priority">Group by Strategic Objective</SelectItem>}
               </SelectContent>
             </Select>
           </div>
@@ -549,10 +549,10 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                   onValueChange={(value) => setNewMetric(prev => ({ ...prev, priorityId: value === "unassigned" ? "" : value }))}
                 >
                   <SelectTrigger data-testid="select-new-metric-priority">
-                    <SelectValue placeholder="Link to Priority" />
+                    <SelectValue placeholder="Link to Strategic Objective" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unassigned">No Priority</SelectItem>
+                    <SelectItem value="unassigned">No Strategic Objective</SelectItem>
                     {priorities.map((priority) => (
                       <SelectItem key={priority.id} value={priority.id}>
                         {priority.title}
@@ -697,7 +697,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                 {metric.priorityId && (
                   <span className="flex items-center gap-1">
                     <TargetIcon className="h-3 w-3" />
-                    {priorities.find(p => p.id === metric.priorityId)?.title || 'Priority'}
+                    {priorities.find(p => p.id === metric.priorityId)?.title || 'Strategic Objective'}
                   </span>
                 )}
               </div>
@@ -721,10 +721,10 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                     onValueChange={(value) => setEditForm(prev => prev ? {...prev, priorityId: value === "unassigned" ? "" : value} : null)}
                   >
                     <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Link to Priority" />
+                      <SelectValue placeholder="Link to Strategic Objective" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="unassigned">No Priority</SelectItem>
+                      <SelectItem value="unassigned">No Strategic Objective</SelectItem>
                       {priorities.map((priority) => (
                         <SelectItem key={priority.id} value={priority.id}>
                           {priority.title}

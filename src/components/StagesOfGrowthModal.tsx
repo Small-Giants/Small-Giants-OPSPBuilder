@@ -377,19 +377,19 @@ export default function StagesOfGrowthModal({ open, onOpenChange }: StagesOfGrow
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
-                  <div className="text-sm text-muted-foreground mb-1">1st Priority</div>
+                  <div className="text-sm text-muted-foreground mb-1">1st Strategic Objective</div>
                   <Badge variant="secondary">
                     {currentStageData.threeGatesOfFocus.first}
                   </Badge>
                 </div>
                 <div className="text-center">
-                  <div className="text-sm text-muted-foreground mb-1">2nd Priority</div>
+                  <div className="text-sm text-muted-foreground mb-1">2nd Strategic Objective</div>
                   <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700">
                     {currentStageData.threeGatesOfFocus.second}
                   </Badge>
                 </div>
                 <div className="text-center">
-                  <div className="text-sm text-muted-foreground mb-1">3rd Priority</div>
+                  <div className="text-sm text-muted-foreground mb-1">3rd Strategic Objective</div>
                   <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700">
                     {currentStageData.threeGatesOfFocus.third}
                   </Badge>

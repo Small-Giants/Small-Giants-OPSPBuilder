@@ -300,7 +300,7 @@ export default function YearSwitcher() {
                     onCheckedChange={(v) => setCarryPriorities(Boolean(v))}
                     disabled={isCreating}
                   />
-                  Annual priorities & capabilities list
+                  Annual strategic objectives & capabilities list
                 </label>
 
                 <label className="flex items-center gap-2 text-sm">

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLabels } from "@/hooks/use-labels";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -65,6 +66,7 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const { toast } = useToast();
   
+  const { getLabel } = useLabels();
   const supportEmail = "brennan@smallgiantsonline.com";
   
   const handleCopyEmail = () => {
@@ -77,29 +79,29 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
 
   const navigationSections: NavigationSection[] = useMemo(() => {
     const planItems: NavigationItem[] = [
-      { id: 'exec-summary', label: 'Executive Summary', icon: <HomeIcon className="w-4 h-4" /> },
-      { id: 'wizard', label: 'Planning Wizard', icon: <TrendingUpIcon className="w-4 h-4" /> },
-      { id: 'canvas', label: 'Roadmap Canvas', icon: <FileTextIcon className="w-4 h-4" /> },
-      { id: 'foundation', label: 'Foundation', icon: <BuildingIcon className="w-4 h-4" /> },
-      { id: 'three-year', label: 'Three Year', icon: <CalendarIcon className="w-4 h-4" /> },
-      { id: 'one-year', label: 'One Year', icon: <Clock3Icon className="w-4 h-4" /> },
-      { id: 'priority-management', label: 'Priorities & Capabilities', icon: <ActivityIcon className="w-4 h-4" /> },
-      { id: 'swot', label: 'SWOT Analysis', icon: <TrendingUpIcon className="w-4 h-4" /> },
+      { id: 'exec-summary', label: getLabel('nav.exec-summary', 'Executive Summary'), icon: <HomeIcon className="w-4 h-4" /> },
+      { id: 'wizard', label: getLabel('nav.wizard', 'Planning Wizard'), icon: <TrendingUpIcon className="w-4 h-4" /> },
+      { id: 'canvas', label: getLabel('nav.canvas', 'Roadmap Canvas'), icon: <FileTextIcon className="w-4 h-4" /> },
+      { id: 'foundation', label: getLabel('nav.foundation', 'Foundation'), icon: <BuildingIcon className="w-4 h-4" /> },
+      { id: 'three-year', label: getLabel('nav.three-year', 'Three Year'), icon: <CalendarIcon className="w-4 h-4" /> },
+      { id: 'one-year', label: getLabel('nav.one-year', 'One Year'), icon: <Clock3Icon className="w-4 h-4" /> },
+      { id: 'priority-management', label: getLabel('nav.priority-management', 'Strategic Objectives & Capabilities'), icon: <ActivityIcon className="w-4 h-4" /> },
+      { id: 'swot', label: getLabel('nav.swot', 'SWOT Analysis'), icon: <TrendingUpIcon className="w-4 h-4" /> },
     ];
 
     const executeItems: NavigationItem[] = [
-      { id: 'weekly-meeting', label: 'Weekly Meeting', icon: <UsersIcon className="w-4 h-4" /> },
-      { id: 'priorities', label: 'Priority Execution', icon: <ClipboardListIcon className="w-4 h-4" /> },
-      { id: 'metrics', label: 'KPI Dashboard', icon: <BarChart3Icon className="w-4 h-4" /> },
-      { id: 'rocks', label: 'My Rocks', icon: <TargetIcon className="w-4 h-4" /> },
-      { id: 'assessments', label: 'Agile Growth Checklist', icon: <ClipboardListIcon className="w-4 h-4" /> },
-      { id: 'just-get-it-done', label: 'Just Get It Done', icon: <ClipboardListIcon className="w-4 h-4" /> },
-      { id: 'personal', label: 'Personal Development', icon: <BookOpenIcon className="w-4 h-4" />, disabled: true },
+      { id: 'weekly-meeting', label: getLabel('nav.weekly-meeting', 'Weekly Meeting'), icon: <UsersIcon className="w-4 h-4" /> },
+      { id: 'priorities', label: getLabel('nav.priorities', 'Strategic Objective Execution'), icon: <ClipboardListIcon className="w-4 h-4" /> },
+      { id: 'metrics', label: getLabel('nav.metrics', 'KPI Dashboard'), icon: <BarChart3Icon className="w-4 h-4" /> },
+      { id: 'rocks', label: getLabel('nav.rocks', 'My Tactics'), icon: <TargetIcon className="w-4 h-4" /> },
+      { id: 'assessments', label: getLabel('nav.agile-checklist', 'Agile Growth Checklist'), icon: <ClipboardListIcon className="w-4 h-4" /> },
+      { id: 'just-get-it-done', label: getLabel('nav.just-get-it-done', 'Just Get It Done'), icon: <ClipboardListIcon className="w-4 h-4" /> },
+      { id: 'personal', label: getLabel('nav.personal-dev', 'Personal Development'), icon: <BookOpenIcon className="w-4 h-4" />, disabled: true },
     ];
 
     const adminItems: NavigationItem[] =
       currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')
-        ? [{ id: 'admin', label: 'Admin Panel', icon: <ShieldIcon className="w-4 h-4" /> }]
+        ? [{ id: 'admin', label: getLabel('nav.admin', 'Admin Panel'), icon: <ShieldIcon className="w-4 h-4" /> }]
         : [];
 
     return [
