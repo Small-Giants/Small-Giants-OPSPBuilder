@@ -89,15 +89,15 @@ const WIZARD_STEPS: WizardStep[] = [
   },
   {
     id: "quarterly",
-    title: "Quarterly Tactics",
-    description: "Break down strategic objectives into quarterly tactics with owners",
+    title: "Quarterly Goals",
+    description: "Break down strategic objectives into quarterly goals with owners",
     icon: <CalendarIcon className="h-5 w-5" />,
     checkFields: ["rocks"],
     navigateTo: "one-year",
     tips: [
-      "Tactics are 90-day deliverables",
-      "Each tactic needs a clear owner",
-      "Link tactics to annual strategic objectives",
+      "Goals are 90-day deliverables",
+      "Each goal needs a clear owner",
+      "Link goals to annual strategic objectives",
     ],
   },
   {

@@ -173,9 +173,9 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
         responsible: "", accountable: "", startDate: "", projectManagement: false,
         bloomGrowthVisibility: false, visionStatement: ""
       });
-      toast({ title: "Success", description: "Tactic created successfully" });
+      toast({ title: "Success", description: "Goal created successfully" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to create tactic", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to create goal", variant: "destructive" });
     }
   };
 
@@ -189,9 +189,9 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
       const rockRef = doc(db, 'companies', companyId, 'rocks', rockId);
       await updateDoc(rockRef, editForm);
       setEditingRock(null);
-      toast({ title: "Success", description: "Tactic updated successfully" });
+      toast({ title: "Success", description: "Goal updated successfully" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update tactic", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to update goal", variant: "destructive" });
     }
   };
 
@@ -199,9 +199,9 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
     try {
       const rockRef = doc(db, 'companies', companyId, 'rocks', rockId);
       await deleteDoc(rockRef);
-      toast({ title: "Success", description: "Tactic deleted successfully" });
+      toast({ title: "Success", description: "Goal deleted successfully" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to delete tactic", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to delete goal", variant: "destructive" });
     }
   };
 
@@ -244,7 +244,7 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
         const rockRef = doc(db, 'companies', companyId, 'rocks', draggedRock.id);
         await updateDoc(rockRef, updates);
       } catch (error) {
-        toast({ title: "Error", description: "Failed to move tactic", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to move goal", variant: "destructive" });
       }
     }
     
@@ -309,7 +309,7 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
               <Input
                 value={editForm.text || ""}
                 onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
-                placeholder="Tactic description..."
+                placeholder="Goal description..."
                 className="h-7 text-sm"
                 autoFocus
                 data-testid={`input-edit-rock-text-${rock.id}`}
@@ -317,7 +317,7 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
               <Textarea
                 value={editForm.visionStatement || ""}
                 onChange={(e) => setEditForm({ ...editForm, visionStatement: e.target.value })}
-                placeholder="Tactic description..."
+                placeholder="Goal description..."
                 className="min-h-[60px] text-xs"
                 data-testid={`input-edit-rock-vision-${rock.id}`}
               />
@@ -479,7 +479,7 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
                   rocks.map(rock => renderRockCard(rock))
                 ) : (
                   <p className="text-xs text-muted-foreground italic text-center py-8">
-                    Drop tactics here
+                    Drop goals here
                   </p>
                 )}
               </div>
@@ -522,7 +522,7 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
                   rocks.map(rock => renderRockCard(rock))
                 ) : (
                   <p className="text-xs text-muted-foreground italic text-center py-8">
-                    Drop tactics here
+                    Drop goals here
                   </p>
                 )}
               </div>
@@ -539,10 +539,10 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <TargetIcon className="h-6 w-6" />
-            My Tactics
+            My Goals
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Track and manage your quarterly tactics and strategic objectives
+            Track and manage your quarterly goals and strategic objectives
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -605,7 +605,7 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
             data-testid="button-add-rock"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
-            Add Tactic
+            Add Goal
           </Button>
         </div>
       </div>
@@ -613,13 +613,13 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
       {addingRock && (
         <Card>
           <CardHeader className="border-b">
-            <CardTitle className="text-sm">Add New Tactic</CardTitle>
+            <CardTitle className="text-sm">Add New Goal</CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-4">
             <Input
               value={newRockForm.text}
               onChange={(e) => setNewRockForm({ ...newRockForm, text: e.target.value })}
-              placeholder="Describe your tactic..."
+              placeholder="Describe your goal..."
               autoFocus
               data-testid="input-new-rock-text"
             />
@@ -708,7 +708,7 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
             <div className="flex gap-2">
               <Button onClick={handleAddRock} data-testid="button-save-new-rock">
                 <CheckIcon className="h-4 w-4 mr-2" />
-                Save Tactic
+                Save Goal
               </Button>
               <Button variant="outline" onClick={() => setAddingRock(false)} data-testid="button-cancel-new-rock">
                 <XIcon className="h-4 w-4 mr-2" />

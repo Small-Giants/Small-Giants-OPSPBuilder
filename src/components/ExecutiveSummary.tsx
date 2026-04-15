@@ -380,7 +380,7 @@ export default function ExecutiveSummary({
       `Annual Strategic Objectives (${exec.prioritiesTop.length} shown):`,
       ...exec.prioritiesTop.map((p, idx) => `${idx + 1}. ${p.title || "-"}`),
       "",
-      `This Quarter (${currentQuarter}) tactics: ${quarterRocks.length} total, ${quarterComplete} complete (${quarterProgress}%)`,
+      `This Quarter (${currentQuarter}) goals: ${quarterRocks.length} total, ${quarterComplete} complete (${quarterProgress}%)`,
       `KPIs: ${exec.kpiCount}`,
     ];
 
@@ -484,7 +484,7 @@ export default function ExecutiveSummary({
               <div className="text-2xl font-bold">{priorities.length}</div>
             </div>
             <div className="bg-white/10 rounded-lg p-3">
-              <div className="text-xs text-white/70 mb-1">{currentQuarter} Tactics</div>
+              <div className="text-xs text-white/70 mb-1">{currentQuarter} Goals</div>
               <div className="text-2xl font-bold">{quarterRocks.length}</div>
             </div>
             <div className="bg-white/10 rounded-lg p-3">
@@ -518,7 +518,7 @@ export default function ExecutiveSummary({
           <Separator />
           <Step
             title="Set Quarterly Plan"
-            description={`Add tactics for ${currentQuarter} and assign owners.`}
+            description={`Add goals for ${currentQuarter} and assign owners.`}
             status={getStepStatus(completion.stepQuarter.done)}
             percent={completion.stepQuarter.pct}
             ctaLabel="Go to 1-Year"
@@ -666,7 +666,7 @@ export default function ExecutiveSummary({
                   <ArrowRightIcon className="h-4 w-4 ml-2" />
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => onNavigate("one-year")}>
-                  Link to tactics
+                  Link to goals
                   <ArrowRightIcon className="h-4 w-4 ml-2" />
                 </Button>
               </div>
@@ -696,7 +696,7 @@ export default function ExecutiveSummary({
             
             <div className="rounded-lg border border-border p-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-foreground">Tactics status</div>
+                <div className="text-sm font-medium text-foreground">Goals status</div>
                 <Badge variant="secondary">{quarterRocks.length}</Badge>
               </div>
               <div className="mt-2">
@@ -726,13 +726,13 @@ export default function ExecutiveSummary({
                 ))}
                 {quarterRocks.length === 0 && (
                   <div className="text-xs text-muted-foreground italic">
-                    No tactics yet for {currentQuarter}. Add tactics under your priorities/capabilities.
+                    No goals yet for {currentQuarter}. Add goals under your priorities/capabilities.
                   </div>
                 )}
               </div>
               <div className="mt-4">
                 <Button variant="outline" size="sm" onClick={() => onNavigate("rocks")} className="w-full">
-                  View tactics
+                  View goals
                   <ArrowRightIcon className="h-4 w-4 ml-2" />
                 </Button>
               </div>
@@ -771,7 +771,7 @@ export default function ExecutiveSummary({
               <div>
                 <h3 className="font-semibold text-lg">Run Your Weekly Meeting</h3>
                 <p className="text-white/80 text-sm">
-                  Review scoreboard, discuss tactics, capture issues, and assign action items.
+                  Review scoreboard, discuss goals, capture issues, and assign action items.
                 </p>
               </div>
             </div>

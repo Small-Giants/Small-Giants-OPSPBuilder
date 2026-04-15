@@ -65,13 +65,13 @@ const EXPORT_SECTIONS: ExportSection[] = [
     id: "capabilities",
     label: "Capabilities",
     icon: <TrendingUpIcon className="h-4 w-4" />,
-    description: "Key capabilities and their associated tactics",
+    description: "Key capabilities and their associated goals",
   },
   {
     id: "quarterly",
-    label: "Quarterly Tactics",
+    label: "Quarterly Goals",
     icon: <CalendarIcon className="h-4 w-4" />,
-    description: "Current quarter tactics and ownership",
+    description: "Current quarter goals and ownership",
   },
   {
     id: "kpis",
@@ -675,7 +675,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
           ${c.executiveChampion ? `<div style="font-size: 12px; color: #727272; margin-top: 8px;">Champion: ${c.executiveChampion}</div>` : ""}
           ${capabilityRocks.length > 0 ? `
           <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e9eb;">
-            <div style="font-size: 11px; color: #727272; margin-bottom: 8px;">Associated Tactics (${capabilityRocks.length})</div>
+            <div style="font-size: 11px; color: #727272; margin-bottom: 8px;">Associated Goals (${capabilityRocks.length})</div>
             ${capabilityRocks.slice(0, 5).map((r: any) => `
               <div style="font-size: 13px; padding: 4px 0; display: flex; align-items: flex-start; gap: 8px;">
                 <span style="width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: ${r.status === 'complete' ? '#22c55e' : r.status === 'in_progress' ? '#3b82f6' : '#94a3b8'};"></span>
@@ -700,7 +700,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
   </div>
   <div class="page">
     <div class="section">
-      <div class="section-title">${currentQuarter} ${selectedYear} Tactics</div>
+      <div class="section-title">${currentQuarter} ${selectedYear} Goals</div>
       <div class="card">
         ${quarterRocks
           .map((rock: any) => {

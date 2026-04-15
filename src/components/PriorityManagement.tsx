@@ -266,7 +266,7 @@ export default function PriorityManagement() {
 
   const handleAddRock = async (priorityId: string) => {
     if (!newRockForm.text.trim()) {
-      toast({ title: "Error", description: "Tactic text is required", variant: "destructive" });
+      toast({ title: "Error", description: "Goal text is required", variant: "destructive" });
       return;
     }
     
@@ -286,9 +286,9 @@ export default function PriorityManagement() {
       
       setAddingRockTo(null);
       setNewRockForm({ text: "", assigneeId: "", assigneeName: "", quarter: "Q1", year: selectedYear, priority: false });
-      toast({ title: "Success", description: "Tactic added" });
+      toast({ title: "Success", description: "Goal added" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to add tactic", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to add goal", variant: "destructive" });
     }
   };
 
@@ -318,18 +318,18 @@ export default function PriorityManagement() {
         priority: editRockForm.priority
       });
       setEditingRock(null);
-      toast({ title: "Success", description: "Tactic updated" });
+      toast({ title: "Success", description: "Goal updated" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update tactic", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to update goal", variant: "destructive" });
     }
   };
 
   const handleDeleteRock = async (rockId: string) => {
     try {
       await deleteDoc(doc(db, 'companies', companyId, 'rocks', rockId));
-      toast({ title: "Success", description: "Tactic deleted" });
+      toast({ title: "Success", description: "Goal deleted" });
     } catch (error) {
-       toast({ title: "Error", description: "Failed to delete tactic", variant: "destructive" });
+       toast({ title: "Error", description: "Failed to delete goal", variant: "destructive" });
     }
   };
   
@@ -628,10 +628,10 @@ export default function PriorityManagement() {
                                         {priority.rocks && priority.rocks.length > 0 ? (
                                             <Button variant="ghost" size="sm" onClick={() => setExpandedPriority(expandedPriority === priority.id ? null : priority.id)} className="text-xs p-0 h-auto hover:bg-transparent">
                                                 {expandedPriority === priority.id ? <ChevronDownIcon className="h-4 w-4 mr-1" /> : <ChevronRightIcon className="h-4 w-4 mr-1" />}
-                                                <span className="text-muted-foreground">{priority.rocks.length} tactics</span>
+                                                <span className="text-muted-foreground">{priority.rocks.length} goals</span>
                                             </Button>
-                                        ) : <span className="text-xs text-muted-foreground">No tactics yet</span>}
-                                        <Button variant="outline" size="sm" onClick={() => { setAddingRockTo(priority.id); setExpandedPriority(priority.id); }} className="text-xs h-6 px-2 border-dashed"><PlusIcon className="h-3 w-3 mr-1" />Add Tactic</Button>
+                                        ) : <span className="text-xs text-muted-foreground">No goals yet</span>}
+                                        <Button variant="outline" size="sm" onClick={() => { setAddingRockTo(priority.id); setExpandedPriority(priority.id); }} className="text-xs h-6 px-2 border-dashed"><PlusIcon className="h-3 w-3 mr-1" />Add Goal</Button>
                                     </div>
                                 </div>
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -652,14 +652,14 @@ export default function PriorityManagement() {
                                                         <div key={quarter} className="space-y-2">
                                                             <div className="flex items-center gap-2">
                                                                 <Badge variant="secondary" className="text-xs">{quarter}</Badge>
-                                                                <span className="text-xs text-muted-foreground">{quarterRocks.length} tactics</span>
+                                                                <span className="text-xs text-muted-foreground">{quarterRocks.length} goals</span>
                                                             </div>
                                                             {quarterRocks.map((rock: any) => (
                                                                 <div key={rock.id} className="flex items-start justify-between gap-2 p-2 rounded bg-muted/30">
                                                                     {editingRock === rock.id ? (
                                                                         // Edit Rock Form
                                                                         <div className="flex-1 space-y-2">
-                                                                            <Input value={editRockForm.text} onChange={(e) => setEditRockForm({...editRockForm, text: e.target.value})} placeholder="Tactic text" className="text-sm" />
+                                                                            <Input value={editRockForm.text} onChange={(e) => setEditRockForm({...editRockForm, text: e.target.value})} placeholder="Goal text" className="text-sm" />
                                                                             <UserCombobox
                                                                                 value={editRockForm.assigneeId || ""}
                                                                                 onValueChange={(v) => setEditRockForm({...editRockForm, assigneeId: v})}
@@ -690,7 +690,7 @@ export default function PriorityManagement() {
                                                             ))}
                                                             {addingRockTo === priority.id && quarter === newRockForm.quarter && (
                                                                 <div className="p-2 rounded bg-muted/50 space-y-2">
-                                                                    <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New tactic..." autoFocus className="text-sm" />
+                                                                    <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New goal..." autoFocus className="text-sm" />
                                                                     <UserCombobox
                                                                         value={newRockForm.assigneeId || ""}
                                                                         onValueChange={(v) => setNewRockForm({...newRockForm, assigneeId: v})}
@@ -709,14 +709,14 @@ export default function PriorityManagement() {
                                                     );
                                                 })
                                             })()}
-                                            {priority.rocks.length === 0 && addingRockTo !== priority.id && <div className="text-center py-4 text-muted-foreground text-sm">No tactics yet.</div>}
-                                            {addingRockTo !== priority.id && <Button variant="outline" size="sm" onClick={() => { setAddingRockTo(priority.id); setNewRockForm({...newRockForm, quarter: "Q1"}); }} className="w-full text-xs border-dashed"><PlusIcon className="h-3 w-3 mr-1" />Add Tactic</Button>}
+                                            {priority.rocks.length === 0 && addingRockTo !== priority.id && <div className="text-center py-4 text-muted-foreground text-sm">No goals yet.</div>}
+                                            {addingRockTo !== priority.id && <Button variant="outline" size="sm" onClick={() => { setAddingRockTo(priority.id); setNewRockForm({...newRockForm, quarter: "Q1"}); }} className="w-full text-xs border-dashed"><PlusIcon className="h-3 w-3 mr-1" />Add Goal</Button>}
                                         </div>
                                     )}
                                     {(!priority.rocks || priority.rocks.length === 0) && addingRockTo === priority.id && (
                                         <div className="mt-4 pl-4 border-l-2 border-muted">
                                              <div className="p-2 rounded bg-muted/50 space-y-2">
-                                                <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New tactic..." autoFocus className="text-sm" />
+                                                <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New goal..." autoFocus className="text-sm" />
                                                 <UserCombobox
                                                     value={newRockForm.assigneeId || ""}
                                                     onValueChange={(v) => setNewRockForm({...newRockForm, assigneeId: v})}
@@ -864,11 +864,11 @@ export default function PriorityManagement() {
                                               <ChevronRightIcon className="h-4 w-4 mr-1" />
                                             )}
                                             <span className="text-muted-foreground">
-                                              {capability.rocks.length} tactics
+                                              {capability.rocks.length} goals
                                             </span>
                                           </Button>
                                         ) : (
-                                          <span className="text-xs text-muted-foreground">No tactics yet</span>
+                                          <span className="text-xs text-muted-foreground">No goals yet</span>
                                         )}
                                         <Button
                                           variant="outline"
@@ -880,7 +880,7 @@ export default function PriorityManagement() {
                                           className="text-xs h-6 px-2 border-dashed"
                                         >
                                           <PlusIcon className="h-3 w-3 mr-1" />
-                                          Add Tactic
+                                          Add Goal
                                         </Button>
                                       </div>
                                     </div>
@@ -902,7 +902,7 @@ export default function PriorityManagement() {
                                                 <Input
                                                   value={editRockForm.text}
                                                   onChange={(e) => setEditRockForm({ ...editRockForm, text: e.target.value })}
-                                                  placeholder="Tactic text"
+                                                  placeholder="Goal text"
                                                   className="text-sm"
                                                 />
                                                 <UserCombobox
@@ -979,7 +979,7 @@ export default function PriorityManagement() {
                                         ))
                                       ) : (
                                         <div className="text-center py-4 text-muted-foreground text-sm">
-                                          No tactics yet. Click "Add Tactic" to get started.
+                                          No goals yet. Click "Add Goal" to get started.
                                         </div>
                                       )}
                                       
@@ -988,7 +988,7 @@ export default function PriorityManagement() {
                                           <Input
                                             value={newRockForm.text}
                                             onChange={(e) => setNewRockForm({ ...newRockForm, text: e.target.value })}
-                                            placeholder="Enter tactic text..."
+                                            placeholder="Enter goal text..."
                                             className="text-sm"
                                             autoFocus
                                           />
@@ -1066,7 +1066,7 @@ export default function PriorityManagement() {
                                           className="w-full text-xs border-dashed"
                                         >
                                           <PlusIcon className="h-3 w-3 mr-1" />
-                                          Add Tactic
+                                          Add Goal
                                         </Button>
                                       )}
                                     </div>

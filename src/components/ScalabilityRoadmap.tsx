@@ -565,7 +565,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
     if (totalFilteredRocks === 0) {
       return (
         <div className="mt-3 p-3 bg-muted rounded border border-border text-center">
-          <p className="text-xs text-muted-foreground">No tactics match the current filters</p>
+          <p className="text-xs text-muted-foreground">No goals match the current filters</p>
         </div>
       );
     }
@@ -573,7 +573,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
     return (
       <div className="mt-3 space-y-2">
         <div className="flex items-center gap-2 mb-2">
-          <h4 className="text-xs font-bold text-accent uppercase tracking-wider">Quarterly Tactics</h4>
+          <h4 className="text-xs font-bold text-accent uppercase tracking-wider">Quarterly Goals</h4>
           <Badge variant="secondary" className="text-[9px]">{totalFilteredRocks}</Badge>
         </div>
         {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map((quarter) => {
@@ -588,7 +588,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
                 <div className="flex items-center gap-2">
                   {quartersExpanded[quarter] ? <ChevronUp className="w-3 h-3 text-accent" /> : <ChevronDown className="w-3 h-3 text-accent" />}
                   <Badge variant="secondary" className="text-[10px] px-2 py-0 h-5">{quarter}</Badge>
-                  <span className="text-xs font-semibold text-foreground">{quarterRocks.length} {quarterRocks.length === 1 ? 'Tactic' : 'Tactics'}</span>
+                  <span className="text-xs font-semibold text-foreground">{quarterRocks.length} {quarterRocks.length === 1 ? 'Goal' : 'Goals'}</span>
                 </div>
               </button>
               {quartersExpanded[quarter] && (

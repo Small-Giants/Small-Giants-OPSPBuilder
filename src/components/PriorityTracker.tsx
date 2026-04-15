@@ -275,7 +275,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span>Progress {priority.rocks && priority.rocks.length > 0 ? '(from tactics)' : ''}</span>
+                  <span>Progress {priority.rocks && priority.rocks.length > 0 ? '(from goals)' : ''}</span>
                   <span className="font-medium">
                     {priority.rocks && priority.rocks.length > 0 
                       ? Math.round((priority.rocks.filter(r => r.status === 'complete').length / priority.rocks.length) * 100)
@@ -303,7 +303,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
 
               {priority.rocks && priority.rocks.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Associated Tactics:</h4>
+                  <h4 className="text-sm font-medium">Associated Goals:</h4>
                   <div className="space-y-1">
                     {priority.rocks.map((rock) => (
                       <div key={rock.id} className="flex items-center justify-between text-xs bg-muted p-2 rounded">

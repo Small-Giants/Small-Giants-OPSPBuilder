@@ -93,7 +93,7 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
       { id: 'weekly-meeting', label: getLabel('nav.weekly-meeting', 'Weekly Meeting'), icon: <UsersIcon className="w-4 h-4" /> },
       { id: 'priorities', label: getLabel('nav.priorities', 'Strategic Objective Execution'), icon: <ClipboardListIcon className="w-4 h-4" /> },
       { id: 'metrics', label: getLabel('nav.metrics', 'KPI Dashboard'), icon: <BarChart3Icon className="w-4 h-4" /> },
-      { id: 'rocks', label: getLabel('nav.rocks', 'My Tactics'), icon: <TargetIcon className="w-4 h-4" /> },
+      { id: 'rocks', label: getLabel('nav.rocks', 'My Goals'), icon: <TargetIcon className="w-4 h-4" /> },
       { id: 'assessments', label: getLabel('nav.agile-checklist', 'Agile Growth Checklist'), icon: <ClipboardListIcon className="w-4 h-4" /> },
       { id: 'just-get-it-done', label: getLabel('nav.just-get-it-done', 'Just Get It Done'), icon: <ClipboardListIcon className="w-4 h-4" /> },
       { id: 'personal', label: getLabel('nav.personal-dev', 'Personal Development'), icon: <BookOpenIcon className="w-4 h-4" />, disabled: true },

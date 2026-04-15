@@ -304,7 +304,7 @@ export default function OneYear() {
 
   const handleAddRock = async (priorityId: string) => {
     if (!newRockForm.text.trim()) {
-      toast({ title: "Error", description: "Tactic text is required", variant: "destructive" });
+      toast({ title: "Error", description: "Goal text is required", variant: "destructive" });
       return;
     }
     
@@ -324,9 +324,9 @@ export default function OneYear() {
       
       setAddingRockTo(null);
       setNewRockForm({ text: "", assigneeId: "", assigneeName: "", quarter: "Q1", year: selectedYear, priority: false });
-      toast({ title: "Success", description: "Tactic added" });
+      toast({ title: "Success", description: "Goal added" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to add tactic", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to add goal", variant: "destructive" });
     }
   };
 
@@ -344,18 +344,18 @@ export default function OneYear() {
         priority: editRockForm.priority
       });
       setEditingRock(null);
-      toast({ title: "Success", description: "Tactic updated" });
+      toast({ title: "Success", description: "Goal updated" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update tactic", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to update goal", variant: "destructive" });
     }
   };
 
   const handleDeleteRock = async (rockId: string) => {
     try {
       await deleteDoc(doc(db, 'companies', companyId, 'rocks', rockId));
-      toast({ title: "Success", description: "Tactic deleted" });
+      toast({ title: "Success", description: "Goal deleted" });
     } catch (error) {
-       toast({ title: "Error", description: "Failed to delete tactic", variant: "destructive" });
+       toast({ title: "Error", description: "Failed to delete goal", variant: "destructive" });
     }
   };
 
@@ -599,11 +599,11 @@ export default function OneYear() {
                                   <ChevronRightIcon className="h-4 w-4 mr-1" />
                                 )}
                                 <span className="text-muted-foreground">
-                                  {totalRocks} tactics
+                                  {totalRocks} goals
                                 </span>
                               </Button>
                             ) : (
-                              <span className="text-xs text-muted-foreground">No tactics yet</span>
+                              <span className="text-xs text-muted-foreground">No goals yet</span>
                             )}
                             <Button
                               variant="outline"
@@ -615,7 +615,7 @@ export default function OneYear() {
                               className="text-xs h-6 px-2 border-dashed border-border text-muted-foreground hover:bg-accent"
                             >
                               <PlusIcon className="h-3 w-3 mr-1" />
-                              Add Tactic
+                              Add Goal
                             </Button>
                           </div>
                         </div>
@@ -633,14 +633,14 @@ export default function OneYear() {
                                   <Badge className="bg-accent text-accent-foreground text-[10px] px-2 py-0 h-5">
                                     {quarter}
                                   </Badge>
-                                  <span className="text-xs text-muted-foreground">{quarterRocks.length} {quarterRocks.length === 1 ? 'tactic' : 'tactics'}</span>
+                                  <span className="text-xs text-muted-foreground">{quarterRocks.length} {quarterRocks.length === 1 ? 'goal' : 'goals'}</span>
                                 </div>
                                 
                                 {quarterRocks.map((rock: any) => (
                                   <div key={rock.id} className="flex items-start justify-between gap-2 p-2 rounded bg-background">
                                     {editingRock === rock.id ? (
                                       <div className="flex-1 space-y-2">
-                                        <Input value={editRockForm.text} onChange={(e) => setEditRockForm({...editRockForm, text: e.target.value})} placeholder="Tactic text" className="bg-background border-border text-foreground text-sm" />
+                                        <Input value={editRockForm.text} onChange={(e) => setEditRockForm({...editRockForm, text: e.target.value})} placeholder="Goal text" className="bg-background border-border text-foreground text-sm" />
                                         <UserCombobox
                                             value={editRockForm.assigneeId || ""}
                                             onValueChange={(v) => setEditRockForm({...editRockForm, assigneeId: v})}
@@ -695,7 +695,7 @@ export default function OneYear() {
                                 
                                 {addingRockTo === priority.id && quarter === newRockForm.quarter && (
                                   <div className="p-2 rounded bg-muted space-y-2 border border-border">
-                                    <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New tactic..." autoFocus className="bg-background border-border text-foreground text-sm" />
+                                    <Input value={newRockForm.text} onChange={(e) => setNewRockForm({...newRockForm, text: e.target.value})} placeholder="New goal..." autoFocus className="bg-background border-border text-foreground text-sm" />
                                     <UserCombobox
                                         value={newRockForm.assigneeId || ""}
                                         onValueChange={(v) => setNewRockForm({...newRockForm, assigneeId: v})}
@@ -727,7 +727,7 @@ export default function OneYear() {
                               className="w-full text-xs border-dashed border-border text-muted-foreground hover:bg-accent"
                             >
                               <PlusIcon className="h-3 w-3 mr-1" />
-                              Add Tactic
+                              Add Goal
                             </Button>
                           )}
                         </div>

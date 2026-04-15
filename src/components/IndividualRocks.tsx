@@ -123,9 +123,9 @@ export default function IndividualRocks() {
       });
       
       setEditingRock(null);
-      toast({ title: "Success", description: "Tactic updated successfully" });
+      toast({ title: "Success", description: "Goal updated successfully" });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update tactic", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to update goal", variant: "destructive" });
     }
   };
 
@@ -166,10 +166,10 @@ export default function IndividualRocks() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl text-foreground">
             <UserIcon className="w-6 h-6" />
-            My Tactics - {user?.name || user?.email || 'Current User'}
+            My Goals - {user?.name || user?.email || 'Current User'}
           </CardTitle>
           <div className="text-sm text-muted-foreground">
-            Total tactics assigned to you: {myRocks.length}
+            Total goals assigned to you: {myRocks.length}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -187,7 +187,7 @@ export default function IndividualRocks() {
                     <FlameIcon className="w-5 h-5 text-accent" />
                     <span className="font-semibold text-lg text-foreground">{quarter}</span>
                     <Badge variant="secondary">
-                      {quarterRocks.length} tactic{quarterRocks.length !== 1 ? 's' : ''}
+                      {quarterRocks.length} goal{quarterRocks.length !== 1 ? 's' : ''}
                     </Badge>
                   </div>
                   {expandedQuarters[quarter] ? (
@@ -206,7 +206,7 @@ export default function IndividualRocks() {
                             <Input
                               value={editForm.text || ""}
                               onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
-                              placeholder="Tactic description"
+                              placeholder="Goal description"
                             />
                             
                             <div className="grid grid-cols-2 gap-3">
@@ -297,7 +297,7 @@ export default function IndividualRocks() {
           
           {myRocks.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-muted-foreground text-lg">No tactics assigned to you yet.</p>
+              <p className="text-muted-foreground text-lg">No goals assigned to you yet.</p>
             </div>
           )}
         </CardContent>
