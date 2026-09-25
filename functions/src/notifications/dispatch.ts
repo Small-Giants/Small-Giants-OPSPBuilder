@@ -64,6 +64,9 @@ export async function dispatch(intents: NotificationIntent[]): Promise<number> {
             body: intent.body,
             ctaLabel: "Open the OPSP",
             ctaUrl: url,
+            // A retried trigger invocation reuses the key, so Resend collapses
+            // it instead of sending the same notice twice.
+            idempotencyKey: `${recipientId}:${intent.dedupeKey}`,
           });
         }
 

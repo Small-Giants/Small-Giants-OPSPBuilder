@@ -14,18 +14,24 @@ a private token, and sending email and push notifications.
 
    ```
    firebase functions:secrets:set CLICKUP_API_TOKEN
-   firebase functions:secrets:set SENDGRID_API_KEY
+   firebase functions:secrets:set RESEND_API_KEY
    ```
 
    A function only receives a secret if it declares it in its `secrets` option,
    so adding a secret here does not expose it to every function.
 
-3. **Set the non-secret config** if the defaults in `src/config.ts` are wrong for
+3. **Verify the sending domain in Resend.** Email goes out through Resend, which
+   rejects any `from` address on an unverified domain with a 403. Add
+   `smallgiantsonline.com` under Domains in the Resend dashboard and publish the
+   DKIM and SPF records it gives you before expecting mail to arrive.
+
+4. **Set the non-secret config** if the defaults in `src/config.ts` are wrong for
    your environment, via `functions/.env`:
 
    ```
    APP_BASE_URL=https://opsp.smallgiantsonline.com
    EMAIL_FROM=opsp@smallgiantsonline.com
+   EMAIL_FROM_NAME=Small Giants OPSP
    ```
 
 ## Local development

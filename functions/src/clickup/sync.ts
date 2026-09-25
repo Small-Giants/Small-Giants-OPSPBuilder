@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions";
-import { CLICKUP_API_TOKEN, DEFAULT_COMPANY_ID, SENDGRID_API_KEY } from "../config";
+import { CLICKUP_API_TOKEN, DEFAULT_COMPANY_ID, RESEND_API_KEY } from "../config";
 import { dispatch } from "../notifications/dispatch";
 import { requireAdmin, requireCaller } from "../auth";
 import { db } from "../firestore";
@@ -29,7 +29,7 @@ export interface SyncResponse {
 }
 
 export const syncClickUp = onCall<SyncRequest, Promise<SyncResponse>>(
-  { secrets: [CLICKUP_API_TOKEN, SENDGRID_API_KEY] },
+  { secrets: [CLICKUP_API_TOKEN, RESEND_API_KEY] },
   async (request) => {
     const companyId = DEFAULT_COMPANY_ID;
     const caller = await requireCaller(request, companyId);

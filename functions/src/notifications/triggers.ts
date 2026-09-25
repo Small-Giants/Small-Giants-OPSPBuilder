@@ -1,7 +1,7 @@
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions";
-import { DEFAULT_COMPANY_ID, SENDGRID_API_KEY } from "../config";
+import { DEFAULT_COMPANY_ID, RESEND_API_KEY } from "../config";
 import { db } from "../firestore";
 import { dispatch } from "./dispatch";
 import {
@@ -17,7 +17,7 @@ import type { NotificationIntent } from "./types";
 export const onGoalWritten = onDocumentWritten(
   {
     document: "companies/{companyId}/goals/{goalId}",
-    secrets: [SENDGRID_API_KEY],
+    secrets: [RESEND_API_KEY],
   },
   async (event) => {
     const before = event.data?.before.exists
@@ -55,7 +55,7 @@ export const quarterDeadlineReminders = onSchedule(
   {
     schedule: "0 9 * * 1-5",
     timeZone: "America/Phoenix",
-    secrets: [SENDGRID_API_KEY],
+    secrets: [RESEND_API_KEY],
   },
   async () => {
     const now = new Date();
@@ -77,7 +77,7 @@ export const weeklyDigest = onSchedule(
   {
     schedule: "0 8 * * 1",
     timeZone: "America/Phoenix",
-    secrets: [SENDGRID_API_KEY],
+    secrets: [RESEND_API_KEY],
   },
   async () => {
     const now = new Date();

@@ -9,12 +9,13 @@ Order of operations for going live and retiring Workleap.
       alert at the same time.
 - [ ] Store the credentials in Secret Manager:
       `firebase functions:secrets:set CLICKUP_API_TOKEN` and
-      `firebase functions:secrets:set SENDGRID_API_KEY`.
+      `firebase functions:secrets:set RESEND_API_KEY`.
 - [ ] Add the web push key as `NEXT_PUBLIC_FIREBASE_VAPID_KEY` in `.env.local`
       and in the hosting build environment. Without it the push toggle stays
       disabled and explains why, rather than failing at runtime.
-- [ ] Verify a SendGrid sender identity for the `EMAIL_FROM` address, or every
-      email silently bounces.
+- [ ] Verify the `EMAIL_FROM` domain in the Resend dashboard and publish the
+      DKIM and SPF records. Resend returns a 403 for any unverified sending
+      domain, so nothing arrives until this is done.
 - [ ] `npm run verify` passes: typecheck, functions build, app tests, functions
       tests.
 - [ ] `npm run test:rules` passes. It needs a JDK on PATH for the Firestore
