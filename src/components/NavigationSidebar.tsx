@@ -29,6 +29,7 @@ import {
   CalendarIcon,
   Clock3Icon,
   ShieldIcon,
+  PlugZapIcon,
   MailIcon,
   CopyIcon,
   LogOutIcon,
@@ -87,6 +88,13 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
       { id: 'swot', label: 'SWOT Analysis', icon: <TrendingUpIcon className="w-4 h-4" /> },
     ];
 
+    const goalItems: NavigationItem[] = [
+      { id: 'goals', label: 'Company Goals', icon: <TargetIcon className="w-4 h-4" /> },
+      { id: 'department-goals', label: 'Department Goals', icon: <BuildingIcon className="w-4 h-4" /> },
+      { id: 'my-goals', label: 'My Goals', icon: <UserIcon className="w-4 h-4" /> },
+      { id: 'team-goals', label: 'My Team', icon: <UsersIcon className="w-4 h-4" /> },
+    ];
+
     const executeItems: NavigationItem[] = [
       { id: 'weekly-meeting', label: 'Weekly Meeting', icon: <UsersIcon className="w-4 h-4" /> },
       { id: 'priorities', label: 'Priority Execution', icon: <ClipboardListIcon className="w-4 h-4" /> },
@@ -99,11 +107,16 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
 
     const adminItems: NavigationItem[] =
       currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')
-        ? [{ id: 'admin', label: 'Admin Panel', icon: <ShieldIcon className="w-4 h-4" /> }]
+        ? [
+            { id: 'admin', label: 'Admin Panel', icon: <ShieldIcon className="w-4 h-4" /> },
+            { id: 'departments', label: 'Departments', icon: <BuildingIcon className="w-4 h-4" /> },
+            { id: 'integrations', label: 'Integrations', icon: <PlugZapIcon className="w-4 h-4" /> },
+          ]
         : [];
 
     return [
       { title: 'Plan', items: planItems },
+      { title: 'Goals', items: goalItems },
       { title: 'Execute', items: executeItems },
       ...(adminItems.length ? [{ title: 'Admin', items: adminItems }] : []),
     ];

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,36 +11,17 @@ import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, type Unsubscribe } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
-
-interface Priority {
-  id: string;
-  title: string;
-  description: string;
-  owner: string;
-  dueDate: string;
-  status: 'not-started' | 'in-progress' | 'completed' | 'blocked';
-  progress: number;
-  evidence: string;
-  subPriorities: SubPriority[];
-  rocks?: Rock[];
-  type?: 'priority' | 'capability';
-}
-
-interface Rock {
-  id: string;
-  text: string;
-  quarter: string;
-  status: 'backlog' | 'ready' | 'in_progress' | 'complete';
-  progress: number;
-  assignee?: string;
-  assigneeName?: string;
-}
-
-interface SubPriority {
-  id: string;
-  title: string;
-  completed: boolean;
-}
+import {
+  PRIORITY_STATUS_COLORS,
+  PRIORITY_STATUS_LABELS,
+  isRockComplete,
+  normalizeRockStatus,
+  rockLabel,
+  toQuarter,
+  type Priority,
+  type PriorityStatus,
+  type Rock,
+} from "@/types";
 
 interface PriorityTrackerProps {
   priorities?: Priority[]; // Kept for backward compatibility if needed, but internal state preferred
@@ -53,6 +34,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
   const { toast } = useToast();
   const { companyId, selectedYear } = usePlanYear();
   const [priorities, setPriorities] = useState<Priority[]>([]);
+  const [rocks, setRocks] = useState<Rock[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPriority, setNewPriority] = useState<Omit<Priority, 'id'>>({
@@ -96,24 +78,56 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
     return () => unsubscribe();
   }, [companyId, isCapabilityView, selectedYear]);
 
-  const getStatusColor = (status: Priority['status']) => {
-    const colors = {
-      'not-started': 'bg-gray-500',
-      'in-progress': 'bg-blue-500',
-      'completed': 'bg-green-500',
-      'blocked': 'bg-red-500'
-    };
-    return colors[status];
-  };
+  useEffect(() => {
+    const rocksRef = collection(db, 'companies', companyId, 'rocks');
 
-  const getStatusLabel = (status: Priority['status']) => {
-    const labels = {
-      'not-started': 'Not Started',
-      'in-progress': 'In Progress',
-      'completed': 'Completed',
-      'blocked': 'Blocked'
-    };
-    return labels[status];
+    const unsubscribe = onSnapshot(
+      rocksRef,
+      (snapshot) => {
+        const items: Rock[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as any;
+          const year = typeof data.year === "number" ? data.year : LEGACY_PLAN_YEAR;
+          if (year !== selectedYear) return;
+          items.push({
+            ...data,
+            id: d.id,
+            status: normalizeRockStatus(data.status),
+            quarter: toQuarter(data.quarter),
+          });
+        });
+        setRocks(items);
+      },
+      () => {
+        setRocks([]);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [companyId, selectedYear]);
+
+  const prioritiesWithRocks = useMemo(
+    () =>
+      priorities.map((priority) => ({
+        ...priority,
+        rocks: rocks.filter((rock) => rock.priorityId === priority.id),
+      })),
+    [priorities, rocks]
+  );
+
+  const getStatusColor = (status?: PriorityStatus) =>
+    PRIORITY_STATUS_COLORS[status ?? 'not-started'];
+
+  const getStatusLabel = (status?: PriorityStatus) =>
+    PRIORITY_STATUS_LABELS[status ?? 'not-started'];
+
+  /** Rocks are the source of truth for progress when a priority has any. */
+  const getProgress = (priority: Priority) => {
+    const linked = priority.rocks ?? [];
+    if (linked.length === 0) return priority.progress ?? 0;
+    return Math.round(
+      (linked.filter(isRockComplete).length / linked.length) * 100
+    );
   };
 
   const handleAddPriority = async () => {
@@ -149,7 +163,8 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
   const handleUpdatePriority = async (priority: Priority) => {
     try {
       const priorityRef = doc(db, 'companies', companyId, 'priorities', priority.id);
-      const { id, ...data } = priority;
+      // `rocks` is joined at read time and must not be written back.
+      const { id, rocks: _rocks, ...data } = priority;
       await updateDoc(priorityRef, data);
     } catch (error) {
       toast({ title: "Error", description: "Failed to update item", variant: "destructive" });
@@ -157,13 +172,13 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
   };
 
   const updateSubPriority = (priority: Priority, subId: string, completed: boolean) => {
-    const updatedSubPriorities = priority.subPriorities.map(sub =>
+    const updatedSubPriorities = (priority.subPriorities ?? []).map(sub =>
       sub.id === subId ? { ...sub, completed } : sub
     );
     const completedCount = updatedSubPriorities.filter(sub => sub.completed).length;
     const newProgress = updatedSubPriorities.length > 0 
       ? Math.round((completedCount / updatedSubPriorities.length) * 100)
-      : priority.progress;
+      : priority.progress ?? 0;
 
     handleUpdatePriority({
       ...priority,
@@ -251,7 +266,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {priorities.map((priority) => (
+        {prioritiesWithRocks.map((priority) => (
           <Card key={priority.id} className="hover-elevate" data-testid={`card-priority-${priority.id}`}>
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -271,19 +286,10 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span>Progress {priority.rocks && priority.rocks.length > 0 ? '(from rocks)' : ''}</span>
-                  <span className="font-medium">
-                    {priority.rocks && priority.rocks.length > 0 
-                      ? Math.round((priority.rocks.filter(r => r.status === 'complete').length / priority.rocks.length) * 100)
-                      : priority.progress}%
-                  </span>
+                  <span>Progress {priority.rocks.length > 0 ? '(from rocks)' : ''}</span>
+                  <span className="font-medium">{getProgress(priority)}%</span>
                 </div>
-                <Progress 
-                  value={priority.rocks && priority.rocks.length > 0 
-                    ? Math.round((priority.rocks.filter(r => r.status === 'complete').length / priority.rocks.length) * 100)
-                    : priority.progress} 
-                  className="h-2" 
-                />
+                <Progress value={getProgress(priority)} className="h-2" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -297,7 +303,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
                 </div>
               </div>
 
-              {priority.rocks && priority.rocks.length > 0 && (
+              {priority.rocks.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Associated Rocks:</h4>
                   <div className="space-y-1">
@@ -309,8 +315,8 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
                             rock.status === 'in_progress' ? 'bg-blue-500' :
                             rock.status === 'ready' ? 'bg-yellow-500' : 'bg-gray-400'
                           }`} />
-                          <span className={rock.status === 'complete' ? 'line-through' : ''}>
-                            {rock.text}
+                          <span className={isRockComplete(rock) ? 'line-through' : ''}>
+                            {rockLabel(rock)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -325,10 +331,10 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
                 </div>
               )}
 
-              {priority.subPriorities.length > 0 && (
+              {(priority.subPriorities?.length ?? 0) > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Sub-priorities:</h4>
-                  {priority.subPriorities.map((sub) => (
+                  {priority.subPriorities!.map((sub) => (
                     <div key={sub.id} className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -358,8 +364,8 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
               <div className="flex gap-2 pt-2 border-t">
                 <Select
                   value={priority.status}
-                  onValueChange={(value: Priority['status']) =>
-                    handleUpdatePriority({ ...priority, status: value })
+                  onValueChange={(value) =>
+                    handleUpdatePriority({ ...priority, status: value as PriorityStatus })
                   }
                 >
                   <SelectTrigger className="flex-1" data-testid={`select-status-${priority.id}`}>

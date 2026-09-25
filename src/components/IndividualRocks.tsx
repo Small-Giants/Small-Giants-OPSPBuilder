@@ -11,18 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
 import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, updateDoc, query, where, type Unsubscribe } from "firebase/firestore";
-
-interface Rock {
-  id: string;
-  text: string;
-  status: 'not_started' | 'ready' | 'in_progress' | 'complete';
-  quarter: string;
-  year: number;
-  priority: boolean;
-  assigneeId?: string;
-  assigneeName?: string;
-  title?: string; // legacy support
-}
+import { toQuarter, type Rock } from "@/types";
 
 export default function IndividualRocks() {
   const { toast } = useToast();
@@ -218,7 +207,7 @@ export default function IndividualRocks() {
                             <div className="grid grid-cols-2 gap-3">
                               <Select
                                 value={editForm.quarter}
-                                onValueChange={(value) => setEditForm({ ...editForm, quarter: value })}
+                                onValueChange={(value) => setEditForm({ ...editForm, quarter: toQuarter(value) })}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Quarter" />

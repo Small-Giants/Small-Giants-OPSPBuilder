@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,9 @@ import { ActionMenu } from "@/components/ui/ActionMenu";
 import { db } from "@/lib/firebase";
 import { doc, collection, onSnapshot, query, where, type Unsubscribe } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import { Progress } from "@/components/ui/progress";
+import { useGoals } from "@/hooks/use-goals";
+import { calculateAnnualRollup } from "@/lib/goal-progress";
 
 interface ScalabilityRoadmapProps {
   data?: any;
@@ -94,6 +97,19 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
     
     teamMembers: [] as any[]
   });
+
+  const { allGoals, childrenOf } = useGoals();
+
+  const annualGoalRollups = useMemo(
+    () =>
+      allGoals
+        .filter((g) => g.level === "annual")
+        .map((goal) => ({
+          goal,
+          rollup: calculateAnnualRollup(childrenOf.get(goal.id) ?? []),
+        })),
+    [allGoals, childrenOf]
+  );
 
   const [sectionsExpanded, setSectionsExpanded] = useState({
     foundation: true,
@@ -727,6 +743,33 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
           <Card className="bg-card border-border">
             <CardHeader className="bg-muted border-b border-border"><CardTitle className="text-sm text-foreground font-semibold">Annual Priorities</CardTitle></CardHeader>
             <CardContent className="pt-4">{renderList(roadmapData.oneYear.annualPriorities, true)}{renderQuarterlyRocks('priorities')}</CardContent>
+          </Card>
+          <Card className="bg-card border-border hover:border-accent/40 transition-all cursor-pointer group" onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'goals' }))}>
+            <CardHeader className="bg-muted border-b border-border">
+              <CardTitle className="text-sm text-foreground font-semibold flex items-center justify-between">
+                Goal Tree
+                <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100">(Click to manage)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {annualGoalRollups.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No annual goals yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {annualGoalRollups.map(({ goal, rollup }) => (
+                    <div key={goal.id}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm text-foreground truncate">{goal.title}</span>
+                        <Badge variant={rollup.met ? "default" : "secondary"} className="text-[10px] shrink-0">
+                          {rollup.childrenMet}/{rollup.childCount}
+                        </Badge>
+                      </div>
+                      <Progress value={rollup.percent} className="h-1.5 mt-1" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
           </Card>
           <Card className="bg-card border-border">
             <CardHeader className="bg-muted border-b border-border"><CardTitle className="text-sm text-foreground font-semibold">Critical Numbers</CardTitle></CardHeader>

@@ -18,6 +18,9 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import { useGoals } from "@/hooks/use-goals";
+import { calculateAnnualRollup } from "@/lib/goal-progress";
+import { type Metric, type Priority, type Rock } from "@/types";
 import {
   ArrowRightIcon,
   CheckCircle2Icon,
@@ -60,35 +63,6 @@ type OneYearDocData = {
   criticalNumbers?: Record<string, { label?: string; value?: string }>;
 };
 
-type Priority = {
-  id: string;
-  title?: string;
-  description?: string;
-  ownerName?: string;
-  dueDate?: string;
-};
-
-type Rock = {
-  id: string;
-  text?: string;
-  quarter?: string;
-  status?: "not_started" | "ready" | "in_progress" | "complete";
-  year?: number | null;
-  priority?: boolean;
-};
-
-type Metric = {
-  id: string;
-  name?: string;
-  unit?: string;
-  currentValue?: number;
-  targetValue?: number;
-  trend?: "up" | "down" | "stable";
-  data?: Array<{ date: string; value: number }>;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
 function isFilled(v: unknown) {
   return typeof v === "string" ? v.trim().length > 0 : Boolean(v);
 }
@@ -114,6 +88,7 @@ export default function ExecutiveSummary({
 }) {
   const { toast } = useToast();
   const { companyId, selectedYear } = usePlanYear();
+  const { allGoals, childrenOf } = useGoals();
 
   const [foundation, setFoundation] = useState<FoundationData | null>(null);
   const [roadmapMain, setRoadmapMain] = useState<RoadmapMainData | null>(null);
@@ -335,6 +310,20 @@ export default function ExecutiveSummary({
     };
   }, [foundation, oneYear, roadmapMain, priorities, metrics.length]);
 
+  const goalSummary = useMemo(() => {
+    const annual = allGoals.filter((g) => g.level === "annual");
+    const rollups = annual.map((goal) => ({
+      goal,
+      rollup: calculateAnnualRollup(childrenOf.get(goal.id) ?? []),
+    }));
+    return {
+      rollups,
+      departmentCount: allGoals.filter((g) => g.level === "department").length,
+      individualCount: allGoals.filter((g) => g.level === "individual").length,
+      atRisk: rollups.filter((r) => !r.rollup.met && r.rollup.childCount > 0).length,
+    };
+  }, [allGoals, childrenOf]);
+
   const completion = useMemo(() => {
     const foundationDone =
       isFilled(foundation?.corePurpose) &&
@@ -478,10 +467,16 @@ export default function ExecutiveSummary({
           </div>
           
           {/* Quick Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
             <div className="bg-white/10 rounded-lg p-3">
               <div className="text-xs text-white/70 mb-1">Annual Priorities</div>
               <div className="text-2xl font-bold">{priorities.length}</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-3">
+              <div className="text-xs text-white/70 mb-1">Goals Tracked</div>
+              <div className="text-2xl font-bold">
+                {goalSummary.departmentCount + goalSummary.individualCount}
+              </div>
             </div>
             <div className="bg-white/10 rounded-lg p-3">
               <div className="text-xs text-white/70 mb-1">{currentQuarter} Rocks</div>
@@ -667,6 +662,50 @@ export default function ExecutiveSummary({
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => onNavigate("one-year")}>
                   Link to rocks
+                  <ArrowRightIcon className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border p-4">
+              <div className="flex items-center justify-between">
+                <div className="font-medium text-foreground">Goal rollup</div>
+                {goalSummary.atRisk > 0 && (
+                  <Badge variant="destructive">{goalSummary.atRisk} at risk</Badge>
+                )}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                An annual priority only counts as met when every department goal
+                under it is met.
+              </div>
+              <div className="mt-3 space-y-3">
+                {goalSummary.rollups.length === 0 ? (
+                  <div className="text-sm text-muted-foreground italic">
+                    No annual goals yet. Build the tree under Company Goals.
+                  </div>
+                ) : (
+                  goalSummary.rollups.map(({ goal, rollup }) => (
+                    <div key={goal.id}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-sm text-foreground truncate">{goal.title}</div>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "shrink-0 text-[11px]",
+                            rollup.met && "bg-green-500/10 text-green-700 dark:text-green-400"
+                          )}
+                        >
+                          {rollup.childrenMet}/{rollup.childCount} met
+                        </Badge>
+                      </div>
+                      <Progress value={rollup.percent} className="mt-1.5" />
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="mt-4">
+                <Button variant="outline" size="sm" onClick={() => onNavigate("goals")}>
+                  Open Company Goals
                   <ArrowRightIcon className="h-4 w-4 ml-2" />
                 </Button>
               </div>

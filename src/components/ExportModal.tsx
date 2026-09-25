@@ -15,6 +15,8 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { usePlanYear } from "@/contexts/PlanYearContext";
+import { useGoals } from "@/hooks/use-goals";
+import { calculateAnnualRollup, calculateGoalProgress } from "@/lib/goal-progress";
 import { db } from "@/lib/firebase";
 import { doc, collection, onSnapshot, query, where } from "firebase/firestore";
 import {
@@ -74,12 +76,27 @@ const EXPORT_SECTIONS: ExportSection[] = [
     description: "Current quarter rocks and ownership",
   },
   {
+    id: "goals",
+    label: "Goal Tree",
+    icon: <TargetIcon className="h-4 w-4" />,
+    description: "Annual priorities, department goals, and quarterly targets",
+  },
+  {
     id: "kpis",
     label: "KPI Scoreboard",
     icon: <BarChart3Icon className="h-4 w-4" />,
     description: "Key metrics, targets, and current performance",
   },
 ];
+
+/** Goal titles and notes are free text, and this HTML is injected into a print window. */
+function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 function getCurrentQuarter(): string {
   const month = new Date().getMonth();
@@ -107,6 +124,12 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
   const [metrics, setMetrics] = useState<any[]>([]);
 
   const currentQuarter = useMemo(() => getCurrentQuarter(), []);
+
+  const { allGoals, childrenOf } = useGoals();
+  const annualGoals = useMemo(
+    () => allGoals.filter((g) => g.level === "annual"),
+    [allGoals]
+  );
 
   // Fetch all data when modal opens
   useEffect(() => {
@@ -692,6 +715,75 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     </div>
 `;
       }
+    }
+
+    // Goal Tree Section
+    if (selectedSections.includes("goals") && annualGoals.length > 0) {
+      content += `
+  </div>
+  <div class="page">
+    <div class="section">
+      <div class="section-title">${selectedYear} Goal Tree</div>
+      ${annualGoals
+        .map((annual) => {
+          const departmentGoals = childrenOf.get(annual.id) ?? [];
+          const rollup = calculateAnnualRollup(departmentGoals);
+          return `
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-title" style="display: flex; justify-content: space-between; gap: 8px;">
+            <span>${esc(annual.title)}</span>
+            <span style="font-size: 12px; color: ${rollup.met ? "#22c55e" : "#727272"};">
+              ${rollup.childrenMet}/${rollup.childCount} department goals met • ${rollup.percent}%
+            </span>
+          </div>
+          ${annual.description ? `<div class="card-content">${esc(annual.description)}</div>` : ""}
+          ${
+            departmentGoals.length === 0
+              ? `<div style="font-size: 12px; color: #b45309; margin-top: 8px;">No department goals linked, so this priority cannot be met.</div>`
+              : departmentGoals
+                  .map((child) => {
+                    const progress = calculateGoalProgress(child);
+                    const individualGoals = childrenOf.get(child.id) ?? [];
+                    const quarters = child.quarters
+                      .map(
+                        (q) =>
+                          `<span style="display: inline-block; margin-right: 10px;">${q.quarter}: ${
+                            q.target == null ? "-" : esc(q.target)
+                          }${q.actual == null ? "" : ` / ${esc(q.actual)}`}${q.complete ? " ✓" : ""}</span>`
+                      )
+                      .join("");
+                    return `
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e9eb;">
+            <div style="font-size: 13px; display: flex; justify-content: space-between; gap: 8px;">
+              <span>${esc(child.title)}</span>
+              <span style="color: #727272;">${progress.percent}%</span>
+            </div>
+            <div style="font-size: 11px; color: #727272; margin-top: 4px;">
+              ${child.ownerName ? `Owner: ${esc(child.ownerName)} • ` : ""}${quarters}
+            </div>
+            ${
+              individualGoals.length > 0
+                ? `<div style="font-size: 11px; color: #727272; margin-top: 6px; padding-left: 12px;">
+              ${individualGoals
+                .map(
+                  (ic) =>
+                    `<div>• ${esc(ic.title)}${ic.ownerName ? ` (${esc(ic.ownerName)})` : ""}</div>`
+                )
+                .join("")}
+            </div>`
+                : ""
+            }
+          </div>
+        `;
+                  })
+                  .join("")
+          }
+        </div>
+      `;
+        })
+        .join("")}
+    </div>
+`;
     }
 
     // Quarterly Rocks Section

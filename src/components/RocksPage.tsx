@@ -30,25 +30,7 @@ import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, type Unsubscribe } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
 
-interface Rock {
-  id: string;
-  text: string;
-  status: 'not_started' | 'ready' | 'in_progress' | 'complete';
-  quarter: string;
-  category: string;
-  progress: number;
-  executiveSponsor?: string;
-  responsible?: string;
-  accountable?: string;
-  startDate?: string;
-  projectManagement?: boolean;
-  bloomGrowthVisibility?: boolean;
-  visionStatement?: string;
-  assigneeId?: string;
-  assigneeName?: string;
-  year?: number;
-  companyId?: string;
-}
+import { type Rock } from "@/types";
 
 interface RocksPageProps {
   currentUserId?: string;
@@ -299,7 +281,7 @@ export default function RocksPage({ currentUserId = '1', currentUserName = 'Curr
           )}
           <div className="flex-1">
             <div className={`flex items-center gap-2 ${isGridMode ? 'mb-2' : 'mb-1'}`}>
-              <Badge className={`${getCategoryColor(rock.category)} ${isGridMode ? 'text-xs' : ''}`}>
+              <Badge className={`${getCategoryColor(rock.category ?? '')} ${isGridMode ? 'text-xs' : ''}`}>
                 {rock.category}
               </Badge>
               <span className="text-xs text-muted-foreground">{rock.quarter}</span>

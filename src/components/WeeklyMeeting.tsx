@@ -25,6 +25,10 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import { useGoals } from "@/hooks/use-goals";
+import { GoalCard } from "@/components/goals/GoalCard";
+import { AnnualRollup } from "@/components/goals/GoalProgress";
+import { type Metric, type Rock } from "@/types";
 import {
   PlayIcon,
   PauseIcon,
@@ -42,9 +46,10 @@ import {
   LightbulbIcon,
   UsersIcon,
   ClockIcon,
+  TrendingUpIcon,
 } from "lucide-react";
 
-type MeetingStep = "scoreboard" | "rocks" | "issues" | "decisions" | "todos";
+type MeetingStep = "scoreboard" | "rocks" | "goals" | "issues" | "decisions" | "todos";
 
 interface Issue {
   id: string;
@@ -80,26 +85,6 @@ interface Meeting {
   createdAt: string;
 }
 
-interface Metric {
-  id: string;
-  name: string;
-  unit: string;
-  currentValue: number;
-  targetValue: number;
-  trend: "up" | "down" | "stable";
-  owner?: string;
-  lastUpdated?: string;
-}
-
-interface Rock {
-  id: string;
-  text: string;
-  status: "not_started" | "ready" | "in_progress" | "complete";
-  quarter: string;
-  assigneeName?: string;
-  progress?: number;
-}
-
 function getCurrentQuarter(): string {
   const month = new Date().getMonth();
   if (month <= 2) return "Q1";
@@ -111,6 +96,7 @@ function getCurrentQuarter(): string {
 const STEPS: { key: MeetingStep; label: string; icon: React.ReactNode }[] = [
   { key: "scoreboard", label: "Scoreboard", icon: <BarChart3Icon className="h-4 w-4" /> },
   { key: "rocks", label: "Rocks Review", icon: <TargetIcon className="h-4 w-4" /> },
+  { key: "goals", label: "Goals", icon: <TrendingUpIcon className="h-4 w-4" /> },
   { key: "issues", label: "Issues", icon: <AlertTriangleIcon className="h-4 w-4" /> },
   { key: "decisions", label: "Decisions", icon: <LightbulbIcon className="h-4 w-4" /> },
   { key: "todos", label: "To-Dos", icon: <ListTodoIcon className="h-4 w-4" /> },
@@ -119,6 +105,8 @@ const STEPS: { key: MeetingStep; label: string; icon: React.ReactNode }[] = [
 export default function WeeklyMeeting() {
   const { toast } = useToast();
   const { companyId, selectedYear } = usePlanYear();
+
+  const { allGoals, childrenOf: goalChildrenOf } = useGoals();
 
   const [currentStep, setCurrentStep] = useState<MeetingStep>("scoreboard");
   const [activeMeeting, setActiveMeeting] = useState<Meeting | null>(null);
@@ -247,6 +235,11 @@ export default function WeeklyMeeting() {
   const rocksComplete = useMemo(
     () => quarterRocks.filter((r) => r.status === "complete").length,
     [quarterRocks]
+  );
+
+  const annualGoals = useMemo(
+    () => allGoals.filter((g) => g.level === "annual"),
+    [allGoals]
   );
 
   const rocksProgress = useMemo(() => {
@@ -519,6 +512,49 @@ export default function WeeklyMeeting() {
     </div>
   );
 
+  const renderGoals = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Goal Check-In</h3>
+        <Badge variant="outline">{currentQuarter}</Badge>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Annual priorities and how their department goals are tracking. Update a
+        quarter directly from here.
+      </p>
+
+      {annualGoals.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <TargetIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p>No goals set for {selectedYear} yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {annualGoals.map((annual) => {
+            const children = goalChildrenOf.get(annual.id) ?? [];
+            return (
+              <div key={annual.id} className="rounded-lg border border-border p-4 space-y-3">
+                <div className="font-medium">{annual.title}</div>
+                <AnnualRollup children={children} />
+                {children.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    No department goals linked, so this priority cannot be met.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {children.map((child) => (
+                      <GoalCard key={child.id} goal={child} compact />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   const renderIssues = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -716,6 +752,8 @@ export default function WeeklyMeeting() {
         return renderScoreboard();
       case "rocks":
         return renderRocks();
+      case "goals":
+        return renderGoals();
       case "issues":
         return renderIssues();
       case "decisions":

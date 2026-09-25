@@ -44,6 +44,7 @@
   ],
   "exclude": [
     "node_modules",
+    "functions",
     "src/components/examples/**/*"
   ]
 }

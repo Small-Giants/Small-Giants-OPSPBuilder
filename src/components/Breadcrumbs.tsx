@@ -9,7 +9,7 @@ interface BreadcrumbsProps {
 }
 
 // Map view IDs to readable labels and their section
-const viewConfig: Record<string, { label: string; section: "plan" | "execute" | "admin" }> = {
+const viewConfig: Record<string, { label: string; section: "plan" | "goals" | "execute" | "admin" }> = {
   "exec-summary": { label: "Executive Summary", section: "plan" },
   "wizard": { label: "Planning Wizard", section: "plan" },
   "canvas": { label: "Roadmap Canvas", section: "plan" },
@@ -18,6 +18,12 @@ const viewConfig: Record<string, { label: string; section: "plan" | "execute" | 
   "one-year": { label: "One Year", section: "plan" },
   "priority-management": { label: "Priorities & Capabilities", section: "plan" },
   "swot": { label: "SWOT Analysis", section: "plan" },
+  "integrations": { label: "Integrations", section: "admin" },
+  "notification-settings": { label: "Notifications", section: "admin" },
+  "goals": { label: "Company Goals", section: "goals" },
+  "department-goals": { label: "Department Goals", section: "goals" },
+  "my-goals": { label: "My Goals", section: "goals" },
+  "team-goals": { label: "My Team", section: "goals" },
   "priorities": { label: "Priority Execution", section: "execute" },
   "metrics": { label: "KPI Dashboard", section: "execute" },
   "rocks": { label: "My Rocks", section: "execute" },
@@ -26,6 +32,7 @@ const viewConfig: Record<string, { label: string; section: "plan" | "execute" | 
   "personal": { label: "Personal Development", section: "execute" },
   "weekly-meeting": { label: "Weekly Meeting", section: "execute" },
   "admin": { label: "Admin Panel", section: "admin" },
+  "departments": { label: "Departments", section: "admin" },
   "settings": { label: "Settings", section: "admin" },
 };
 
@@ -44,6 +51,7 @@ export default function Breadcrumbs({ currentView }: BreadcrumbsProps) {
 
   const sectionLabels = {
     plan: "Plan",
+    goals: "Goals",
     execute: "Execute",
     admin: "Admin",
   };
@@ -64,7 +72,7 @@ export default function Breadcrumbs({ currentView }: BreadcrumbsProps) {
         <Badge variant="outline" className="text-xs font-normal px-2 py-0.5">
           {selectedYear}
         </Badge>
-        {config.section === "execute" && (
+        {(config.section === "execute" || config.section === "goals") && (
           <Badge 
             variant="secondary" 
             className="text-xs font-normal px-2 py-0.5 bg-accent/10 text-accent-foreground"

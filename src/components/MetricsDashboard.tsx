@@ -13,32 +13,7 @@ import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, where
 import { useToast } from "@/hooks/use-toast";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
 
-interface MetricDataPoint {
-  date: string;
-  value: number;
-}
-
-interface Metric {
-  id: string;
-  name: string;
-  unit: string;
-  currentValue: number;
-  targetValue: number;
-  data: MetricDataPoint[];
-  trend: 'up' | 'down' | 'stable';
-  owner?: string;
-  assignee?: string;
-  cadence?: 'daily' | 'weekly' | 'monthly' | 'quarterly';
-  lastUpdated?: string;
-  status?: 'green' | 'yellow' | 'red';
-  priorityId?: string;
-}
-
-interface Priority {
-  id: string;
-  title: string;
-  type: string;
-}
+import { type Metric, type MetricDataPoint, type Priority } from "@/types";
 
 type GroupByOption = 'none' | 'owner' | 'status' | 'priority';
 

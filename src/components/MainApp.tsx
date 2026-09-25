@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUpIcon, FileTextIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import AdminPanel from "@/components/AdminPanel";
+import DepartmentManagement from "@/components/DepartmentManagement";
 import IndividualRocks from "@/components/IndividualRocks";
 import YearSwitcher from "@/components/YearSwitcher";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -29,6 +30,13 @@ import ExecutiveSummary from "@/components/ExecutiveSummary";
 import WeeklyMeeting from "@/components/WeeklyMeeting";
 import PlanningWizard from "@/components/PlanningWizard";
 import ExportModal from "@/components/ExportModal";
+import GoalTree from "@/components/GoalTree";
+import DepartmentGoals from "@/components/DepartmentGoals";
+import MyGoals from "@/components/MyGoals";
+import TeamGoals from "@/components/TeamGoals";
+import IntegrationSettings from "@/components/IntegrationSettings";
+import NotificationCenter from "@/components/NotificationCenter";
+import NotificationSettings from "@/components/NotificationSettings";
 
 export default function MainApp() {
   const { user, logout } = useAuth();
@@ -58,6 +66,23 @@ export default function MainApp() {
     };
     window.addEventListener('navigate', handleNavigateEvent);
     return () => window.removeEventListener('navigate', handleNavigateEvent);
+  }, [handleNavigate]);
+
+  // Deep links from notification emails and push arrive as ?view=goals.
+  // Consume the param so a refresh does not bounce back to the same view.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    if (!view) return;
+
+    handleNavigate(view);
+    params.delete('view');
+    const query = params.toString();
+    window.history.replaceState(
+      {},
+      '',
+      `${window.location.pathname}${query ? `?${query}` : ''}`
+    );
   }, [handleNavigate]);
 
   const handleExportPDF = () => {
@@ -107,6 +132,18 @@ export default function MainApp() {
         );
       case 'my-rocks':
         return <IndividualRocks />;
+      case 'goals':
+        return <GoalTree />;
+      case 'department-goals':
+        return <DepartmentGoals />;
+      case 'my-goals':
+        return <MyGoals />;
+      case 'team-goals':
+        return <TeamGoals />;
+      case 'integrations':
+        return <IntegrationSettings />;
+      case 'notification-settings':
+        return <NotificationSettings />;
       case 'capabilities':
         return (
           <PriorityTracker
@@ -115,6 +152,8 @@ export default function MainApp() {
         );
       case 'admin':
         return <AdminPanel />;
+      case 'departments':
+        return <DepartmentManagement />;
       case 'settings':
         return <Settings />;
       case 'weekly-meeting':
@@ -171,7 +210,9 @@ export default function MainApp() {
                   </Button>
                   
                   <div className="h-4 w-px bg-border" />
-                  
+
+                  <NotificationCenter onNavigate={handleNavigate} />
+
                   <Button
                     variant="outline"
                     size="sm"

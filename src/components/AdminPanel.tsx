@@ -21,7 +21,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AlertTriangle, Shield, User, UserCheck, Loader2, Trash2, RotateCcw, Users, UserX } from 'lucide-react';
 import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
-
+import { DepartmentCombobox } from '@/components/ui/department-combobox';
+import { UserCombobox } from '@/components/ui/user-combobox';
 interface UserData {
   id: string;
   email: string;
@@ -31,6 +32,8 @@ interface UserData {
   lastLogin?: string;
   deletedAt?: string;
   deletedBy?: string;
+  departmentId?: string;
+  managerId?: string;
 }
 
 export default function AdminPanel() {
@@ -94,6 +97,26 @@ export default function AdminPanel() {
       toast({
         title: "Error",
         description: "Failed to update user role.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAssignmentChange = async (
+    userId: string,
+    field: 'departmentId' | 'managerId',
+    value: string
+  ) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), { [field]: value || null });
+      toast({
+        title: field === 'departmentId' ? "Department Updated" : "Manager Updated",
+        description: "The change is live for everyone.",
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: `Failed to update ${field === 'departmentId' ? 'department' : 'manager'}.`,
         variant: "destructive",
       });
     }
@@ -215,7 +238,8 @@ export default function AdminPanel() {
           <TableHead>Email</TableHead>
           <TableHead>Name</TableHead>
           <TableHead>Role</TableHead>
-          <TableHead>Created</TableHead>
+          <TableHead className="min-w-[180px]">Department</TableHead>
+          <TableHead className="min-w-[180px]">Manager</TableHead>
           <TableHead>Last Login</TableHead>
           <TableHead>Actions</TableHead>
         </TableRow>
@@ -223,7 +247,7 @@ export default function AdminPanel() {
       <TableBody>
         {activeUsers.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+            <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
               No active users found.
             </TableCell>
           </TableRow>
@@ -246,7 +270,25 @@ export default function AdminPanel() {
                 </div>
               </TableCell>
               <TableCell>
-                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
+                <DepartmentCombobox
+                  value={user.departmentId || ''}
+                  onValueChange={(value) =>
+                    handleAssignmentChange(user.id, 'departmentId', value)
+                  }
+                  placeholder="Unassigned"
+                  triggerClassName="h-9"
+                />
+              </TableCell>
+              <TableCell>
+                <UserCombobox
+                  value={user.managerId || ''}
+                  onValueChange={(value) =>
+                    handleAssignmentChange(user.id, 'managerId', value)
+                  }
+                  placeholder="No manager"
+                  valueMode="id"
+                  triggerClassName="h-9"
+                />
               </TableCell>
               <TableCell>
                 {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}

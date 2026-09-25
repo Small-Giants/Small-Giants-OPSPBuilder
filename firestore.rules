@@ -1,113 +1,230 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to get the current user's role
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-    
+
+    // ---------------------------------------------------------------------
+    // Helpers
+    //
+    // Rules are OR'd together across matches, so there are deliberately no
+    // `{path=**}` wildcards below. A single broad match would silently grant
+    // everything the specific goal and department rules are trying to
+    // restrict.
+    // ---------------------------------------------------------------------
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
     function isAdmin() {
       return isAuthenticated() && getUserRole() in ['admin', 'superadmin'];
     }
-    
+
     function isSuperadmin() {
       return isAuthenticated() && getUserRole() == 'superadmin';
     }
-    
-    function isOwner(userId) {
+
+    function isSelf(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
-    // Users collection - strict access control
-    match /users/{userId} {
-      // Users can read their own profile, admins can read all users
-      allow read: if isOwner(userId) || isAdmin();
-      
-      // Allow user creation on first login (user creates their own doc)
-      allow create: if isOwner(userId);
-      
-      // Users can update their own profile EXCEPT role and deletedAt fields
-      // Admins can update any user's profile
-      // Only superadmins can modify role to/from superadmin or set deletedAt
-      allow update: if isOwner(userId) && 
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'deletedAt', 'deletedBy'])
-        || isAdmin() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'deletedAt', 'deletedBy'])
-        || isAdmin() && request.resource.data.role != 'superadmin' && resource.data.role != 'superadmin'
-        || isSuperadmin();
+
+    function departmentPath(companyId, departmentId) {
+      return /databases/$(database)/documents/companies/$(companyId)/departments/$(departmentId);
     }
-    
-    // Company/Organization data - authenticated users can read, admins can write
+
+    function isDepartmentLeader(companyId, departmentId) {
+      return isAuthenticated()
+        && departmentId is string
+        && departmentId != ''
+        && exists(departmentPath(companyId, departmentId))
+        && get(departmentPath(companyId, departmentId)).data.leaderId == request.auth.uid;
+    }
+
+    // A goal may be written by its owner, a listed contributor, the leader of
+    // the owning department, or an admin.
+    function canWriteGoal(companyId, data) {
+      return isAdmin()
+        || data.get('ownerId', '') == request.auth.uid
+        || request.auth.uid in data.get('contributorIds', [])
+        || isDepartmentLeader(companyId, data.get('departmentId', ''));
+    }
+
+    function goalPath(companyId, goalId) {
+      return /databases/$(database)/documents/companies/$(companyId)/goals/$(goalId);
+    }
+
+    // ---------------------------------------------------------------------
+    // Users
+    // ---------------------------------------------------------------------
+
+    match /users/{userId} {
+      allow read: if isSelf(userId) || isAuthenticated();
+
+      allow create: if isSelf(userId);
+
+      // Users may edit their own profile but never their role, department
+      // assignment, reporting line, or soft-delete state.
+      allow update: if isSelf(userId)
+          && !request.resource.data.diff(resource.data).affectedKeys()
+               .hasAny(['role', 'deletedAt', 'deletedBy', 'departmentId', 'managerId'])
+        || isAdmin()
+          && !request.resource.data.diff(resource.data).affectedKeys()
+               .hasAny(['role', 'deletedAt', 'deletedBy'])
+        || isAdmin()
+          && request.resource.data.role != 'superadmin'
+          && resource.data.role != 'superadmin'
+        || isSuperadmin();
+
+      allow delete: if isSuperadmin();
+    }
+
+    // Per-user private data: notification inbox, push tokens, preferences.
+    // Fan-out writes come from Cloud Functions via the Admin SDK, which
+    // bypasses rules, so no client ever needs to write into someone else's
+    // inbox.
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if isSelf(userId);
+    }
+
+    match /users/{userId}/pushTokens/{tokenId} {
+      allow read, write: if isSelf(userId);
+    }
+
+    match /users/{userId}/settings/{settingId} {
+      allow read, write: if isSelf(userId);
+    }
+
+    // ---------------------------------------------------------------------
+    // Company root
+    // ---------------------------------------------------------------------
+
     match /companies/{companyId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
-    
-    // Company subcollections (roadmap, swot, priorities, metrics, etc.)
-    // All authenticated users can read/write planning data within a company
-    match /companies/{companyId}/{subcollection}/{docId} {
+
+    // Shared strategic planning surfaces. These are intentionally
+    // collaborative: the whole team edits the plan together.
+    match /companies/{companyId}/roadmap/{docId} {
       allow read, write: if isAuthenticated();
     }
-    
-    // Deeper nested company subcollections (e.g., companies/x/users/y/tools/z)
-    // Used by AgileGrowthChecklist and similar features
-    match /companies/{companyId}/{path=**} {
+
+    match /companies/{companyId}/priorities/{priorityId} {
       allow read, write: if isAuthenticated();
     }
-    
-    // Planning data (foundation, goals, etc.) - authenticated users can read/write
-    match /plans/{planId} {
+
+    match /companies/{companyId}/rocks/{rockId} {
       allow read, write: if isAuthenticated();
     }
-    
-    match /plans/{planId}/{subcollection=**} {
+
+    match /companies/{companyId}/metrics/{metricId} {
       allow read, write: if isAuthenticated();
     }
-    
-    // Rocks - authenticated users can read/write
-    match /rocks/{rockId} {
+
+    match /companies/{companyId}/swot/{swotId} {
       allow read, write: if isAuthenticated();
     }
-    
-    // Priorities - authenticated users can read/write
-    match /priorities/{priorityId} {
+
+    match /companies/{companyId}/meetings/{meetingId} {
       allow read, write: if isAuthenticated();
     }
-    
-    // Metrics/KPIs - authenticated users can read/write
-    match /metrics/{metricId} {
+
+    match /companies/{companyId}/just-get-it-done/{itemId} {
       allow read, write: if isAuthenticated();
     }
-    
-    // SWOT Analysis - authenticated users can read/write
-    match /swot/{swotId} {
+
+    match /companies/{companyId}/personal-development/{docId} {
       allow read, write: if isAuthenticated();
     }
-    
-    // Assessments - authenticated users can read/write
-    match /assessments/{assessmentId} {
+
+    match /companies/{companyId}/agile-checklist/{itemId} {
       allow read, write: if isAuthenticated();
     }
-    
-    // Meetings - authenticated users can read/write
-    match /meetings/{meetingId} {
-      allow read, write: if isAuthenticated();
-    }
-    
-    // Settings - authenticated users can read, admins can write
-    match /settings/{settingId} {
+
+    match /companies/{companyId}/years/{yearId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
-    
-    // Catch-all for any other collections - require authentication
-    // This is more restrictive than before but allows flexibility
-    match /{collection}/{document=**} {
+
+    // Nav label overrides are a superadmin-only customization surface.
+    match /companies/{companyId}/settings/labels {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && collection != 'users';
+      allow write: if isSuperadmin();
+    }
+
+    match /companies/{companyId}/settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Per-user tool state (Agile Growth Checklist scores).
+    match /companies/{companyId}/users/{userId}/tools/{toolId} {
+      allow read: if isAuthenticated();
+      allow write: if isSelf(userId) || isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Departments
+    // ---------------------------------------------------------------------
+
+    match /companies/{companyId}/departments/{departmentId} {
+      allow read: if isAuthenticated();
+      allow create, delete: if isAdmin();
+      // Leaders may maintain their own department; only admins can reassign
+      // leadership or create/remove departments.
+      allow update: if isAdmin()
+        || (isAuthenticated()
+            && resource.data.leaderId == request.auth.uid
+            && request.resource.data.leaderId == resource.data.leaderId);
+    }
+
+    // ---------------------------------------------------------------------
+    // Goals
+    //
+    // Reads are open to any authenticated team member, matching the
+    // transparency model of the rest of the OPSP. Tighten this single rule if
+    // individual goals need to be restricted to self, manager, and leader.
+    // ---------------------------------------------------------------------
+
+    match /companies/{companyId}/goals/{goalId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && canWriteGoal(companyId, request.resource.data);
+
+      allow update: if isAuthenticated()
+        && canWriteGoal(companyId, resource.data)
+        && canWriteGoal(companyId, request.resource.data);
+
+      allow delete: if isAuthenticated()
+        && canWriteGoal(companyId, resource.data);
+
+      // Quarterly targets and actuals inherit their parent goal's permissions.
+      match /quarters/{quarterId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated()
+          && exists(goalPath(companyId, goalId))
+          && canWriteGoal(companyId, get(goalPath(companyId, goalId)).data);
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Integrations
+    // ---------------------------------------------------------------------
+
+    // ClickUp workspace and field mapping. Credentials live in Secret Manager,
+    // never in Firestore, but the mapping is still admin-only.
+    match /companies/{companyId}/integrations/{integrationId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Written exclusively by Cloud Functions through the Admin SDK.
+    match /companies/{companyId}/syncLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
     }
   }
 }
