@@ -18,6 +18,8 @@ import {
 import { db } from "@/lib/firebase";
 import { doc, collection, onSnapshot, query, where } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import { useAnnualPriorities } from "@/hooks/use-annual-priorities";
+import { rockGoalId, rockLabel } from "@/types";
 
 interface OpspFullCanvasProps {
   data?: any;
@@ -44,7 +46,7 @@ export default function OpspFullCanvas({ data }: OpspFullCanvasProps) {
   const [foundationData, setFoundationData] = useState<FoundationData | null>(null);
   const [roadmapData, setRoadmapData] = useState<any>(null);
   const [rocks, setRocks] = useState<any[]>([]);
-  const [priorities, setPriorities] = useState<any[]>([]);
+  const { priorities } = useAnnualPriorities();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -85,24 +87,12 @@ export default function OpspFullCanvas({ data }: OpspFullCanvasProps) {
       setRocks(items);
     });
 
-    // 4. Priorities (to map rocks)
-    const unsubPriorities = onSnapshot(collection(db, 'companies', companyId, 'priorities'), (snapshot) => {
-      const items: any[] = [];
-      snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-      const filtered = items
-        .filter((p) => {
-          const planYear = typeof p.planYear === "number" ? p.planYear : LEGACY_PLAN_YEAR;
-          return planYear === selectedYear;
-        })
-        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-      setPriorities(filtered);
-    });
+    // Annual priorities, used to label rocks, come from useAnnualPriorities.
 
     return () => {
       unsubFoundation();
       unsubRoadmap();
       unsubRocks();
-      unsubPriorities();
     };
   }, [selectedYear, companyId]);
 
@@ -115,14 +105,14 @@ export default function OpspFullCanvas({ data }: OpspFullCanvasProps) {
   };
 
   rocks.forEach(rock => {
-      const priority = priorities.find(p => p.id === rock.priorityId);
+      const priority = priorities.find(p => p.id === rockGoalId(rock));
       const quarter = rock.quarter as 'Q1' | 'Q2' | 'Q3' | 'Q4';
-      
-      if (priority && priority.type === 'priority' && quarterlyRocks[quarter]) {
+
+      if (priority && quarterlyRocks[quarter]) {
           quarterlyRocks[quarter].push({
               id: rock.id,
-              text: rock.text,
-              assignee: rock.assigneeName || 'Unassigned',
+              text: rockLabel(rock),
+              assignee: rock.ownerName || rock.assigneeName || 'Unassigned',
               priorityTitle: priority.title || 'Unknown'
           });
       }

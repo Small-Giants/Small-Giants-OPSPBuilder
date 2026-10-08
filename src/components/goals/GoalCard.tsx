@@ -16,10 +16,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { GoalProgressBar, GoalStatusBadge } from "@/components/goals/GoalProgress";
 import { QuarterCheckIn } from "@/components/goals/QuarterCheckIn";
+import { RockSection } from "@/components/rocks/RockSection";
 import { useToast } from "@/hooks/use-toast";
 import { usePlanYear } from "@/contexts/PlanYearContext";
 import { useDepartments } from "@/hooks/use-departments";
 import { useGoalPermissions } from "@/hooks/use-goal-permissions";
+import { useRocks } from "@/hooks/use-rocks";
 import { deleteGoal } from "@/lib/goals";
 import { syncClickUp } from "@/lib/callables";
 import { GOAL_LEVEL_LABELS, type Goal } from "@/types";
@@ -40,6 +42,8 @@ interface GoalCardProps {
   showCheckIn?: boolean;
   defaultExpanded?: boolean;
   compact?: boolean;
+  /** Hidden on dense surfaces like the weekly meeting agenda. */
+  showRocks?: boolean;
 }
 
 export function GoalCard({
@@ -49,15 +53,18 @@ export function GoalCard({
   showCheckIn = true,
   defaultExpanded = false,
   compact = false,
+  showRocks = true,
 }: GoalCardProps) {
   const { toast } = useToast();
   const { companyId } = usePlanYear();
   const { getName } = useDepartments();
   const { canEditGoal } = useGoalPermissions();
+  const { byGoal } = useRocks();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [syncing, setSyncing] = useState(false);
 
   const canEdit = canEditGoal(goal);
+  const rocks = byGoal.get(goal.id) ?? [];
 
   const handleSync = async () => {
     setSyncing(true);
@@ -153,8 +160,7 @@ export function GoalCard({
               )}
               {(goal.contributorIds?.length ?? 0) > 0 && (
                 <span>
-                  +{goal.contributorIds!.length} contributor
-                  {goal.contributorIds!.length === 1 ? "" : "s"}
+                  +{goal.contributorIds!.length} responsible
                 </span>
               )}
             </div>
@@ -162,6 +168,16 @@ export function GoalCard({
             <div className="mt-3">
               <GoalProgressBar goal={goal} showDetail={false} />
             </div>
+
+            {showRocks && (
+              <div className="mt-3">
+                <RockSection
+                  goalId={goal.id}
+                  rocks={rocks}
+                  canEdit={canEdit}
+                />
+              </div>
+            )}
           </div>
 
           {canEdit && (

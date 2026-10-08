@@ -1,4 +1,5 @@
 import { QUARTERS, type Quarter } from "./common";
+import type { RaciAssignment } from "./raci";
 
 export type GoalLevel = "annual" | "department" | "individual";
 
@@ -157,7 +158,7 @@ export function parseClickUpTaskId(input: string): string | null {
   }
 }
 
-export interface Goal {
+export interface Goal extends RaciAssignment {
   id: string;
   title: string;
   /** Flattened from `smart` on save so existing list views can read one string. */
@@ -166,9 +167,6 @@ export interface Goal {
   level: GoalLevel;
   parentGoalId?: string | null;
   departmentId?: string | null;
-  ownerId?: string;
-  ownerName?: string;
-  contributorIds?: string[];
   startDate?: string;
   dueDate?: string;
   planYear: number;

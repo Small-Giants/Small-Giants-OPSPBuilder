@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, collection, query, where, type Unsubscribe } from "firebase/firestore";
 import { usePlanYear, LEGACY_PLAN_YEAR } from "@/contexts/PlanYearContext";
+import { useGoals } from "@/hooks/use-goals";
 import {
   CheckCircle2Icon,
   CircleIcon,
@@ -122,9 +123,19 @@ interface PlanningWizardProps {
 
 export default function PlanningWizard({ onNavigate, onClose }: PlanningWizardProps) {
   const { companyId, selectedYear } = usePlanYear();
+  const { goals: annualGoals } = useGoals({ level: "annual" });
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completionStatus, setCompletionStatus] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setCompletionStatus((prev) => ({
+      ...prev,
+      // Three or more annual priorities is the recommended minimum.
+      priorities: annualGoals.length >= 3,
+      prioritiesPartial: annualGoals.length > 0,
+    }));
+  }, [annualGoals.length]);
 
   // Fetch completion status from various documents
   useEffect(() => {
@@ -187,35 +198,7 @@ export default function PlanningWizard({ onNavigate, onClose }: PlanningWizardPr
       )
     );
 
-    // Priorities (year-scoped)
-    const prioritiesCol = collection(db, "companies", companyId, "priorities");
-    const qPrioritiesYear = query(prioritiesCol, where("planYear", "==", selectedYear), where("type", "==", "priority"));
-    unsubs.push(
-      onSnapshot(qPrioritiesYear, (snap) => {
-        const hasPriorities = snap.size > 0;
-        setCompletionStatus((prev) => ({
-          ...prev,
-          priorities: snap.size >= 3, // At least 3 priorities recommended
-          prioritiesPartial: hasPriorities,
-        }));
-      })
-    );
-
-    // Legacy priorities for 2025
-    if (selectedYear === LEGACY_PLAN_YEAR) {
-      const qPrioritiesLegacy = query(prioritiesCol, where("planYear", "==", null), where("type", "==", "priority"));
-      unsubs.push(
-        onSnapshot(qPrioritiesLegacy, (snap) => {
-          if (snap.size > 0) {
-            setCompletionStatus((prev) => ({
-              ...prev,
-              priorities: prev.priorities || snap.size >= 3,
-              prioritiesPartial: prev.prioritiesPartial || snap.size > 0,
-            }));
-          }
-        })
-      );
-    }
+    // Annual priorities are goals now, counted in a separate effect below.
 
     // Rocks (year-scoped)
     const rocksCol = collection(db, "companies", companyId, "rocks");

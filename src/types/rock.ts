@@ -1,4 +1,6 @@
 import type { Quarter } from "./common";
+import type { SmartDescription } from "./goal";
+import type { RaciAssignment } from "./raci";
 
 export type RockStatus = "not_started" | "ready" | "in_progress" | "complete";
 
@@ -16,31 +18,42 @@ export const ROCK_STATUS_LABELS: Record<RockStatus, string> = {
   complete: "Complete",
 };
 
-export interface Rock {
+/**
+ * A task that lives inside a goal at any of the three levels. Rocks carry the
+ * same RACI and SMART structure as goals so the two read consistently.
+ */
+export interface Rock extends RaciAssignment {
   id: string;
+  /** The title. Stored as `text` because `title` means something else below. */
   text: string;
+  description?: string;
+  /** Optional, unlike a goal: a rock can be saved with just a title. */
+  smart?: SmartDescription;
   status: RockStatus;
   quarter: Quarter;
   /** Legacy documents predate the field and store null. */
   year?: number | null;
+  /** The goal this rock belongs to, at any level. */
+  goalId?: string;
+  /** Pre-conversion link to the priorities collection. Read, never written. */
+  priorityId?: string;
   progress?: number;
   category?: string;
-  priorityId?: string;
   /** Flags a rock as a top focus item. Distinct from the Priority entity. */
   priority?: boolean;
-  assigneeId?: string;
-  assigneeName?: string;
-  executiveSponsor?: string;
-  responsible?: string;
-  accountable?: string;
   startDate?: string;
   projectManagement?: boolean;
   bloomGrowthVisibility?: boolean;
   visionStatement?: string;
   companyId?: string;
   createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
   /** Older documents stored the label under `title` instead of `text`. */
   title?: string;
+  /** Pre-RACI single assignee. Read for legacy docs, never written. */
+  assigneeId?: string;
+  assigneeName?: string;
 }
 
 /**
@@ -60,4 +73,24 @@ export function rockLabel(rock: Pick<Rock, "text" | "title">): string {
 
 export function isRockComplete(rock: Pick<Rock, "status">): boolean {
   return normalizeRockStatus(rock.status) === "complete";
+}
+
+/**
+ * The goal a rock hangs off. Documents written before the conversion still
+ * carry `priorityId`, which pointed at the priority that became that goal.
+ */
+export function rockGoalId(rock: Pick<Rock, "goalId" | "priorityId">): string | null {
+  return rock.goalId || rock.priorityId || null;
+}
+
+/**
+ * Who is doing the work. Legacy rocks stored one `assigneeId`; that person is
+ * Responsible under the RACI model.
+ */
+export function rockResponsibleIds(
+  rock: Pick<Rock, "contributorIds" | "assigneeId">
+): string[] {
+  const ids = rock.contributorIds ?? [];
+  if (ids.length > 0) return ids;
+  return rock.assigneeId ? [rock.assigneeId] : [];
 }

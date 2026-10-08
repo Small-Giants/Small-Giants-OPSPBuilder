@@ -60,8 +60,7 @@ beforeEach(async () => {
 
     await setDoc(doc(fs, "companies", COMPANY, "departments", "engineering"), {
       name: "Engineering",
-      leaderId: DANA,
-      memberIds: [ALICE, CARLA],
+      leaderIds: [DANA],
     });
 
     await setDoc(goalRef(fs, "goal-alice"), {
@@ -114,6 +113,44 @@ describe("goal writes", () => {
   it("contributor can update the goal", async () => {
     await assertSucceeds(
       updateDoc(goalRef(db(CARLA), "goal-alice"), { title: "Contributor edit" })
+    );
+  });
+
+  it("anyone named in a RACI role can update the goal", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(goalRef(ctx.firestore(), "goal-raci"), {
+        title: "RACI goal",
+        level: "individual",
+        ownerId: ALICE,
+        contributorIds: [],
+        consultedIds: [BOB],
+        informedIds: [CARLA],
+        departmentId: "",
+      });
+    });
+
+    await assertSucceeds(
+      updateDoc(goalRef(db(BOB), "goal-raci"), { title: "Consulted edit" })
+    );
+    await assertSucceeds(
+      updateDoc(goalRef(db(CARLA), "goal-raci"), { title: "Informed edit" })
+    );
+  });
+
+  it("the executive sponsor can update the goal", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(goalRef(ctx.firestore(), "goal-sponsored"), {
+        title: "Sponsored goal",
+        level: "annual",
+        ownerId: ALICE,
+        contributorIds: [],
+        executiveSponsorId: BOB,
+        departmentId: "",
+      });
+    });
+
+    await assertSucceeds(
+      updateDoc(goalRef(db(BOB), "goal-sponsored"), { title: "Sponsor edit" })
     );
   });
 
@@ -204,8 +241,7 @@ describe("departments", () => {
     await assertFails(
       setDoc(doc(db(BOB), "companies", COMPANY, "departments", "sales"), {
         name: "Sales",
-        leaderId: BOB,
-        memberIds: [],
+        leaderIds: [BOB],
       })
     );
   });
@@ -214,18 +250,48 @@ describe("departments", () => {
     await assertSucceeds(
       setDoc(doc(db(ADMIN), "companies", COMPANY, "departments", "sales"), {
         name: "Sales",
-        leaderId: BOB,
-        memberIds: [],
+        leaderIds: [BOB],
       })
     );
   });
 
-  it("a leader cannot hand leadership to someone else", async () => {
+  it("a leader cannot change the leadership list", async () => {
     await assertFails(
       updateDoc(
         doc(db(DANA), "companies", COMPANY, "departments", "engineering"),
-        { leaderId: BOB }
+        { leaderIds: [DANA, BOB] }
       )
+    );
+  });
+
+  it("one of several leaders can still edit the department", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), "companies", COMPANY, "departments", "engineering"),
+        { name: "Engineering", leaderIds: [DANA, BOB] }
+      );
+    });
+
+    await assertSucceeds(
+      updateDoc(
+        doc(db(BOB), "companies", COMPANY, "departments", "engineering"),
+        { name: "Engineering & Platform" }
+      )
+    );
+  });
+
+  it("a leader named only in the pre-array field still has access", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        doc(ctx.firestore(), "companies", COMPANY, "departments", "legacy"),
+        { name: "Legacy", leaderId: DANA }
+      );
+    });
+
+    await assertSucceeds(
+      updateDoc(doc(db(DANA), "companies", COMPANY, "departments", "legacy"), {
+        name: "Legacy Renamed",
+      })
     );
   });
 

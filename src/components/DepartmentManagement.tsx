@@ -29,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlanYear } from "@/contexts/PlanYearContext";
 import { useDepartments } from "@/hooks/use-departments";
 import { useActiveUsers } from "@/hooks/use-active-users";
+import { departmentLeaderIds } from "@/types";
 import { db } from "@/lib/firebase";
 import {
   addDoc,
@@ -48,7 +49,19 @@ import {
   XIcon,
 } from "lucide-react";
 
-const emptyForm = { name: "", description: "", leaderId: "" };
+interface DepartmentForm {
+  name: string;
+  description: string;
+  leaderIds: string[];
+  memberIds: string[];
+}
+
+const emptyForm: DepartmentForm = {
+  name: "",
+  description: "",
+  leaderIds: [],
+  memberIds: [],
+};
 
 export default function DepartmentManagement() {
   const { toast } = useToast();
@@ -59,7 +72,7 @@ export default function DepartmentManagement() {
 
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<DepartmentForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
   const isAdmin = hasRole("admin");
@@ -89,20 +102,50 @@ export default function DepartmentManagement() {
     setEditingId(null);
   };
 
+  /**
+   * Membership lives on the user document, so assigning people is a write per
+   * user rather than a field on the department.
+   */
+  const applyMembership = async (departmentId: string, memberIds: string[]) => {
+    const desired = new Set(memberIds);
+    const current = new Set(
+      (membersByDepartment.get(departmentId) ?? []).map((m) => m.id)
+    );
+
+    const writes: Promise<unknown>[] = [];
+    desired.forEach((userId) => {
+      if (!current.has(userId)) {
+        writes.push(updateDoc(doc(db, "users", userId), { departmentId }));
+      }
+    });
+    current.forEach((userId) => {
+      if (!desired.has(userId)) {
+        writes.push(updateDoc(doc(db, "users", userId), { departmentId: "" }));
+      }
+    });
+    await Promise.all(writes);
+  };
+
+  /** Leaders are members of the department they lead. */
+  const formMemberIds = () =>
+    Array.from(new Set([...form.leaderIds, ...form.memberIds]));
+
   const handleCreate = async () => {
     if (!form.name.trim()) return;
     setSaving(true);
     try {
-      await addDoc(collection(db, "companies", companyId, "departments"), {
-        name: form.name.trim(),
-        description: form.description.trim(),
-        leaderId: form.leaderId || "",
-        leaderName: userName(form.leaderId) || "",
-        memberIds: [],
-        sortOrder: departments.length,
-        companyId,
-        createdAt: new Date().toISOString(),
-      });
+      const created = await addDoc(
+        collection(db, "companies", companyId, "departments"),
+        {
+          name: form.name.trim(),
+          description: form.description.trim(),
+          leaderIds: form.leaderIds,
+          sortOrder: departments.length,
+          companyId,
+          createdAt: new Date().toISOString(),
+        }
+      );
+      await applyMembership(created.id, formMemberIds());
       toast({ title: "Department created", description: form.name.trim() });
       resetForm();
     } catch {
@@ -125,11 +168,11 @@ export default function DepartmentManagement() {
         {
           name: form.name.trim(),
           description: form.description.trim(),
-          leaderId: form.leaderId || "",
-          leaderName: userName(form.leaderId) || "",
+          leaderIds: form.leaderIds,
           updatedAt: new Date().toISOString(),
         }
       );
+      await applyMembership(departmentId, formMemberIds());
       toast({ title: "Department updated" });
       resetForm();
     } catch {
@@ -167,7 +210,8 @@ export default function DepartmentManagement() {
     setForm({
       name: department.name ?? "",
       description: department.description ?? "",
-      leaderId: department.leaderId ?? "",
+      leaderIds: departmentLeaderIds(department),
+      memberIds: (membersByDepartment.get(departmentId) ?? []).map((m) => m.id),
     });
     setAdding(false);
     setEditingId(departmentId);
@@ -193,6 +237,41 @@ export default function DepartmentManagement() {
     );
   }
 
+  const addLeader = (userId: string) => {
+    if (!userId || form.leaderIds.includes(userId)) return;
+    setForm({
+      ...form,
+      leaderIds: [...form.leaderIds, userId],
+      memberIds: form.memberIds.includes(userId)
+        ? form.memberIds
+        : [...form.memberIds, userId],
+    });
+  };
+
+  const addMember = (userId: string) => {
+    if (!userId || form.memberIds.includes(userId)) return;
+    setForm({ ...form, memberIds: [...form.memberIds, userId] });
+  };
+
+  const renderChips = (ids: string[], onRemove: (id: string) => void) =>
+    ids.length === 0 ? null : (
+      <div className="flex flex-wrap gap-1 mb-2">
+        {ids.map((id) => (
+          <Badge key={id} variant="secondary" className="gap-1">
+            {userName(id) ?? "Unknown"}
+            <button
+              type="button"
+              onClick={() => onRemove(id)}
+              className="hover:text-destructive"
+              aria-label={`Remove ${userName(id) ?? "person"}`}
+            >
+              <XIcon className="w-3 h-3" />
+            </button>
+          </Badge>
+        ))}
+      </div>
+    );
+
   const renderForm = (onSave: () => void, saveLabel: string) => (
     <div className="space-y-3 rounded-md border border-dashed p-4">
       <Input
@@ -209,16 +288,40 @@ export default function DepartmentManagement() {
       />
       <div>
         <label className="text-sm font-medium mb-1 block">
-          Department leader
+          Department leaders
         </label>
+        {renderChips(form.leaderIds, (id) =>
+          setForm({ ...form, leaderIds: form.leaderIds.filter((x) => x !== id) })
+        )}
         <UserCombobox
-          value={form.leaderId}
-          onValueChange={(v) => setForm({ ...form, leaderId: v })}
-          placeholder="Select a leader"
+          value=""
+          onValueChange={(v) => addLeader(v)}
+          placeholder="Add a leader"
           valueMode="id"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Leaders can edit any goal owned by someone in their department.
+          Leaders can edit any goal owned by someone in their department, and
+          are counted as members of it.
+        </p>
+      </div>
+      <div>
+        <label className="text-sm font-medium mb-1 block">Team members</label>
+        {renderChips(
+          form.memberIds.filter((id) => !form.leaderIds.includes(id)),
+          (id) =>
+            setForm({
+              ...form,
+              memberIds: form.memberIds.filter((x) => x !== id),
+            })
+        )}
+        <UserCombobox
+          value=""
+          onValueChange={(v) => addMember(v)}
+          placeholder="Add a team member"
+          valueMode="id"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Someone already in another department moves here when you add them.
         </p>
       </div>
       <div className="flex gap-2">
@@ -270,7 +373,9 @@ export default function DepartmentManagement() {
             <div className="space-y-3">
               {departments.map((department) => {
                 const members = membersByDepartment.get(department.id) ?? [];
-                const leader = userName(department.leaderId);
+                const leaders = departmentLeaderIds(department)
+                  .map(userName)
+                  .filter(Boolean);
 
                 if (editingId === department.id) {
                   return (
@@ -295,8 +400,10 @@ export default function DepartmentManagement() {
                           <Users className="w-3 h-3" />
                           {members.length}
                         </Badge>
-                        {leader ? (
-                          <Badge variant="outline">Led by {leader}</Badge>
+                        {leaders.length > 0 ? (
+                          <Badge variant="outline">
+                            Led by {leaders.join(", ")}
+                          </Badge>
                         ) : (
                           <Badge variant="outline" className="text-amber-600">
                             No leader

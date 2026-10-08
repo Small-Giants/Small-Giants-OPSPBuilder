@@ -31,8 +31,27 @@ describe("stakeholders", () => {
   it("collects the owner, contributors, and department leader without duplicates", () => {
     const result = stakeholders(
       goal({ ownerId: "u1", contributorIds: ["u2", "u1"] }),
-      "u3"
+      ["u3"]
     );
+    expect(result.sort()).toEqual(["u1", "u2", "u3"]);
+  });
+
+  it("includes every RACI role, not just the owner and contributors", () => {
+    const result = stakeholders(
+      goal({
+        ownerId: "u1",
+        contributorIds: ["u2"],
+        consultedIds: ["u3"],
+        informedIds: ["u4"],
+        executiveSponsorId: "u5",
+      }),
+      null
+    );
+    expect(result.sort()).toEqual(["u1", "u2", "u3", "u4", "u5"]);
+  });
+
+  it("includes all of a department's leaders", () => {
+    const result = stakeholders(goal({ ownerId: "u1" }), ["u2", "u3"]);
     expect(result.sort()).toEqual(["u1", "u2", "u3"]);
   });
 
@@ -81,7 +100,7 @@ describe("intentsForGoalChange", () => {
     const intents = intentsForGoalChange({
       before: goal({ ownerId: "u1", contributorIds: ["u2"], status: "in_progress" }),
       after: goal({ ownerId: "u1", contributorIds: ["u2"], status: "complete" }),
-      departmentLeaderId: "u3",
+      departmentLeaderIds: ["u3"],
     });
     const completed = intents.filter((i) => i.kind === "goal_completed");
     expect(completed.map((i) => i.recipientId).sort()).toEqual(["u1", "u2", "u3"]);

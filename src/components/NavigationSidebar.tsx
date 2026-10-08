@@ -89,7 +89,7 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
     ];
 
     const goalItems: NavigationItem[] = [
-      { id: 'goals', label: 'Company Goals', icon: <TargetIcon className="w-4 h-4" /> },
+      { id: 'goals', label: 'Annual Priorities', icon: <TargetIcon className="w-4 h-4" /> },
       { id: 'department-goals', label: 'Department Goals', icon: <BuildingIcon className="w-4 h-4" /> },
       { id: 'my-goals', label: 'My Goals', icon: <UserIcon className="w-4 h-4" /> },
       { id: 'team-goals', label: 'My Team', icon: <UsersIcon className="w-4 h-4" /> },

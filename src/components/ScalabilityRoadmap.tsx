@@ -24,7 +24,9 @@ import { doc, collection, onSnapshot, query, where, type Unsubscribe } from "fir
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
 import { Progress } from "@/components/ui/progress";
 import { useGoals } from "@/hooks/use-goals";
+import { useAnnualPriorities } from "@/hooks/use-annual-priorities";
 import { calculateAnnualRollup } from "@/lib/goal-progress";
+import { rockGoalId } from "@/types";
 
 interface ScalabilityRoadmapProps {
   data?: any;
@@ -32,6 +34,7 @@ interface ScalabilityRoadmapProps {
 
 export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
   const { companyId, selectedYear } = usePlanYear();
+  const { priorities: annualPriorities } = useAnnualPriorities();
   
   const [roadmapData, setRoadmapData] = useState({
     companyName: "Small Giants",
@@ -201,25 +204,17 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
     let unsubPrioritiesLegacy: Unsubscribe | undefined;
     const prioritiesById = new Map<string, any>();
     const applyPriorities = () => {
-      const items = Array.from(prioritiesById.values());
-      // Sort by sortOrder to match Priority Management ordering
-      const capabilities = items
+      // Only capabilities still live here; annual priorities are goals now.
+      const capabilities = Array.from(prioritiesById.values())
         .filter((p) => p.type === "capability")
         .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-      const annualPriorities = items
-        .filter((p) => p.type === "priority")
-        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-      setRawPriorities(items);
+      setRawCapabilities(capabilities);
       setRoadmapData((prev) => ({
         ...prev,
         threeYear: {
           ...prev.threeYear,
           capabilities: capabilities.map((c) => ({ id: c.id, text: c.title || c.description })),
-        },
-        oneYear: {
-          ...prev.oneYear,
-          annualPriorities: annualPriorities.map((p) => ({ id: p.id, text: p.title || p.description })),
         },
       }));
     };
@@ -477,13 +472,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
   }, [companyId, selectedYear]);
 
   const [rawRocks, setRawRocks] = useState<any[]>([]);
-  const [rawPriorities, setRawPriorities] = useState<any[]>([]); // Capture raw priorities for mapping
-
-  // Listen to priorities separately to update rawPriorities for rock mapping
-  useEffect(() => {
-      // rawPriorities is managed by the year-scoped listener above
-      return () => {};
-  }, []);
+  const [rawCapabilities, setRawCapabilities] = useState<any[]>([]);
 
   // Combine Rocks and Priorities to form Quarterly Rocks
   useEffect(() => {
@@ -494,9 +483,11 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
       };
 
       rawRocks.forEach(rock => {
-          const priority = rawPriorities.find(p => p.id === rock.priorityId);
-          const priorityType = priority?.type || 'priority'; // Default to priority if unknown? Or maybe just skip.
-          const priorityTitle = priority?.title || 'Unknown';
+          const parentId = rockGoalId(rock);
+          const capability = rawCapabilities.find(c => c.id === parentId);
+          const priority = annualPriorities.find(p => p.id === parentId);
+          const priorityType = capability ? 'capability' : 'priority';
+          const priorityTitle = capability?.title || priority?.title || 'Unknown';
           const quarter = rock.quarter || 'Q1';
 
           const rockData = {
@@ -519,7 +510,18 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
 
       setRoadmapData(prev => ({ ...prev, quarterlyRocks }));
 
-  }, [rawRocks, rawPriorities]);
+  }, [rawRocks, rawCapabilities, annualPriorities]);
+
+  // Annual priorities are goals, mirrored into the one-year panel.
+  useEffect(() => {
+    setRoadmapData((prev) => ({
+      ...prev,
+      oneYear: {
+        ...prev.oneYear,
+        annualPriorities: annualPriorities.map((p) => ({ id: p.id, text: p.title || p.description || "" })),
+      },
+    }));
+  }, [annualPriorities]);
 
 
   // ... Render functions (renderField, renderList, renderQuarterlyRocks) ...

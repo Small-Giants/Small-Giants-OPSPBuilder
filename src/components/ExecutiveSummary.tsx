@@ -19,8 +19,9 @@ import {
 } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
 import { useGoals } from "@/hooks/use-goals";
+import { useAnnualPriorities } from "@/hooks/use-annual-priorities";
 import { calculateAnnualRollup } from "@/lib/goal-progress";
-import { type Metric, type Priority, type Rock } from "@/types";
+import { type Metric, type Rock } from "@/types";
 import {
   ArrowRightIcon,
   CheckCircle2Icon,
@@ -89,11 +90,11 @@ export default function ExecutiveSummary({
   const { toast } = useToast();
   const { companyId, selectedYear } = usePlanYear();
   const { allGoals, childrenOf } = useGoals();
+  const { priorities } = useAnnualPriorities();
 
   const [foundation, setFoundation] = useState<FoundationData | null>(null);
   const [roadmapMain, setRoadmapMain] = useState<RoadmapMainData | null>(null);
   const [oneYear, setOneYear] = useState<OneYearDocData | null>(null);
-  const [priorities, setPriorities] = useState<Priority[]>([]);
   const [rocks, setRocks] = useState<Rock[]>([]);
   const [metrics, setMetrics] = useState<Metric[]>([]);
 
@@ -102,8 +103,6 @@ export default function ExecutiveSummary({
     let unsubMain: Unsubscribe | undefined;
     let unsubOneYear: Unsubscribe | undefined;
     let unsubOneYearLegacy: Unsubscribe | undefined;
-    let unsubPrioritiesYear: Unsubscribe | undefined;
-    let unsubPrioritiesLegacy: Unsubscribe | undefined;
     let unsubRocksYear: Unsubscribe | undefined;
     let unsubRocksLegacy: Unsubscribe | undefined;
     let unsubMetricsYear: Unsubscribe | undefined;
@@ -170,45 +169,8 @@ export default function ExecutiveSummary({
       );
     }
 
-    // Priorities (year + legacy for 2025)
-    const prioritiesById = new Map<string, Priority>();
-    const applyPriorities = () => {
-      const sorted = Array.from(prioritiesById.values())
-        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-      setPriorities(sorted);
-    };
-    const prioritiesCol = collection(db, "companies", companyId, "priorities");
-    const qPrioritiesYear = query(
-      prioritiesCol,
-      where("type", "==", "priority"),
-      where("planYear", "==", selectedYear)
-    );
-
-    unsubPrioritiesYear = onSnapshot(qPrioritiesYear, (snap) => {
-      prioritiesById.clear();
-      snap.forEach((d) => prioritiesById.set(d.id, { id: d.id, ...(d.data() as any) }));
-      applyPriorities();
-    });
-
-    if (selectedYear === LEGACY_PLAN_YEAR) {
-      const qPrioritiesLegacy = query(
-        prioritiesCol,
-        where("type", "==", "priority"),
-        where("planYear", "==", null)
-      );
-      unsubPrioritiesLegacy = onSnapshot(
-        qPrioritiesLegacy,
-        (snap) => {
-          snap.forEach((d) => {
-            if (!prioritiesById.has(d.id)) prioritiesById.set(d.id, { id: d.id, ...(d.data() as any) });
-          });
-          applyPriorities();
-        },
-        () => {
-          // ignore
-        }
-      );
-    }
+    // Annual priorities come from the goals collection through
+    // useAnnualPriorities, so nothing subscribes to `priorities` here.
 
     // Rocks (year + legacy for 2025)
     const rocksById = new Map<string, Rock>();
@@ -271,8 +233,6 @@ export default function ExecutiveSummary({
       unsubMain?.();
       unsubOneYear?.();
       unsubOneYearLegacy?.();
-      unsubPrioritiesYear?.();
-      unsubPrioritiesLegacy?.();
       unsubRocksYear?.();
       unsubRocksLegacy?.();
       unsubMetricsYear?.();
@@ -681,7 +641,7 @@ export default function ExecutiveSummary({
               <div className="mt-3 space-y-3">
                 {goalSummary.rollups.length === 0 ? (
                   <div className="text-sm text-muted-foreground italic">
-                    No annual goals yet. Build the tree under Company Goals.
+                    No annual goals yet. Build the tree under Annual Priorities.
                   </div>
                 ) : (
                   goalSummary.rollups.map(({ goal, rollup }) => (
@@ -705,7 +665,7 @@ export default function ExecutiveSummary({
               </div>
               <div className="mt-4">
                 <Button variant="outline" size="sm" onClick={() => onNavigate("goals")}>
-                  Open Company Goals
+                  Open Annual Priorities
                   <ArrowRightIcon className="h-4 w-4 ml-2" />
                 </Button>
               </div>

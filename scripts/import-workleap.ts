@@ -135,7 +135,7 @@ async function main() {
 
   console.log(`\nImported ${withIds.length} goal(s) into ${companyId} for ${planYear}.`);
   console.log(
-    "Next: open Company Goals and attach the department goals to their annual priorities."
+    "Next: open Annual Priorities and attach the department goals to their annual priorities."
   );
 }
 

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot } from "firebase/firestore";
 import { usePlanYear } from "@/contexts/PlanYearContext";
-import type { Department } from "@/types";
+import { departmentLeaderIds, type Department } from "@/types";
 
 export function useDepartments() {
   const { companyId } = usePlanYear();
@@ -48,13 +48,19 @@ export function useDepartments() {
 
   const isLeaderOf = useCallback(
     (userId: string | undefined, departmentId?: string | null) =>
-      Boolean(userId && departmentId && byId.get(departmentId)?.leaderId === userId),
+      Boolean(
+        userId &&
+          departmentId &&
+          departmentLeaderIds(byId.get(departmentId)).includes(userId)
+      ),
     [byId]
   );
 
   const departmentsLedBy = useCallback(
     (userId?: string) =>
-      userId ? departments.filter((d) => d.leaderId === userId) : [],
+      userId
+        ? departments.filter((d) => departmentLeaderIds(d).includes(userId))
+        : [],
     [departments]
   );
 

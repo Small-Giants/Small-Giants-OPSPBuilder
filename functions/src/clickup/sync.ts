@@ -11,7 +11,7 @@ import {
   mergeQuarters,
   type ClickUpMappingConfig,
 } from "./mapping";
-import type { Goal, SyncLogEntry, SyncLogStatus } from "../types";
+import { raciMembers, type Goal, type SyncLogEntry, type SyncLogStatus } from "../types";
 
 interface SyncRequest {
   /** Sync a single goal, or omit to sync every linked goal for the plan year. */
@@ -51,9 +51,7 @@ export const syncClickUp = onCall<SyncRequest, Promise<SyncResponse>>(
     }
 
     // Syncing someone else's goal is an admin action; syncing your own is not.
-    const ownsAll = goals.every(
-      (g) => g.ownerId === caller.uid || (g.contributorIds ?? []).includes(caller.uid)
-    );
+    const ownsAll = goals.every((g) => raciMembers(g).includes(caller.uid));
     if (!ownsAll) requireAdmin(caller);
 
     const startedAt = new Date().toISOString();

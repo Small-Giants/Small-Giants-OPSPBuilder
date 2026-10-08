@@ -20,8 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserCombobox } from "@/components/ui/user-combobox";
 import { DepartmentCombobox } from "@/components/ui/department-combobox";
+import { RaciFields } from "@/components/RaciFields";
 import { SmartGoalFields } from "@/components/goals/SmartGoalFields";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,9 +42,10 @@ import {
   type GoalLevel,
   type GoalQuarter,
   type MeasurementType,
+  type RaciAssignment,
   type TargetAccumulation,
 } from "@/types";
-import { Loader2, SplitIcon, X } from "lucide-react";
+import { Loader2, SplitIcon } from "lucide-react";
 
 interface GoalFormProps {
   open: boolean;
@@ -127,8 +128,6 @@ export function GoalForm({
     [allGoals, parentLevel, goal?.id]
   );
 
-  const contributorIds = draft.contributorIds ?? [];
-
   const setMeasurement = (changes: Partial<GoalDraft["measurement"]>) =>
     setDraft((prev) => ({
       ...prev,
@@ -157,41 +156,20 @@ export function GoalForm({
     }));
   };
 
-  const addContributor = (userId: string) => {
-    if (!userId || contributorIds.includes(userId) || userId === draft.ownerId) {
-      return;
-    }
-    setDraft((prev) => ({
-      ...prev,
-      contributorIds: [...(prev.contributorIds ?? []), userId],
-    }));
-  };
-
-  const removeContributor = (userId: string) =>
-    setDraft((prev) => ({
-      ...prev,
-      contributorIds: (prev.contributorIds ?? []).filter((id) => id !== userId),
-    }));
-
-  const userLabel = (userId: string) => {
-    const found = users.find((u) => u.id === userId);
-    return found?.name || found?.email || userId;
-  };
-
-  const handleOwnerChange = (userId: string) => {
-    const owner = users.find((u) => u.id === userId);
-    setDraft((prev) => ({
-      ...prev,
-      ownerId: userId,
-      ownerName: owner?.name || owner?.email || "",
-      // An individual goal inherits the department of whoever owns it.
-      departmentId:
-        prev.level === "individual"
-          ? owner?.departmentId ?? prev.departmentId ?? null
-          : prev.departmentId ?? null,
-      contributorIds: (prev.contributorIds ?? []).filter((id) => id !== userId),
-    }));
-  };
+  const handleRaciChange = (next: RaciAssignment) =>
+    setDraft((prev) => {
+      const ownerChanged = next.ownerId !== prev.ownerId;
+      const owner = users.find((u) => u.id === next.ownerId);
+      return {
+        ...prev,
+        ...next,
+        // An individual goal inherits the department of whoever owns it.
+        departmentId:
+          ownerChanged && prev.level === "individual"
+            ? owner?.departmentId ?? prev.departmentId ?? null
+            : prev.departmentId ?? null,
+      };
+    });
 
   const handleClickUpBlur = () => {
     const raw = clickUpInput.trim();
@@ -328,55 +306,16 @@ export function GoalForm({
             onChange={(smart) => setDraft({ ...draft, smart })}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label>Accountable owner</Label>
-              <UserCombobox
-                value={draft.ownerId ?? ""}
-                onValueChange={handleOwnerChange}
-                placeholder="Who owns this?"
-                valueMode="id"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Department</Label>
-              <DepartmentCombobox
-                value={draft.departmentId ?? ""}
-                onValueChange={(v) =>
-                  setDraft({ ...draft, departmentId: v || null })
-                }
-              />
-            </div>
-          </div>
+          <RaciFields value={draft} onChange={handleRaciChange} />
 
-          <div className="space-y-2">
-            <Label>Contributors</Label>
-            <UserCombobox
-              value=""
-              onValueChange={addContributor}
-              placeholder="Add a contributor"
-              valueMode="id"
+          <div className="space-y-1">
+            <Label>Department</Label>
+            <DepartmentCombobox
+              value={draft.departmentId ?? ""}
+              onValueChange={(v) =>
+                setDraft({ ...draft, departmentId: v || null })
+              }
             />
-            {contributorIds.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {contributorIds.map((id) => (
-                  <Badge key={id} variant="secondary" className="gap-1">
-                    {userLabel(id)}
-                    <button
-                      type="button"
-                      onClick={() => removeContributor(id)}
-                      className="hover:text-destructive"
-                      aria-label={`Remove ${userLabel(id)}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Contributors can edit this goal. The owner stays accountable for it.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

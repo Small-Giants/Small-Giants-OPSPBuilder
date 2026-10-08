@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   planMigration,
-  quartersForRock,
   quartersFromRocks,
   summarizePlan,
   type LegacyPriority,
@@ -10,7 +9,7 @@ import {
 
 const BASE = {
   companyId: "default-company",
-  planYear: 2026,
+  planYears: [2026],
   legacyPlanYear: 2025,
 };
 
@@ -49,27 +48,6 @@ describe("quartersFromRocks", () => {
   });
 });
 
-describe("quartersForRock", () => {
-  it("marks only the rock's own quarter", () => {
-    const result = quartersForRock({
-      id: "r1",
-      quarter: "Q3",
-      status: "complete",
-    });
-    expect(result.find((q) => q.quarter === "Q3")?.complete).toBe(true);
-    expect(result.filter((q) => q.complete)).toHaveLength(1);
-  });
-
-  it("defaults an unrecognised quarter to Q1", () => {
-    const result = quartersForRock({
-      id: "r1",
-      quarter: "whenever",
-      status: "complete",
-    });
-    expect(result.find((q) => q.quarter === "Q1")?.complete).toBe(true);
-  });
-});
-
 describe("planMigration", () => {
   it("converts an annual priority into a layer 1 goal", () => {
     const plan = run(
@@ -98,9 +76,22 @@ describe("planMigration", () => {
     const plan = run(
       [{ id: "p1", title: "Legacy priority", type: "priority" }],
       [],
-      { planYear: 2025 }
+      { planYears: [2025] }
     );
     expect(plan.goals).toHaveLength(1);
+  });
+
+  it("converts both plan years in a single run", () => {
+    const plan = run(
+      [
+        { id: "p1", title: "This year", type: "priority", planYear: 2025 },
+        { id: "p2", title: "Next year", type: "priority", planYear: 2026 },
+      ],
+      [],
+      { planYears: [2025, 2026] }
+    );
+
+    expect(plan.goals.map((g) => g.draft.planYear).sort()).toEqual([2025, 2026]);
   });
 
   it("skips records from a different plan year", () => {
@@ -112,7 +103,7 @@ describe("planMigration", () => {
     expect(plan.skipped[0].reason).toContain("2024");
   });
 
-  it("parents a rock to the annual goal built from its priority", () => {
+  it("repoints a rock onto the goal its priority became, without making it a goal", () => {
     const plan = run(
       [{ id: "p1", title: "Grow revenue", type: "priority", planYear: 2026 }],
       [
@@ -127,38 +118,64 @@ describe("planMigration", () => {
       ]
     );
 
-    const rockGoal = plan.goals.find((g) => g.source.collection === "rocks");
-    expect(rockGoal?.draft.level).toBe("individual");
-    expect(rockGoal?.parentKey).toBe("priority:p1");
+    expect(plan.goals).toHaveLength(1);
+    expect(plan.goals[0].draft.level).toBe("annual");
+    expect(plan.rockUpdates).toEqual([
+      {
+        rockId: "r1",
+        goalKey: "priority:p1",
+        ownerId: "",
+        ownerName: "",
+        contributorIds: [],
+      },
+    ]);
   });
 
-  it("carries the rock assignee through as the goal owner", () => {
+  it("makes the old single assignee both accountable and responsible", () => {
     const plan = run(
-      [],
+      [{ id: "p1", title: "Grow revenue", type: "priority", planYear: 2026 }],
       [
         {
           id: "r1",
           text: "Ship onboarding",
           quarter: "Q1",
           year: 2026,
+          priorityId: "p1",
           assigneeId: "uid-alice",
           assigneeName: "Alice",
         },
       ]
     );
 
-    expect(plan.goals[0].draft.ownerId).toBe("uid-alice");
-    expect(plan.goals[0].draft.ownerName).toBe("Alice");
+    expect(plan.rockUpdates[0]).toMatchObject({
+      ownerId: "uid-alice",
+      ownerName: "Alice",
+      contributorIds: ["uid-alice"],
+    });
   });
 
-  it("backfills the department from the assignee's profile", () => {
+  it("leaves a capability's rocks alone", () => {
     const plan = run(
-      [],
-      [{ id: "r1", text: "Ship it", quarter: "Q1", year: 2026, assigneeId: "uid-alice" }],
-      { departmentByUserId: { "uid-alice": "engineering" } }
+      [{ id: "c1", title: "Build a CRM", type: "capability", planYear: 2026 }],
+      [{ id: "r1", text: "Pick a vendor", quarter: "Q1", year: 2026, priorityId: "c1" }]
     );
 
-    expect(plan.goals[0].draft.departmentId).toBe("engineering");
+    expect(plan.rockUpdates).toHaveLength(0);
+    expect(
+      plan.skipped.some(
+        (s) => s.collection === "rocks" && s.reason.includes("capability")
+      )
+    ).toBe(true);
+  });
+
+  it("leaves a rock with no priority link as a standalone rock", () => {
+    const plan = run(
+      [],
+      [{ id: "r1", text: "Ship it", quarter: "Q1", year: 2026 }]
+    );
+
+    expect(plan.rockUpdates).toHaveLength(0);
+    expect(plan.skipped[0].reason).toContain("standalone");
   });
 
   it("resolves a free-text priority owner to a user id when one matches", () => {
@@ -182,20 +199,6 @@ describe("planMigration", () => {
     expect(plan.warnings.some((w) => w.includes("Ghost"))).toBe(true);
   });
 
-  it("falls back to the legacy title field when text is missing", () => {
-    const plan = run(
-      [],
-      [{ id: "r1", title: "Legacy titled rock", quarter: "Q1", year: 2026 }]
-    );
-    expect(plan.goals[0].draft.title).toBe("Legacy titled rock");
-  });
-
-  it("skips rocks with no label at all", () => {
-    const plan = run([], [{ id: "r1", quarter: "Q1", year: 2026 }]);
-    expect(plan.goals).toHaveLength(0);
-    expect(plan.skipped[0].reason).toBe("No text.");
-  });
-
   it("warns when a rock points at a priority that was not migrated", () => {
     const plan = run(
       [],
@@ -210,7 +213,7 @@ describe("planMigration", () => {
       ]
     );
 
-    expect(plan.goals[0].parentKey).toBeNull();
+    expect(plan.rockUpdates).toHaveLength(0);
     expect(plan.warnings.some((w) => w.includes("missing"))).toBe(true);
   });
 
@@ -247,15 +250,16 @@ describe("planMigration", () => {
 
     const summary = summarizePlan(plan);
     expect(summary.annual).toBe(1);
-    expect(summary.individual).toBe(1);
-    expect(summary.total).toBe(2);
+    expect(summary.individual).toBe(0);
+    expect(summary.total).toBe(1);
+    expect(summary.rocksRepointed).toBe(1);
     expect(summary.skipped).toBe(1);
   });
 
   it("records provenance on every migrated goal so a rollback can find them", () => {
     const plan = run(
       [{ id: "p1", title: "Grow", type: "priority", planYear: 2026 }],
-      [{ id: "r1", text: "Do a thing", quarter: "Q1", year: 2026 }]
+      [{ id: "r1", text: "Do a thing", quarter: "Q1", year: 2026, priorityId: "p1" }]
     );
 
     expect(

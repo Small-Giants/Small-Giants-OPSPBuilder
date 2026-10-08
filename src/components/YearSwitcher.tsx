@@ -20,6 +20,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useGoals } from "@/hooks/use-goals";
+import { createGoal, newGoalDraft } from "@/lib/goals";
 import { db } from "@/lib/firebase";
 import {
   addDoc,
@@ -62,6 +64,7 @@ interface SwotData {
 
 export default function YearSwitcher() {
   const { companyId, selectedYear, setSelectedYear, availableYears } = usePlanYear();
+  const { goals: annualGoals } = useGoals({ level: "annual" });
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [newYear, setNewYear] = useState(String(selectedYear + 1));
@@ -148,10 +151,12 @@ export default function YearSwitcher() {
 
       // 3) Carry over selections
       if (carryPriorities) {
-        const prioritiesSnap = await getDocs(collection(db, "companies", companyId, "priorities"));
+        // Capabilities still live in the priorities collection.
+        const capabilitiesSnap = await getDocs(collection(db, "companies", companyId, "priorities"));
         const toCreate: PriorityData[] = [];
-        prioritiesSnap.forEach((d) => {
+        capabilitiesSnap.forEach((d) => {
           const data = d.data() as PriorityData;
+          if (data.type !== "capability") return;
           const planYear = typeof data.planYear === "number" ? data.planYear : selectedYear;
           if (planYear !== selectedYear) return;
           const { createdAt, updatedAt, ...rest } = data;
@@ -164,6 +169,24 @@ export default function YearSwitcher() {
 
         for (const item of toCreate) {
           await addDoc(collection(db, "companies", companyId, "priorities"), item);
+        }
+
+        // Annual priorities are goals. Copy the titles forward and reset
+        // progress, leaving quarters and rocks behind with the old year.
+        for (const goal of annualGoals) {
+          await createGoal(companyId, {
+            ...newGoalDraft({ level: "annual", planYear: toYear, companyId }),
+            title: goal.title,
+            description: goal.description,
+            smart: goal.smart,
+            ownerId: goal.ownerId,
+            ownerName: goal.ownerName,
+            contributorIds: goal.contributorIds ?? [],
+            consultedIds: goal.consultedIds ?? [],
+            informedIds: goal.informedIds ?? [],
+            executiveSponsorId: goal.executiveSponsorId,
+            sortOrder: goal.sortOrder,
+          });
         }
       }
 

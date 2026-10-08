@@ -35,20 +35,36 @@ service cloud.firestore {
       return /databases/$(database)/documents/companies/$(companyId)/departments/$(departmentId);
     }
 
+    // Departments can have several leaders. `leaderId` is the pre-array
+    // field, still honoured for documents written before the change.
+    function departmentLeaderIds(department) {
+      return department.get('leaderIds', [])
+        .concat(department.get('leaderId', '') == '' ? [] : [department.get('leaderId', '')]);
+    }
+
     function isDepartmentLeader(companyId, departmentId) {
       return isAuthenticated()
         && departmentId is string
         && departmentId != ''
         && exists(departmentPath(companyId, departmentId))
-        && get(departmentPath(companyId, departmentId)).data.leaderId == request.auth.uid;
+        && request.auth.uid in departmentLeaderIds(get(departmentPath(companyId, departmentId)).data);
     }
 
-    // A goal may be written by its owner, a listed contributor, the leader of
-    // the owning department, or an admin.
+    // Anyone named in a RACI role may write. `ownerId` is Accountable and
+    // `contributorIds` is Responsible; both keep their pre-RACI storage names.
+    function isRaciMember(data) {
+      return data.get('ownerId', '') == request.auth.uid
+        || data.get('executiveSponsorId', '') == request.auth.uid
+        || request.auth.uid in data.get('contributorIds', [])
+        || request.auth.uid in data.get('consultedIds', [])
+        || request.auth.uid in data.get('informedIds', []);
+    }
+
+    // A goal may be written by anyone in its RACI, the leader of the owning
+    // department, or an admin.
     function canWriteGoal(companyId, data) {
       return isAdmin()
-        || data.get('ownerId', '') == request.auth.uid
-        || request.auth.uid in data.get('contributorIds', [])
+        || isRaciMember(data)
         || isDepartmentLeader(companyId, data.get('departmentId', ''));
     }
 
@@ -177,8 +193,9 @@ service cloud.firestore {
       // leadership or create/remove departments.
       allow update: if isAdmin()
         || (isAuthenticated()
-            && resource.data.leaderId == request.auth.uid
-            && request.resource.data.leaderId == resource.data.leaderId);
+            && request.auth.uid in departmentLeaderIds(resource.data)
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                 .hasAny(['leaderIds', 'leaderId']));
     }
 
     // ---------------------------------------------------------------------

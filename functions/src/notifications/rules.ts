@@ -1,22 +1,25 @@
-import { QUARTERS, type Goal, type Quarter } from "../types";
+import { QUARTERS, raciMembers, type Goal, type Quarter } from "../types";
 import type { NotificationIntent } from "./types";
 
 /**
- * Everyone with a stake in a goal: the owner, the contributors, and whoever
+ * Everyone with a stake in a goal: everybody named in its RACI, plus whoever
  * leads the department it belongs to.
  */
 export function stakeholders(
   goal: Goal,
-  departmentLeaderId?: string | null
+  departmentLeaderIds?: string | string[] | null
 ): string[] {
-  const ids = [goal.ownerId, ...(goal.contributorIds ?? []), departmentLeaderId];
+  const leaders = Array.isArray(departmentLeaderIds)
+    ? departmentLeaderIds
+    : [departmentLeaderIds];
+  const ids = [...raciMembers(goal), ...leaders];
   return Array.from(new Set(ids.filter((id): id is string => Boolean(id))));
 }
 
 export interface GoalChangeContext {
   before: Goal | null;
   after: Goal | null;
-  departmentLeaderId?: string | null;
+  departmentLeaderIds?: string[] | null;
   /** Who made the change; they do not need to be told about their own edit. */
   actorId?: string;
 }
@@ -29,7 +32,7 @@ export interface GoalChangeContext {
 export function intentsForGoalChange({
   before,
   after,
-  departmentLeaderId,
+  departmentLeaderIds,
   actorId,
 }: GoalChangeContext): NotificationIntent[] {
   if (!after) return [];
@@ -62,7 +65,7 @@ export function intentsForGoalChange({
     });
   }
 
-  const recipients = stakeholders(after, departmentLeaderId);
+  const recipients = stakeholders(after, departmentLeaderIds);
 
   if (before?.status !== "at_risk" && after.status === "at_risk") {
     for (const id of recipients) {

@@ -27,6 +27,7 @@ import { ActionMenu } from "@/components/ui/ActionMenu";
 import { db } from "@/lib/firebase";
 import { doc, collection, onSnapshot, setDoc, updateDoc, addDoc, deleteDoc, query, where, type Unsubscribe } from "firebase/firestore";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import { useAnnualPriorities } from "@/hooks/use-annual-priorities";
 
 export default function OneYear() {
   const { toast } = useToast();
@@ -78,7 +79,7 @@ export default function OneYear() {
     }
   });
 
-  const [priorities, setPriorities] = useState<any[]>([]);
+  const { priorities: annualPriorities } = useAnnualPriorities();
   const [rocks, setRocks] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,8 +97,6 @@ export default function OneYear() {
   useEffect(() => {
     let unsubYearRoadmap: Unsubscribe | undefined;
     let unsubLegacyRoadmap: Unsubscribe | undefined;
-    let unsubPrioritiesYear: Unsubscribe | undefined;
-    let unsubPrioritiesLegacy: Unsubscribe | undefined;
     let unsubRocksYear: Unsubscribe | undefined;
     let unsubRocksLegacy: Unsubscribe | undefined;
 
@@ -157,41 +156,7 @@ export default function OneYear() {
       );
     }
 
-    // 2) Priorities (year-scoped)
-    const prioritiesById = new Map<string, any>();
-    const applyPriorities = () => setPriorities(Array.from(prioritiesById.values()));
-
-    const prioritiesCol = collection(db, "companies", companyId, "priorities");
-    const qPrioritiesYear = query(
-      prioritiesCol,
-      where("type", "==", "priority"),
-      where("planYear", "==", selectedYear)
-    );
-    unsubPrioritiesYear = onSnapshot(qPrioritiesYear, (snapshot) => {
-      prioritiesById.clear();
-      snapshot.forEach((d) => prioritiesById.set(d.id, { id: d.id, ...d.data() }));
-      applyPriorities();
-    });
-
-    if (selectedYear === LEGACY_PLAN_YEAR) {
-      const qPrioritiesLegacy = query(
-        prioritiesCol,
-        where("type", "==", "priority"),
-        where("planYear", "==", null)
-      );
-      unsubPrioritiesLegacy = onSnapshot(
-        qPrioritiesLegacy,
-        (snapshot) => {
-          snapshot.forEach((d) => {
-            if (!prioritiesById.has(d.id)) prioritiesById.set(d.id, { id: d.id, ...d.data() });
-          });
-          applyPriorities();
-        },
-        () => {
-          // ignore
-        }
-      );
-    }
+    // 2) Annual priorities come from the goals collection via useAnnualPriorities.
 
     // 3) Rocks (year-scoped)
     const rocksById = new Map<string, any>();
@@ -232,8 +197,6 @@ export default function OneYear() {
     return () => {
       unsubYearRoadmap?.();
       unsubLegacyRoadmap?.();
-      unsubPrioritiesYear?.();
-      unsubPrioritiesLegacy?.();
       unsubRocksYear?.();
       unsubRocksLegacy?.();
       unsubUsers();
@@ -499,13 +462,10 @@ export default function OneYear() {
     return grouped;
   };
 
-  // Sort priorities by sortOrder to match Priority Management ordering
-  const annualPriorities = priorities
-    .filter((p: any) => p.type === 'priority')
-    .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  // Already sorted by sortOrder, matching Priority Management ordering.
   const prioritiesWithRocks = annualPriorities.map(p => ({
       ...p,
-      rocks: rocks.filter(r => r.priorityId === p.id)
+      rocks: p.rocks ?? []
   }));
 
   if (loading) {

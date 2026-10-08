@@ -60,6 +60,8 @@ export function newGoalDraft(params: {
     ownerId: params.ownerId ?? "",
     ownerName: params.ownerName ?? "",
     contributorIds: [],
+    consultedIds: [],
+    informedIds: [],
     startDate: "",
     dueDate: "",
     planYear: params.planYear,

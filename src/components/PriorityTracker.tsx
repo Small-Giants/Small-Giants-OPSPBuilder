@@ -11,17 +11,28 @@ import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, type Unsubscribe } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import { useAnnualPriorities } from "@/hooks/use-annual-priorities";
+import { updateGoal } from "@/lib/goals";
 import {
   PRIORITY_STATUS_COLORS,
   PRIORITY_STATUS_LABELS,
   isRockComplete,
   normalizeRockStatus,
+  rockGoalId,
   rockLabel,
   toQuarter,
+  type GoalStatus,
   type Priority,
   type PriorityStatus,
   type Rock,
 } from "@/types";
+
+const GOAL_STATUS_BY_PRIORITY_STATUS: Record<PriorityStatus, GoalStatus> = {
+  "not-started": "not_started",
+  "in-progress": "in_progress",
+  completed: "complete",
+  blocked: "at_risk",
+};
 
 interface PriorityTrackerProps {
   priorities?: Priority[]; // Kept for backward compatibility if needed, but internal state preferred
@@ -33,6 +44,7 @@ interface PriorityTrackerProps {
 export default function PriorityTracker({ isCapabilityView = false }: PriorityTrackerProps) {
   const { toast } = useToast();
   const { companyId, selectedYear } = usePlanYear();
+  const { priorities: annualPriorities } = useAnnualPriorities();
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [rocks, setRocks] = useState<Rock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,11 +62,15 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
   });
 
   useEffect(() => {
+    // Annual priorities are goals now, so only capabilities are read here.
+    if (!isCapabilityView) {
+      setPriorities([]);
+      setLoading(false);
+      return;
+    }
+
     const prioritiesRef = collection(db, 'companies', companyId, 'priorities');
-    const qByType = query(
-      prioritiesRef,
-      where("type", "==", isCapabilityView ? 'capability' : 'priority')
-    );
+    const qByType = query(prioritiesRef, where("type", "==", 'capability'));
 
     const unsubscribe = onSnapshot(
       qByType,
@@ -108,11 +124,13 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
 
   const prioritiesWithRocks = useMemo(
     () =>
-      priorities.map((priority) => ({
-        ...priority,
-        rocks: rocks.filter((rock) => rock.priorityId === priority.id),
-      })),
-    [priorities, rocks]
+      isCapabilityView
+        ? priorities.map((priority) => ({
+            ...priority,
+            rocks: rocks.filter((rock) => rockGoalId(rock) === priority.id),
+          }))
+        : annualPriorities,
+    [isCapabilityView, priorities, rocks, annualPriorities]
   );
 
   const getStatusColor = (status?: PriorityStatus) =>
@@ -162,6 +180,12 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
 
   const handleUpdatePriority = async (priority: Priority) => {
     try {
+      if (!isCapabilityView) {
+        await updateGoal(companyId, priority.id, {
+          status: GOAL_STATUS_BY_PRIORITY_STATUS[priority.status ?? 'not-started'],
+        });
+        return;
+      }
       const priorityRef = doc(db, 'companies', companyId, 'priorities', priority.id);
       // `rocks` is joined at read time and must not be written back.
       const { id, rocks: _rocks, ...data } = priority;
@@ -208,13 +232,26 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
               : 'Track progress on your annual priorities'}
           </p>
         </div>
-        <Button 
-          onClick={() => setShowAddForm(true)}
-          data-testid="button-add-priority"
-        >
-          <PlusIcon className="w-4 h-4 mr-2" />
-          Add {isCapabilityView ? 'Capability' : 'Priority'}
-        </Button>
+        {isCapabilityView ? (
+          <Button
+            onClick={() => setShowAddForm(true)}
+            data-testid="button-add-priority"
+          >
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Add Capability
+          </Button>
+        ) : (
+          // Annual priorities are goals, so they are created on the
+          // Priorities & Capabilities screen where the full goal form lives.
+          <Button
+            variant="outline"
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'priority-management' }))}
+            data-testid="button-add-priority"
+          >
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Add Priority
+          </Button>
+        )}
       </div>
 
       {showAddForm && (
@@ -321,8 +358,8 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-primary">{rock.quarter}</span>
-                          {rock.assigneeName && (
-                            <span className="text-muted-foreground">({rock.assigneeName})</span>
+                          {(rock.ownerName || rock.assigneeName) && (
+                            <span className="text-muted-foreground">({rock.ownerName || rock.assigneeName})</span>
                           )}
                         </div>
                       </div>

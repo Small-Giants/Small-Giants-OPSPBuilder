@@ -20,7 +20,7 @@ const viewConfig: Record<string, { label: string; section: "plan" | "goals" | "e
   "swot": { label: "SWOT Analysis", section: "plan" },
   "integrations": { label: "Integrations", section: "admin" },
   "notification-settings": { label: "Notifications", section: "admin" },
-  "goals": { label: "Company Goals", section: "goals" },
+  "goals": { label: "Annual Priorities", section: "goals" },
   "department-goals": { label: "Department Goals", section: "goals" },
   "my-goals": { label: "My Goals", section: "goals" },
   "team-goals": { label: "My Team", section: "goals" },

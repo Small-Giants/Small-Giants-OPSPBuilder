@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, type Unsubscribe } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { LEGACY_PLAN_YEAR, usePlanYear } from "@/contexts/PlanYearContext";
+import { useGoals } from "@/hooks/use-goals";
 
 import { type Metric, type MetricDataPoint, type Priority } from "@/types";
 
@@ -27,6 +28,7 @@ interface MetricsDashboardProps {
 export default function MetricsDashboard({ }: MetricsDashboardProps) {
   const { toast } = useToast();
   const { companyId, selectedYear } = usePlanYear();
+  const { goals: annualGoals } = useGoals({ level: "annual" });
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [priorities, setPriorities] = useState<Priority[]>([]);
@@ -98,20 +100,16 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
     };
   }, [companyId, selectedYear]);
 
-  // Fetch priorities for grouping and linking
+  // Annual priorities for grouping and linking come from the goals collection.
   useEffect(() => {
-    const prioritiesRef = collection(db, 'companies', companyId, 'priorities');
-    const q = query(prioritiesRef, where("planYear", "==", selectedYear), where("type", "==", "priority"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedPriorities: Priority[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        fetchedPriorities.push({ id: doc.id, title: data.title, type: data.type });
-      });
-      setPriorities(fetchedPriorities);
-    });
-    return () => unsubscribe();
-  }, [companyId, selectedYear]);
+    setPriorities(
+      annualGoals.map((goal) => ({
+        id: goal.id,
+        title: goal.title,
+        type: "priority" as const,
+      }))
+    );
+  }, [annualGoals]);
 
   // Calculate derived status for metrics
   const metricsWithStatus = useMemo(() => {

@@ -29,12 +29,12 @@ export const onGoalWritten = onDocumentWritten(
 
     if (!after) return;
 
-    const departmentLeaderId = await leaderOf(event.params.companyId, after.departmentId);
+    const departmentLeaderIds = await leadersOf(event.params.companyId, after.departmentId);
 
     const intents = intentsForGoalChange({
       before,
       after,
-      departmentLeaderId,
+      departmentLeaderIds,
       // Goal writes carry the last editor, so self-edits stay quiet.
       actorId: (after as Goal & { updatedBy?: string }).updatedBy,
     });
@@ -127,11 +127,16 @@ async function loadGoals(companyId: string, planYear: number): Promise<Goal[]> {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Goal);
 }
 
-async function leaderOf(
+async function leadersOf(
   companyId: string,
   departmentId: string | null | undefined
-): Promise<string | null> {
-  if (!departmentId) return null;
+): Promise<string[]> {
+  if (!departmentId) return [];
   const snap = await db().doc(`companies/${companyId}/departments/${departmentId}`).get();
-  return (snap.data()?.leaderId as string | undefined) ?? null;
+  const data = snap.data();
+  const ids = (data?.leaderIds as string[] | undefined) ?? [];
+  if (ids.length > 0) return ids;
+  // Pre-array documents stored a single leader.
+  const legacy = data?.leaderId as string | undefined;
+  return legacy ? [legacy] : [];
 }

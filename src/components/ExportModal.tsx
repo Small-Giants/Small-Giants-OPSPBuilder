@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePlanYear } from "@/contexts/PlanYearContext";
 import { useGoals } from "@/hooks/use-goals";
 import { calculateAnnualRollup, calculateGoalProgress } from "@/lib/goal-progress";
+import { rockGoalId } from "@/types";
 import { db } from "@/lib/firebase";
 import { doc, collection, onSnapshot, query, where } from "firebase/firestore";
 import {
@@ -153,7 +154,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
       (snap) => setOneYearData(snap.exists() ? snap.data() : null)
     );
 
-    // Priorities (both priorities and capabilities)
+    // Capabilities. Annual priorities come from annualGoals instead.
     const prioritiesCol = collection(db, "companies", companyId, "priorities");
     const qPriorities = query(prioritiesCol, where("planYear", "==", selectedYear));
     const unsubPriorities = onSnapshot(qPriorities, (snap) => {
@@ -608,10 +609,8 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
     }
 
     // 1-Year Section
-    if (selectedSections.includes("one-year") && (oneYearData || priorities.length > 0)) {
-      const annualPriorities = priorities
-        .filter((p) => p.type === "priority")
-        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    if (selectedSections.includes("one-year") && (oneYearData || annualGoals.length > 0)) {
+      const annualPriorities = annualGoals;
 
       content += `
     <div class="section">
@@ -687,7 +686,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
       ${capabilities
         .map(
           (c: any, idx: number) => {
-            const capabilityRocks = rocks.filter((r: any) => r.priorityId === c.id);
+            const capabilityRocks = rocks.filter((r: any) => rockGoalId(r) === c.id);
             return `
         <div class="card" style="margin-bottom: 16px;">
           <div class="card-title" style="display: flex; align-items: center; gap: 8px;">

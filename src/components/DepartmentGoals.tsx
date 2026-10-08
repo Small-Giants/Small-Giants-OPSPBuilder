@@ -24,7 +24,7 @@ import { useDepartments } from "@/hooks/use-departments";
 import { useActiveUsers } from "@/hooks/use-active-users";
 import { useAuth } from "@/contexts/AuthContext";
 import { calculateGoalProgress } from "@/lib/goal-progress";
-import { type Goal } from "@/types";
+import { departmentLeaderIds, type Goal } from "@/types";
 import { Building2, Loader2, PlusIcon, Users } from "lucide-react";
 
 export default function DepartmentGoals() {
@@ -47,7 +47,7 @@ export default function DepartmentGoals() {
     if (selectedId || departments.length === 0) return;
     const preferred =
       departments.find((d) => d.id === myDepartmentId) ??
-      departments.find((d) => d.leaderId === user?.uid) ??
+      departments.find((d) => departmentLeaderIds(d).includes(user?.uid ?? "")) ??
       departments[0];
     setSelectedId(preferred.id);
   }, [departments, myDepartmentId, selectedId, user?.uid]);

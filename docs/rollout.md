@@ -59,7 +59,7 @@ upgrade, the deploy pipeline, and the callable auth path all work.
    unknown team names are reported per row.
 5. **Re-parent the imports.** Workleap has no annual layer, so imported goals
    arrive as department and individual goals with no annual priority above
-   them. Open Company Goals and attach them. The "Not linked to a priority"
+   them. Open Annual Priorities and attach them. The "Not linked to a priority"
    panel at the bottom of that page lists exactly what still needs doing.
 
 ## UAT checklist

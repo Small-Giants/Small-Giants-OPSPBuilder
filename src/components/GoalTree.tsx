@@ -121,7 +121,7 @@ export default function GoalTree() {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <TargetIcon className="w-6 h-6" />
-            Company Goals
+            Annual Priorities
           </h2>
           <p className="text-muted-foreground text-sm">
             Annual priorities, the department goals beneath them, and individual

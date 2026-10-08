@@ -1,5 +1,4 @@
 import {
-  QUARTERS,
   defaultMeasurement,
   emptyQuarters,
   normalizeRockStatus,
@@ -41,6 +40,7 @@ export interface LegacyRock {
   year?: number | null;
   status?: string;
   priorityId?: string;
+  goalId?: string;
   assigneeId?: string;
   assigneeName?: string;
   startDate?: string;
@@ -49,7 +49,8 @@ export interface LegacyRock {
 
 export interface MigrationInput {
   companyId: string;
-  planYear: number;
+  /** Every plan year to convert. Priorities outside these years are skipped. */
+  planYears: number[];
   /** Legacy documents with no year are treated as belonging to this year. */
   legacyPlanYear: number;
   priorities: LegacyPriority[];
@@ -64,12 +65,28 @@ export interface PlannedGoal {
   /** Stable key used to wire children to parents before ids exist. */
   key: string;
   parentKey: string | null;
-  source: { collection: "priorities" | "rocks"; id: string };
+  source: { collection: "priorities"; id: string };
   draft: GoalDraft;
+}
+
+/**
+ * Rocks are tasks, not goals. The conversion leaves each one in place and only
+ * repoints it from the priority it hung off onto the goal that priority became.
+ */
+export interface PlannedRockUpdate {
+  rockId: string;
+  /** Goal key, resolved to a real document id once the goals are written. */
+  goalKey: string;
+  /** Accountable, backfilled from the legacy single assignee. */
+  ownerId: string;
+  ownerName: string;
+  /** Responsible. The old assignee was the person doing the work. */
+  contributorIds: string[];
 }
 
 export interface MigrationPlan {
   goals: PlannedGoal[];
+  rockUpdates: PlannedRockUpdate[];
   skipped: Array<{ collection: string; id: string; reason: string }>;
   warnings: string[];
 }
@@ -110,37 +127,27 @@ export function quartersFromRocks(rocks: LegacyRock[]): GoalQuarter[] {
   });
 }
 
-export function quartersForRock(rock: LegacyRock): GoalQuarter[] {
-  const target = toQuarter(rock.quarter);
-  const isComplete = normalizeRockStatus(rock.status) === "complete";
-  return QUARTERS.map((quarter) => ({
-    quarter,
-    target: null,
-    actual: null,
-    complete: quarter === target ? isComplete : false,
-  }));
-}
-
 /**
- * Builds the full set of goals to write, without touching Firestore, so the
- * result can be inspected in a dry run and asserted in tests.
+ * Builds the full set of writes, without touching Firestore, so the result can
+ * be inspected in a dry run and asserted in tests.
  *
- * Legacy data has no department layer, so annual priorities become layer 1 and
- * rocks become layer 3 parented directly to their priority. Layer 2 department
- * goals are authored by hand afterwards and the layer 3 goals re-parented.
+ * Annual priorities become layer 1 goals. Capabilities stay in the priorities
+ * collection untouched. Rocks stay rocks and are only repointed onto the goal
+ * their priority became. Layer 2 department goals are authored by hand
+ * afterwards.
  */
 export function planMigration(input: MigrationInput): MigrationPlan {
   const {
-    planYear,
+    planYears,
     legacyPlanYear,
     priorities,
     rocks,
     companyId,
-    departmentByUserId = {},
     userIdByName = {},
   } = input;
 
   const goals: PlannedGoal[] = [];
+  const rockUpdates: PlannedRockUpdate[] = [];
   const skipped: MigrationPlan["skipped"] = [];
   const warnings: string[] = [];
 
@@ -154,9 +161,11 @@ export function planMigration(input: MigrationInput): MigrationPlan {
   });
 
   const annualKeyByPriorityId = new Map<string, string>();
+  const capabilityIds = new Set<string>();
 
   priorities.forEach((priority, index) => {
     if (priority.type === "capability") {
+      capabilityIds.add(priority.id);
       skipped.push({
         collection: "priorities",
         id: priority.id,
@@ -166,11 +175,11 @@ export function planMigration(input: MigrationInput): MigrationPlan {
     }
 
     const year = resolveYear(priority.planYear, legacyPlanYear);
-    if (year !== planYear) {
+    if (!planYears.includes(year)) {
       skipped.push({
         collection: "priorities",
         id: priority.id,
-        reason: `Belongs to plan year ${year}, not ${planYear}.`,
+        reason: `Belongs to plan year ${year}, which was not requested.`,
       });
       return;
     }
@@ -211,9 +220,11 @@ export function planMigration(input: MigrationInput): MigrationPlan {
         ownerId,
         ownerName,
         contributorIds: [],
+        consultedIds: [],
+        informedIds: [],
         startDate: "",
         dueDate: priority.dueDate ?? "",
-        planYear,
+        planYear: year,
         measurement: defaultMeasurement(),
         quarters: quartersFromRocks(linkedRocks),
         status: "not_started",
@@ -229,85 +240,59 @@ export function planMigration(input: MigrationInput): MigrationPlan {
     });
   });
 
-  rocks.forEach((rock, index) => {
-    const year = resolveYear(rock.year, legacyPlanYear);
-    if (year !== planYear) {
+  rocks.forEach((rock) => {
+    const label = rockLabel({ text: rock.text ?? "", title: rock.title });
+
+    if (!rock.priorityId) {
       skipped.push({
         collection: "rocks",
         id: rock.id,
-        reason: `Belongs to plan year ${year}, not ${planYear}.`,
+        reason: "Not linked to a priority. Left as a standalone rock.",
       });
       return;
     }
 
-    const label = rockLabel({ text: rock.text ?? "", title: rock.title });
-    if (!label.trim()) {
-      skipped.push({ collection: "rocks", id: rock.id, reason: "No text." });
+    if (capabilityIds.has(rock.priorityId)) {
+      skipped.push({
+        collection: "rocks",
+        id: rock.id,
+        reason: "Belongs to a capability, which stays in the priorities collection.",
+      });
       return;
     }
 
-    const parentKey = rock.priorityId
-      ? annualKeyByPriorityId.get(rock.priorityId) ?? null
-      : null;
-
-    if (rock.priorityId && !parentKey) {
+    const goalKey = annualKeyByPriorityId.get(rock.priorityId);
+    if (!goalKey) {
       warnings.push(
-        `Rock "${label}" points at priority ${rock.priorityId}, which was not migrated. It will be created unparented.`
+        `Rock "${label}" points at priority ${rock.priorityId}, which was not converted. Its link is left as-is.`
       );
+      skipped.push({
+        collection: "rocks",
+        id: rock.id,
+        reason: "Parent priority was not converted.",
+      });
+      return;
     }
 
     const ownerId = rock.assigneeId ?? "";
-
-    goals.push({
-      key: `rock:${rock.id}`,
-      parentKey,
-      source: { collection: "rocks", id: rock.id },
-      draft: {
-        title: label.trim(),
-        description: "",
-        level: "individual",
-        parentGoalId: null,
-        departmentId: ownerId ? departmentByUserId[ownerId] ?? null : null,
-        ownerId,
-        ownerName: rock.assigneeName ?? "",
-        contributorIds: [],
-        startDate: rock.startDate ?? "",
-        dueDate: "",
-        planYear,
-        measurement: defaultMeasurement(),
-        quarters: quartersForRock(rock),
-        status:
-          normalizeRockStatus(rock.status) === "complete"
-            ? "complete"
-            : "not_started",
-        sortOrder: index,
-        companyId,
-        createdAt: rock.createdAt,
-        migratedFrom: {
-          collection: "rocks",
-          id: rock.id,
-          migratedAt: new Date().toISOString(),
-        },
-      },
+    rockUpdates.push({
+      rockId: rock.id,
+      goalKey,
+      ownerId,
+      ownerName: rock.assigneeName ?? "",
+      // The single assignee both owned and did the work, so they land in
+      // Accountable and Responsible. Editable afterwards.
+      contributorIds: ownerId ? [ownerId] : [],
     });
   });
 
-  const unparented = goals.filter(
-    (g) => g.draft.level === "individual" && !g.parentKey
-  ).length;
-  if (unparented > 0) {
+  if (goals.length > 0) {
     warnings.push(
-      `${unparented} individual goal(s) have no parent. Create department goals and re-parent them to restore rollups.`
+      "Legacy data has no department layer. Layer 2 department goals must be created by hand, then the annual priorities' children re-parented onto them."
     );
   }
 
-  if (goals.some((g) => g.draft.level === "annual")) {
-    warnings.push(
-      "Legacy data has no department layer. Layer 2 department goals must be created by hand, then individual goals re-parented onto them."
-    );
-  }
-
-  return { goals, skipped, warnings };
+  return { goals, rockUpdates, skipped, warnings };
 }
 
 export interface MigrationSummary {
@@ -315,6 +300,7 @@ export interface MigrationSummary {
   department: number;
   individual: number;
   total: number;
+  rocksRepointed: number;
   skipped: number;
   warnings: number;
 }
@@ -328,6 +314,7 @@ export function summarizePlan(plan: MigrationPlan): MigrationSummary {
     department: count("department"),
     individual: count("individual"),
     total: plan.goals.length,
+    rocksRepointed: plan.rockUpdates.length,
     skipped: plan.skipped.length,
     warnings: plan.warnings.length,
   };

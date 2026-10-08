@@ -31,16 +31,38 @@ export interface GoalClickUpLink {
   lastSyncError?: string;
 }
 
-export interface Goal {
+/**
+ * RACI. `ownerId` holds Accountable and `contributorIds` holds Responsible;
+ * the storage names predate the model. Mirror of src/types/raci.ts.
+ */
+export interface RaciAssignment {
+  ownerId?: string;
+  ownerName?: string;
+  contributorIds?: string[];
+  consultedIds?: string[];
+  informedIds?: string[];
+  executiveSponsorId?: string;
+}
+
+/** Everyone named in any RACI role. */
+export function raciMembers(entity: RaciAssignment): string[] {
+  const ids = [
+    entity.ownerId,
+    ...(entity.contributorIds ?? []),
+    ...(entity.consultedIds ?? []),
+    ...(entity.informedIds ?? []),
+    entity.executiveSponsorId,
+  ];
+  return Array.from(new Set(ids.filter((id): id is string => Boolean(id))));
+}
+
+export interface Goal extends RaciAssignment {
   id: string;
   title: string;
   description?: string;
   level: GoalLevel;
   parentGoalId?: string | null;
   departmentId?: string | null;
-  ownerId?: string;
-  ownerName?: string;
-  contributorIds?: string[];
   startDate?: string;
   dueDate?: string;
   planYear: number;
