@@ -1,5 +1,12 @@
 import type { ClickUpCustomField, ClickUpTask } from "./client";
-import { QUARTERS, type Goal, type GoalQuarter, type Quarter } from "../types";
+import {
+  QUARTERS,
+  type Goal,
+  type GoalQuarter,
+  type Quarter,
+  type Rock,
+  type RockStatus,
+} from "../types";
 
 export interface ClickUpMappingConfig {
   enabled: boolean;
@@ -165,6 +172,77 @@ export function mapTaskToQuarters(
   }
 
   return { quarters, unplacedSubtasks };
+}
+
+export interface MappedRock {
+  /** The ClickUp subtask id, which is how a rock is matched on later syncs. */
+  taskId: string;
+  text: string;
+  quarter: Quarter;
+  status: RockStatus;
+  url?: string;
+}
+
+/**
+ * Each subtask of a goal's ClickUp task is a rock on that goal. Subtasks that
+ * carry neither a quarter field nor a due date have nowhere to go, so they are
+ * reported rather than guessed at.
+ */
+export function mapSubtasksToRocks(
+  task: ClickUpTask,
+  config: ClickUpMappingConfig
+): { rocks: MappedRock[]; unplacedSubtasks: string[] } {
+  const rocks: MappedRock[] = [];
+  const unplacedSubtasks: string[] = [];
+
+  for (const subtask of task.subtasks ?? []) {
+    const quarter = quarterForTask(subtask, config);
+    if (!quarter) {
+      unplacedSubtasks.push(subtask.name);
+      continue;
+    }
+
+    rocks.push({
+      taskId: subtask.id,
+      text: subtask.name,
+      quarter,
+      status: isTaskComplete(subtask, config) ? "complete" : "in_progress",
+      url: subtask.url,
+    });
+  }
+
+  return { rocks, unplacedSubtasks };
+}
+
+export interface RockMerge {
+  /** Fields to write. Empty when ClickUp agrees with what is already stored. */
+  changes: Partial<Rock>;
+  changed: boolean;
+}
+
+/**
+ * Applies a mapped subtask onto an existing rock. Only the three fields
+ * ClickUp owns are touched, so RACI, description, and SMART entered in the app
+ * survive a sync.
+ */
+export function mergeRock(
+  existing: Rock | undefined,
+  mapped: MappedRock,
+  syncedAt: string
+): RockMerge {
+  const changes: Partial<Rock> = {};
+
+  if (existing?.text !== mapped.text) changes.text = mapped.text;
+  if (existing?.quarter !== mapped.quarter) changes.quarter = mapped.quarter;
+  if (existing?.status !== mapped.status) changes.status = mapped.status;
+
+  const changed = Object.keys(changes).length > 0;
+  if (changed) {
+    changes.updatedAt = syncedAt;
+    changes.updatedBy = "clickup";
+  }
+
+  return { changes, changed };
 }
 
 export interface QuarterMerge {

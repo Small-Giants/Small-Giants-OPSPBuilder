@@ -4,14 +4,22 @@ import { CLICKUP_API_TOKEN, DEFAULT_COMPANY_ID, RESEND_API_KEY } from "../config
 import { dispatch } from "../notifications/dispatch";
 import { requireAdmin, requireCaller } from "../auth";
 import { db } from "../firestore";
-import { ClickUpClient, ClickUpError } from "./client";
+import { ClickUpClient, ClickUpError, type ClickUpTask } from "./client";
 import {
   DEFAULT_MAPPING,
+  mapSubtasksToRocks,
   mapTaskToQuarters,
   mergeQuarters,
+  mergeRock,
   type ClickUpMappingConfig,
 } from "./mapping";
-import { raciMembers, type Goal, type SyncLogEntry, type SyncLogStatus } from "../types";
+import {
+  raciMembers,
+  type Goal,
+  type Rock,
+  type SyncLogEntry,
+  type SyncLogStatus,
+} from "../types";
 
 interface SyncRequest {
   /** Sync a single goal, or omit to sync every linked goal for the plan year. */
@@ -23,6 +31,8 @@ export interface SyncResponse {
   status: SyncLogStatus;
   goalsExamined: number;
   goalsUpdated: number;
+  rocksCreated: number;
+  rocksUpdated: number;
   errors: { goalId: string; goalTitle: string; message: string }[];
   warnings: string[];
   finishedAt: string;
@@ -32,7 +42,7 @@ export const syncClickUp = onCall<SyncRequest, Promise<SyncResponse>>(
   { secrets: [CLICKUP_API_TOKEN, RESEND_API_KEY] },
   async (request) => {
     const companyId = DEFAULT_COMPANY_ID;
-    const caller = await requireCaller(request, companyId);
+    const caller = await requireCaller(request);
 
     const config = await loadMapping(companyId);
     if (!config.enabled) {
@@ -60,6 +70,8 @@ export const syncClickUp = onCall<SyncRequest, Promise<SyncResponse>>(
     const errors: SyncResponse["errors"] = [];
     const warnings: string[] = [];
     let goalsUpdated = 0;
+    let rocksCreated = 0;
+    let rocksUpdated = 0;
 
     for (const goal of goals) {
       const taskId = goal.clickup?.taskId;
@@ -76,6 +88,11 @@ export const syncClickUp = onCall<SyncRequest, Promise<SyncResponse>>(
         }
 
         const syncedAt = new Date().toISOString();
+
+        const rockResult = await syncRocksForGoal(companyId, goal, task, config, syncedAt);
+        rocksCreated += rockResult.created;
+        rocksUpdated += rockResult.updated;
+
         const { quarters, changed } = mergeQuarters(goal.quarters ?? [], mapped, syncedAt);
 
         const update: Record<string, unknown> = {
@@ -124,13 +141,15 @@ export const syncClickUp = onCall<SyncRequest, Promise<SyncResponse>>(
     await db().collection(`companies/${companyId}/syncLogs`).add(entry);
 
     if (status !== "success") {
-      await notifyAdminsOfSyncFailure(companyId, errors.length, goals.length);
+      await notifyAdminsOfSyncFailure(errors.length, goals.length);
     }
 
     return {
       status,
       goalsExamined: goals.length,
       goalsUpdated,
+      rocksCreated,
+      rocksUpdated,
       errors,
       warnings,
       finishedAt,
@@ -138,11 +157,82 @@ export const syncClickUp = onCall<SyncRequest, Promise<SyncResponse>>(
   }
 );
 
+/**
+ * Mirrors a goal's ClickUp subtasks into rocks on that goal.
+ *
+ * Rocks are matched by the subtask id rather than by name, so renaming a
+ * subtask in ClickUp renames the rock instead of orphaning it and creating a
+ * duplicate. A rock whose subtask disappears is left alone: deleting work
+ * someone may have added RACI and notes to is not a decision a sync should
+ * make on its own.
+ */
+async function syncRocksForGoal(
+  companyId: string,
+  goal: Goal,
+  task: ClickUpTask,
+  config: ClickUpMappingConfig,
+  syncedAt: string
+): Promise<{ created: number; updated: number }> {
+  const { rocks: mapped } = mapSubtasksToRocks(task, config);
+  if (mapped.length === 0) return { created: 0, updated: 0 };
+
+  const rocksRef = db().collection(`companies/${companyId}/rocks`);
+  const existing = await rocksRef.where("goalId", "==", goal.id).get();
+
+  const byTaskId = new Map<string, Rock>();
+  existing.docs.forEach((doc) => {
+    const rock = { id: doc.id, ...doc.data() } as Rock;
+    const linked = rock.clickup?.taskId;
+    if (linked) byTaskId.set(linked, rock);
+  });
+
+  let created = 0;
+  let updated = 0;
+  const batch = db().batch();
+
+  for (const entry of mapped) {
+    const current = byTaskId.get(entry.taskId);
+
+    if (!current) {
+      batch.set(rocksRef.doc(), {
+        text: entry.text,
+        description: "",
+        status: entry.status,
+        quarter: entry.quarter,
+        year: goal.planYear ?? null,
+        goalId: goal.id,
+        // The goal's accountable owner carries over so a synced rock is never
+        // unassigned. Editable in the app afterwards.
+        ownerId: goal.ownerId ?? "",
+        ownerName: goal.ownerName ?? "",
+        contributorIds: [],
+        companyId,
+        createdAt: syncedAt,
+        updatedAt: syncedAt,
+        updatedBy: "clickup",
+        clickup: { taskId: entry.taskId, url: entry.url ?? null, lastSyncedAt: syncedAt },
+      });
+      created += 1;
+      continue;
+    }
+
+    const { changes, changed } = mergeRock(current, entry, syncedAt);
+    batch.update(rocksRef.doc(current.id), {
+      ...changes,
+      "clickup.lastSyncedAt": syncedAt,
+    });
+    if (changed) updated += 1;
+  }
+
+  await batch.commit();
+  return { created, updated };
+}
+
 /** Validates a token and returns the workspaces it can see, before saving config. */
 export const testClickUpConnection = onCall(
   { secrets: [CLICKUP_API_TOKEN] },
   async (request) => {
-    const caller = await requireCaller(request, DEFAULT_COMPANY_ID);
+    const caller = await requireCaller(request);
     requireAdmin(caller);
 
     const token = CLICKUP_API_TOKEN.value();
@@ -164,12 +254,11 @@ export const testClickUpConnection = onCall(
 );
 
 async function notifyAdminsOfSyncFailure(
-  companyId: string,
   failed: number,
   total: number
 ): Promise<void> {
   const admins = await db()
-    .collection(`companies/${companyId}/users`)
+    .collection("users")
     .where("role", "in", ["admin", "superadmin"])
     .get();
 

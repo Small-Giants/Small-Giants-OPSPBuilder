@@ -1,6 +1,6 @@
 import { setGlobalOptions } from "firebase-functions/v2";
 import { onCall } from "firebase-functions/v2/https";
-import { REGION, DEFAULT_COMPANY_ID } from "./config";
+import { REGION } from "./config";
 import { requireCaller } from "./auth";
 
 setGlobalOptions({
@@ -22,7 +22,7 @@ export {
 } from "./notifications/triggers";
 
 export const health = onCall(async (request) => {
-  const caller = await requireCaller(request, DEFAULT_COMPANY_ID);
+  const caller = await requireCaller(request);
   return {
     ok: true,
     uid: caller.uid,

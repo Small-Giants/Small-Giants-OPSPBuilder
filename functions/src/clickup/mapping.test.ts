@@ -3,16 +3,19 @@ import type { ClickUpTask } from "./client";
 import {
   DEFAULT_MAPPING,
   isTaskComplete,
+  mapSubtasksToRocks,
   mapTaskToQuarters,
   mergeQuarters,
+  mergeRock,
   quarterForTask,
   quarterFromDueDate,
   readFieldNumber,
   type ClickUpMappingConfig,
 } from "./mapping";
-import type { Goal, GoalQuarter } from "../types";
+import type { Goal, GoalQuarter, Rock } from "../types";
 
 const config: ClickUpMappingConfig = { ...DEFAULT_MAPPING, enabled: true };
+const STAMP = "2026-01-01T00:00:00.000Z";
 
 function task(overrides: Partial<ClickUpTask> = {}): ClickUpTask {
   return { id: "t1", name: "Task", ...overrides };
@@ -167,6 +170,104 @@ describe("mapTaskToQuarters", () => {
 
     const { quarters } = mapTaskToQuarters(subject, simpleGoal(), config);
     expect(quarters[0].actual).toBeNull();
+  });
+});
+
+describe("mapSubtasksToRocks", () => {
+  it("turns each placed subtask into a rock carrying its ClickUp id", () => {
+    const subject = task({
+      subtasks: [
+        task({ id: "s1", name: "Land three deals", custom_fields: [quarterField("Q2")] }),
+        task({
+          id: "s2",
+          name: "Ship onboarding",
+          custom_fields: [quarterField("Q3")],
+          status: { status: "complete" },
+        }),
+      ],
+    });
+
+    const { rocks } = mapSubtasksToRocks(subject, config);
+    expect(rocks).toEqual([
+      { taskId: "s1", text: "Land three deals", quarter: "Q2", status: "in_progress", url: undefined },
+      { taskId: "s2", text: "Ship onboarding", quarter: "Q3", status: "complete", url: undefined },
+    ]);
+  });
+
+  it("reports subtasks with no quarter and no due date instead of guessing", () => {
+    const subject = task({ subtasks: [task({ id: "s1", name: "Unscheduled" })] });
+
+    const { rocks, unplacedSubtasks } = mapSubtasksToRocks(subject, config);
+    expect(rocks).toHaveLength(0);
+    expect(unplacedSubtasks).toEqual(["Unscheduled"]);
+  });
+
+  it("places a subtask by due date when no quarter field is set", () => {
+    const subject = task({
+      subtasks: [task({ id: "s1", name: "Dated", due_date: String(Date.UTC(2026, 7, 15)) })],
+    });
+    expect(mapSubtasksToRocks(subject, config).rocks[0].quarter).toBe("Q3");
+  });
+
+  it("returns nothing for a task with no subtasks", () => {
+    expect(mapSubtasksToRocks(task(), config).rocks).toEqual([]);
+  });
+});
+
+describe("mergeRock", () => {
+  const mapped = {
+    taskId: "s1",
+    text: "Land three deals",
+    quarter: "Q2" as const,
+    status: "in_progress" as const,
+  };
+
+  function rock(overrides: Partial<Rock> = {}): Rock {
+    return {
+      id: "r1",
+      text: "Land three deals",
+      status: "in_progress",
+      quarter: "Q2",
+      ...overrides,
+    };
+  }
+
+  it("reports no change when ClickUp agrees with what is stored", () => {
+    const { changes, changed } = mergeRock(rock(), mapped, STAMP);
+    expect(changed).toBe(false);
+    expect(changes).toEqual({});
+  });
+
+  it("renames a rock when its subtask was renamed, rather than duplicating it", () => {
+    const { changes, changed } = mergeRock(
+      rock({ text: "Old name" }),
+      mapped,
+      STAMP
+    );
+    expect(changed).toBe(true);
+    expect(changes.text).toBe("Land three deals");
+  });
+
+  it("moves a rock to the quarter ClickUp reports", () => {
+    const { changes } = mergeRock(rock({ quarter: "Q4" }), mapped, STAMP);
+    expect(changes.quarter).toBe("Q2");
+  });
+
+  it("leaves RACI and description alone so app edits survive a sync", () => {
+    const { changes } = mergeRock(
+      rock({ text: "Old", description: "Written in the app", ownerId: "u1", contributorIds: ["u2"] }),
+      mapped,
+      STAMP
+    );
+    expect(changes).not.toHaveProperty("description");
+    expect(changes).not.toHaveProperty("ownerId");
+    expect(changes).not.toHaveProperty("contributorIds");
+  });
+
+  it("treats a missing rock as fully changed so it gets created", () => {
+    const { changed, changes } = mergeRock(undefined, mapped, STAMP);
+    expect(changed).toBe(true);
+    expect(changes).toMatchObject({ text: "Land three deals", quarter: "Q2", updatedBy: "clickup" });
   });
 });
 

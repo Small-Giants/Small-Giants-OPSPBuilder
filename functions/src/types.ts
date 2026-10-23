@@ -77,6 +77,27 @@ export interface Goal extends RaciAssignment {
   clickup?: GoalClickUpLink;
 }
 
+export type RockStatus = "not_started" | "ready" | "in_progress" | "complete";
+
+/**
+ * A task inside a goal. Mirror of src/types/rock.ts, limited to the fields the
+ * ClickUp sync reads or writes.
+ */
+export interface Rock extends RaciAssignment {
+  id: string;
+  text: string;
+  description?: string;
+  status: RockStatus;
+  quarter: Quarter;
+  year?: number | null;
+  goalId?: string;
+  companyId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  clickup?: GoalClickUpLink;
+}
+
 export interface UserRecord {
   id: string;
   email?: string;

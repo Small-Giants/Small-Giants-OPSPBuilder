@@ -13,11 +13,12 @@ export interface Caller {
 /**
  * Callable functions run with the caller's identity but no security rules, so
  * every entry point has to re-check what the rules would have checked.
+ *
+ * Profiles live in the root `users` collection, which is also what
+ * firestore.rules reads for role checks. The company scope only nests tool
+ * state, never the profile itself.
  */
-export async function requireCaller(
-  request: CallableRequest,
-  companyId: string
-): Promise<Caller> {
+export async function requireCaller(request: CallableRequest): Promise<Caller> {
   const auth = request.auth;
   if (!auth) {
     throw new HttpsError("unauthenticated", "Sign in to continue.");
@@ -28,7 +29,7 @@ export async function requireCaller(
     throw new HttpsError("permission-denied", "This app is restricted to Small Giants accounts.");
   }
 
-  const snap = await db().doc(`companies/${companyId}/users/${auth.uid}`).get();
+  const snap = await db().doc(`users/${auth.uid}`).get();
   if (!snap.exists) {
     throw new HttpsError("permission-denied", "No user profile found for this account.");
   }

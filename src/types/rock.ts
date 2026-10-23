@@ -1,5 +1,5 @@
 import type { Quarter } from "./common";
-import type { SmartDescription } from "./goal";
+import type { GoalClickUpLink, SmartDescription } from "./goal";
 import type { RaciAssignment } from "./raci";
 
 export type RockStatus = "not_started" | "ready" | "in_progress" | "complete";
@@ -49,6 +49,8 @@ export interface Rock extends RaciAssignment {
   createdAt?: string;
   updatedAt?: string;
   updatedBy?: string;
+  /** Set when this rock mirrors a ClickUp subtask. Written by the sync. */
+  clickup?: GoalClickUpLink;
   /** Older documents stored the label under `title` instead of `text`. */
   title?: string;
   /** Pre-RACI single assignee. Read for legacy docs, never written. */
