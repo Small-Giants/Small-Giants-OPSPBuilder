@@ -44,7 +44,7 @@ npm run emulators            # auth, firestore, functions
 Point the app at the emulator by setting `NEXT_PUBLIC_USE_EMULATORS=true` in
 `.env.local`. Without it, `next dev` talks to the deployed backend.
 
-The Firestore emulator needs a JDK on PATH. Install Temurin 17 if
+The Firestore emulator needs JDK 21 or newer on PATH. Install Temurin 21 if
 `firebase emulators:start` complains about Java.
 
 ## Deploy

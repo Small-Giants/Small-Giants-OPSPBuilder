@@ -171,9 +171,11 @@ service cloud.firestore {
       allow write: if isSuperadmin();
     }
 
+    // Rules are OR'd, so this must exclude labels or it would override the
+    // superadmin-only rule above.
     match /companies/{companyId}/settings/{settingId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow write: if isAuthenticated() && settingId != 'labels';
     }
 
     // Per-user tool state (Agile Growth Checklist scores).
