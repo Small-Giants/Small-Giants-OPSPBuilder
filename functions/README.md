@@ -54,6 +54,16 @@ npm run verify               # typecheck, build functions, unit tests
 npm run deploy:functions
 ```
 
+### The runtime service account needs Firestore access
+
+The organization disables Google's automatic Editor grant for default service
+accounts, so the functions' runtime account
+(`10058852488-compute@developer.gserviceaccount.com`) starts with no data
+access, and every Firestore call fails with `PERMISSION_DENIED`. It has been
+granted **Cloud Datastore User** (`roles/datastore.user`) on the project. A new
+project, or a change of runtime account, needs the same grant. Sending push
+notifications would additionally need a Firebase Cloud Messaging role.
+
 ### New callable functions need one extra step
 
 The Google Workspace organization enforces domain restricted sharing, so the
