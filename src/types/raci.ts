@@ -7,7 +7,10 @@
  * names and change only their labels.
  */
 export interface RaciAssignment {
-  /** Accountable. Exactly one person answers for the outcome. */
+  /**
+   * Accountable. Exactly one person answers for the outcome. A person may
+   * hold several roles, so the Accountable person can also be in the lists.
+   */
   ownerId?: string;
   /** Denormalized so list views can render without a user lookup. */
   ownerName?: string;
@@ -84,17 +87,4 @@ export function isRaciMember(
 ): boolean {
   if (!userId) return false;
   return raciMembers(entity).includes(userId);
-}
-
-/** Drops a person from every role, used when reassigning Accountable. */
-export function withoutRaciMember<T extends RaciAssignment>(
-  entity: T,
-  userId: string
-): T {
-  return {
-    ...entity,
-    contributorIds: (entity.contributorIds ?? []).filter((id) => id !== userId),
-    consultedIds: (entity.consultedIds ?? []).filter((id) => id !== userId),
-    informedIds: (entity.informedIds ?? []).filter((id) => id !== userId),
-  };
 }

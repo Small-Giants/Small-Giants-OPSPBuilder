@@ -8,11 +8,11 @@ import { leadersOf } from "../notifications/triggers";
 import { raciMembers, type Goal, type RecapApproval } from "../types";
 import { ClickUpClient, ClickUpError } from "./client";
 import {
-  addMissingPeople,
   currentPeople,
   fillEmptyTaskFields,
   findRaciFields,
   opspDescriptionBlock,
+  raciFieldChange,
   raciClickUpIds,
   taskAssignees,
   toClickUpDate,
@@ -195,8 +195,13 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
           continue;
         }
         const current = currentPeople(currentFields?.find((f) => f.id === field.id));
-        const diff = addMissingPeople(current, raci.ids[role]);
-        raciLog[role] = { fieldId: field.id, current, wanted: raci.ids[role], add: diff.add };
+        const diff = raciFieldChange(role, current, raci.ids[role]);
+        raciLog[role] = { fieldId: field.id, current, wanted: raci.ids[role], add: diff.add, conflict: diff.conflict };
+        if (diff.conflict) {
+          warnings.push(
+            `ClickUp already has someone else as ${RACI_FIELD_NAMES[role]}, so it was left as is. Change it in ClickUp if the goal's Accountable person is right.`
+          );
+        }
         if (diff.add.length === 0) continue;
         try {
           await client.setPeopleField(taskId, field.id, diff);

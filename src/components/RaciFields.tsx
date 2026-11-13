@@ -7,7 +7,6 @@ import { personLabel, useAssignablePeople } from "@/hooks/use-assignable-people"
 import {
   RACI_ROLE_HINTS,
   RACI_ROLE_LABELS,
-  withoutRaciMember,
   type GoalLevel,
   type RaciAssignment,
   type RaciRole,
@@ -58,26 +57,25 @@ export function RaciFields({ value, onChange, mode = "full", className }: RaciFi
   const idsFor = (role: MultiRole): string[] =>
     (value[MULTI_FIELDS[role]] as string[] | undefined) ?? [];
 
+  // In RACI one person may hold several roles, Accountable included. A rock's
+  // owner is not also listed as working on it.
+  const ownerExcluded = !isRaci;
+
   const handleAccountableChange = (userId: string) => {
-    // One role per person, so taking Accountable drops them from the lists.
     onChange({
-      ...withoutRaciMember(value, userId),
+      ...value,
+      ...(ownerExcluded && userId
+        ? { contributorIds: (value.contributorIds ?? []).filter((id) => id !== userId) }
+        : {}),
       ownerId: userId,
       ownerName: userId ? personLabel(people, userId) : "",
     });
   };
 
   const addTo = (role: MultiRole, userId: string) => {
-    if (!userId || userId === value.ownerId) return;
+    if (!userId || (ownerExcluded && userId === value.ownerId)) return;
     if (idsFor(role).includes(userId)) return;
-
-    // Clear the person out of every list first so they hold one role only.
-    const cleared = withoutRaciMember(value, userId);
-    const field = MULTI_FIELDS[role];
-    onChange({
-      ...cleared,
-      [field]: [...((cleared[field] as string[] | undefined) ?? []), userId],
-    });
+    onChange({ ...value, [MULTI_FIELDS[role]]: [...idsFor(role), userId] });
   };
 
   const removeFrom = (role: MultiRole, userId: string) => {
@@ -153,7 +151,7 @@ export function RaciFields({ value, onChange, mode = "full", className }: RaciFi
                 valueMode="id"
                 allowCustom={false}
                 includeClickUp
-                excludeIds={[...ids, value.ownerId ?? ""]}
+                excludeIds={ownerExcluded ? [...ids, value.ownerId ?? ""] : ids}
               />
               {ids.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">

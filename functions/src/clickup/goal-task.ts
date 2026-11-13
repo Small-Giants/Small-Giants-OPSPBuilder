@@ -183,3 +183,18 @@ export function fillEmptyTaskFields(
 export function addMissingPeople(current: number[], wanted: number[]): { add: number[]; rem: number[] } {
   return { add: wanted.filter((id) => !current.includes(id)), rem: [] };
 }
+
+/**
+ * The change to one RACI People field. Accountable holds a single person, so
+ * it is only set when empty; someone else already there is a conflict to
+ * report, never a second Accountable.
+ */
+export function raciFieldChange(
+  role: RaciRole,
+  current: number[],
+  wanted: number[]
+): { add: number[]; rem: number[]; conflict: boolean } {
+  if (role !== "accountable") return { ...addMissingPeople(current, wanted), conflict: false };
+  if (current.length === 0) return { add: wanted.slice(0, 1), rem: [], conflict: false };
+  return { add: [], rem: [], conflict: wanted.length > 0 && !current.includes(wanted[0]) };
+}

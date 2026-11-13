@@ -5,6 +5,7 @@ import {
   descriptionWithOpspBlock,
   OPSP_MARKER,
   opspDescriptionBlock,
+  raciFieldChange,
   fillEmptyTaskFields,
   findRaciFields,
   goalTaskDescription,
@@ -161,6 +162,19 @@ describe("descriptionWithOpspBlock", () => {
 
   it("adds nothing when ClickUp did not return the markdown to keep", () => {
     expect(descriptionWithOpspBlock({ description: "Notes" }, block, "Relaunch.")).toBeNull();
+  });
+});
+
+describe("raciFieldChange", () => {
+  it("adds missing people to the list roles, allowing the Accountable person too", () => {
+    expect(raciFieldChange("responsible", [5], [1, 5, 6])).toEqual({ add: [1, 6], rem: [], conflict: false });
+  });
+
+  it("sets Accountable only when empty, and reports someone else already there", () => {
+    expect(raciFieldChange("accountable", [], [1])).toEqual({ add: [1], rem: [], conflict: false });
+    expect(raciFieldChange("accountable", [1], [1])).toEqual({ add: [], rem: [], conflict: false });
+    expect(raciFieldChange("accountable", [9], [1])).toEqual({ add: [], rem: [], conflict: true });
+    expect(raciFieldChange("accountable", [9], [])).toEqual({ add: [], rem: [], conflict: false });
   });
 });
 
