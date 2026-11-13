@@ -43,7 +43,7 @@ describe("goalTaskDescription", () => {
     const text = goalTaskDescription(
       goal({ smart: { specific: "Ship the dashboard", timeBound: "By Q3", measurable: " " } })
     );
-    expect(text).toBe("**Specific:** Ship the dashboard\n\n**Time-bound:** By Q3");
+    expect(text).toBe("**Specific:** Ship the dashboard\n**Time-bound:** By Q3");
   });
 
   it("leads with the goal statement when there is one", () => {
@@ -51,7 +51,7 @@ describe("goalTaskDescription", () => {
       goal({ statement: "Ship the dashboard by Q3.", smart: { specific: "Ship the dashboard" } })
     );
     expect(text).toBe(
-      "**Goal:** Ship the dashboard by Q3.\n\n### SMART breakdown\n\n**Specific:** Ship the dashboard"
+      "**Goal:** Ship the dashboard by Q3.\n\n### SMART breakdown\n**Specific:** Ship the dashboard"
     );
   });
 
@@ -110,7 +110,7 @@ describe("opspDescriptionBlock", () => {
       new Date("2026-11-13T05:00:00Z")
     );
     expect(block).toBe(
-      `**${OPSP_MARKER}** (Nov 12, 2026)\n\n**Goal:** Ship the dashboard by Q3.\n\n### SMART breakdown\n\n**Specific:** Ship the dashboard`
+      `***${OPSP_MARKER}*** *(Nov 12, 2026)*\n**Goal:** Ship the dashboard by Q3.\n\n### SMART breakdown\n**Specific:** Ship the dashboard`
     );
   });
 

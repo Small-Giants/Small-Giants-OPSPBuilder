@@ -18,8 +18,8 @@ export function goalTaskDescription(goal: Pick<Goal, "smart" | "description" | "
   );
   const statement = goal.statement?.trim();
   if (lines.length === 0) return statement || goal.description?.trim() || "";
-  const breakdown = lines.join("\n\n");
-  return statement ? `**Goal:** ${statement}\n\n### SMART breakdown\n\n${breakdown}` : breakdown;
+  const breakdown = lines.join("\n");
+  return statement ? `**Goal:** ${statement}\n\n### SMART breakdown\n${breakdown}` : breakdown;
 }
 
 /** Labels what the app wrote into a task, and tells the app it already has. */
@@ -38,7 +38,7 @@ export function opspDescriptionBlock(
     day: "numeric",
     year: "numeric",
   });
-  return `**${OPSP_MARKER}** (${date})\n\n${body}`;
+  return `***${OPSP_MARKER}*** *(${date})*\n${body}`;
 }
 
 const squash = (text: string) => text.replace(/\s+/g, " ").trim().toLowerCase();
