@@ -14,7 +14,14 @@ setGlobalOptions({
  * Confirms the Blaze upgrade, deploy pipeline, and callable auth path all work
  * end to end, without touching any data.
  */
-export { syncClickUp, testClickUpConnection } from "./clickup/sync";
+export {
+  refreshClickUpMembers,
+  scheduledClickUpSync,
+  syncClickUp,
+  testClickUpConnection,
+} from "./clickup/sync";
+export { approveClickUpRecap, pushGoalToClickUp } from "./clickup/goal-actions";
+export { relinkClickUpPerson } from "./clickup/relink";
 export {
   onGoalWritten,
   quarterDeadlineReminders,

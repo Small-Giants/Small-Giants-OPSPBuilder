@@ -36,6 +36,10 @@ export interface SyncClickUpResponse {
   status: "success" | "partial" | "error";
   goalsExamined: number;
   goalsUpdated: number;
+  recapsApplied: number;
+  recapsPending: number;
+  rocksCreated: number;
+  rocksUpdated: number;
   errors: { goalId: string; goalTitle: string; message: string }[];
   warnings: string[];
   finishedAt: string;
@@ -45,6 +49,30 @@ export function syncClickUp(
   payload: { goalId?: string; planYear?: number } = {}
 ): Promise<SyncClickUpResponse> {
   return callFunction<typeof payload, SyncClickUpResponse>("syncClickUp", payload);
+}
+
+export function refreshClickUpMembers(): Promise<{ count: number }> {
+  return callFunction<Record<string, never>, { count: number }>("refreshClickUpMembers", {});
+}
+
+export function approveClickUpRecap(payload: {
+  goalId: string;
+  commentId: string;
+}): Promise<{ approvedBy: string }> {
+  return callFunction<typeof payload, { approvedBy: string }>("approveClickUpRecap", payload);
+}
+
+export interface PushGoalResponse {
+  status: "created" | "updated" | "skipped";
+  reason?: string;
+  taskId?: string;
+  url?: string;
+  warnings: string[];
+}
+
+/** Creates or updates the department goal's ClickUp task and its RACI fields. */
+export function pushGoalToClickUp(payload: { goalId: string }): Promise<PushGoalResponse> {
+  return callFunction<typeof payload, PushGoalResponse>("pushGoalToClickUp", payload);
 }
 
 export function testClickUpConnection(): Promise<{ ok: boolean; connectedAs: string }> {

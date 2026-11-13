@@ -42,6 +42,8 @@ export interface Rock extends RaciAssignment {
   /** Flags a rock as a top focus item. Distinct from the Priority entity. */
   priority?: boolean;
   startDate?: string;
+  /** YYYY-MM-DD. Set by the ClickUp agent's rock plan or by hand. */
+  dueDate?: string | null;
   projectManagement?: boolean;
   bloomGrowthVisibility?: boolean;
   visionStatement?: string;
@@ -49,7 +51,7 @@ export interface Rock extends RaciAssignment {
   createdAt?: string;
   updatedAt?: string;
   updatedBy?: string;
-  /** Set when this rock mirrors a ClickUp subtask. Written by the sync. */
+  /** Set when the ClickUp agent linked the rock to a task. Written by the sync. */
   clickup?: GoalClickUpLink;
   /** Older documents stored the label under `title` instead of `text`. */
   title?: string;

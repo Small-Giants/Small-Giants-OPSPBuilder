@@ -54,7 +54,7 @@ export function SmartGoalFields({ value, onChange }: SmartGoalFieldsProps) {
               </label>
               <span
                 className={`text-[11px] tabular-nums ${
-                  remaining <= 10 ? "text-amber-600" : "text-muted-foreground"
+                  remaining <= 30 ? "text-amber-600" : "text-muted-foreground"
                 }`}
               >
                 {remaining}
@@ -65,8 +65,8 @@ export function SmartGoalFields({ value, onChange }: SmartGoalFieldsProps) {
               onChange={(e) => setField(field, e.target.value)}
               placeholder={SMART_FIELD_PROMPTS[field]}
               maxLength={SMART_CHAR_LIMIT}
-              rows={2}
-              className="resize-none text-sm"
+              rows={3}
+              className="resize-y text-sm"
             />
           </div>
         );

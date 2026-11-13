@@ -19,6 +19,7 @@ const BOB = "uid-bob"; // regular user, unrelated
 const CARLA = "uid-carla"; // contributor on Alice's goal
 const DANA = "uid-dana"; // leader of the Engineering department
 const ADMIN = "uid-admin";
+const SUPER = "uid-super";
 
 let testEnv: RulesTestEnvironment;
 
@@ -57,6 +58,7 @@ beforeEach(async () => {
     await setDoc(doc(fs, "users", CARLA), { role: "user", name: "Carla" });
     await setDoc(doc(fs, "users", DANA), { role: "user", name: "Dana" });
     await setDoc(doc(fs, "users", ADMIN), { role: "admin", name: "Admin" });
+    await setDoc(doc(fs, "users", SUPER), { role: "superadmin", name: "Super" });
 
     await setDoc(doc(fs, "companies", COMPANY, "departments", "engineering"), {
       name: "Engineering",
@@ -107,6 +109,28 @@ describe("goal writes", () => {
   it("owner can update their own goal", async () => {
     await assertSucceeds(
       updateDoc(goalRef(db(ALICE), "goal-alice"), { title: "Ship it faster" })
+    );
+  });
+
+  it("only an admin can touch the ClickUp recap state on a goal", async () => {
+    await assertFails(
+      updateDoc(goalRef(db(ALICE), "goal-alice"), {
+        "clickup.approvals.c1": { byId: ALICE, byName: "Alice", at: "now", via: "app" },
+      })
+    );
+    await assertSucceeds(
+      updateDoc(goalRef(db(ALICE), "goal-alice"), { "clickup.taskId": "868h790bp" })
+    );
+    await assertSucceeds(
+      updateDoc(goalRef(db(ADMIN), "goal-alice"), { "clickup.appliedRecapIds": ["c1"] })
+    );
+    await assertFails(
+      setDoc(goalRef(db(ALICE), "goal-new"), {
+        title: "New",
+        level: "individual",
+        ownerId: ALICE,
+        clickup: { recap: { commentId: "c1" } },
+      })
     );
   });
 
@@ -406,6 +430,22 @@ describe("integrations and sync logs", () => {
         workspaceId: "123",
       })
     );
+  });
+
+  it("only a superadmin can set where ClickUp goal tasks are created", async () => {
+    const location = (uid: string) =>
+      doc(db(uid), "companies", COMPANY, "integrations", "clickup-location");
+    await assertFails(setDoc(location(ADMIN), { url: "https://app.clickup.com/1/v/li/2" }));
+    await assertSucceeds(setDoc(location(SUPER), { url: "https://app.clickup.com/1/v/li/2" }));
+    await assertSucceeds(getDoc(location(ADMIN)));
+    await assertFails(getDoc(location(BOB)));
+  });
+
+  it("ClickUp members are readable by anyone signed in but never client writable", async () => {
+    const member = (uid: string) => doc(db(uid), "companies", COMPANY, "clickupMembers", "33");
+    await assertSucceeds(getDoc(member(BOB)));
+    await assertFails(getDoc(doc(db(), "companies", COMPANY, "clickupMembers", "33")));
+    await assertFails(setDoc(member(SUPER), { username: "James" }));
   });
 
   it("sync logs are not client writable, even by an admin", async () => {

@@ -68,6 +68,18 @@ service cloud.firestore {
         || isDepartmentLeader(companyId, data.get('departmentId', ''));
     }
 
+    // Recap state written by the ClickUp sync. Approvals go through the
+    // approveClickUpRecap function, which checks the approver is Accountable.
+    function clickUpSyncKeys() {
+      return ['approvals', 'pendingRecap', 'appliedRecapIds', 'recap'];
+    }
+
+    function keepsClickUpSyncState() {
+      let before = resource.data.get('clickup', {});
+      let after = request.resource.data.get('clickup', {});
+      return !after.diff(before).affectedKeys().hasAny(clickUpSyncKeys());
+    }
+
     function goalPath(companyId, goalId) {
       return /databases/$(database)/documents/companies/$(companyId)/goals/$(goalId);
     }
@@ -212,11 +224,14 @@ service cloud.firestore {
       allow read: if isAuthenticated();
 
       allow create: if isAuthenticated()
-        && canWriteGoal(companyId, request.resource.data);
+        && canWriteGoal(companyId, request.resource.data)
+        && (isAdmin()
+            || !request.resource.data.get('clickup', {}).keys().hasAny(clickUpSyncKeys()));
 
       allow update: if isAuthenticated()
         && canWriteGoal(companyId, resource.data)
-        && canWriteGoal(companyId, request.resource.data);
+        && canWriteGoal(companyId, request.resource.data)
+        && (isAdmin() || keepsClickUpSyncState());
 
       allow delete: if isAuthenticated()
         && canWriteGoal(companyId, resource.data);
@@ -234,10 +249,25 @@ service cloud.firestore {
     // Integrations
     // ---------------------------------------------------------------------
 
-    // ClickUp workspace and field mapping. Credentials live in Secret Manager,
-    // never in Firestore, but the mapping is still admin-only.
+    // Where new department goals get their ClickUp task. Superadmin-only.
+    match /companies/{companyId}/integrations/clickup-location {
+      allow read: if isAdmin();
+      allow write: if isSuperadmin();
+    }
+
+    // ClickUp settings. Credentials live in Secret Manager, never in
+    // Firestore, but the settings are still admin-only. Rules are OR'd, so
+    // this must exclude the location or it would override the rule above.
     match /companies/{companyId}/integrations/{integrationId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if isAdmin() && integrationId != 'clickup-location';
+    }
+
+    // ClickUp workspace members, offered in people pickers. Written by Cloud
+    // Functions only.
+    match /companies/{companyId}/clickupMembers/{memberId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
     }
 
     // Written exclusively by Cloud Functions through the Admin SDK.

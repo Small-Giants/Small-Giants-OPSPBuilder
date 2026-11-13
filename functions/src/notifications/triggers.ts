@@ -127,7 +127,7 @@ async function loadGoals(companyId: string, planYear: number): Promise<Goal[]> {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Goal);
 }
 
-async function leadersOf(
+export async function leadersOf(
   companyId: string,
   departmentId: string | null | undefined
 ): Promise<string[]> {

@@ -12,6 +12,7 @@
     "test:rules": "firebase emulators:exec --only firestore \"vitest run tests/rules\"",
     "migrate:goals": "tsx scripts/migrate-goals.ts",
     "import:workleap": "tsx scripts/import-workleap.ts",
+    "preview:recap": "tsx scripts/preview-recap.ts",
     "functions:build": "npm --prefix functions run build",
     "emulators": "firebase emulators:start --only auth,firestore,functions",
     "deploy:hosting": "next build && firebase deploy --only hosting",

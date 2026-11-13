@@ -20,6 +20,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useActiveUsers, type ActiveUser } from "@/hooks/use-active-users";
+import { useAssignablePeople, type AssignablePerson } from "@/hooks/use-assignable-people";
 
 type ValueMode = "id" | "name";
 
@@ -28,6 +29,12 @@ interface UserComboboxProps {
   onValueChange: (value: string) => void;
   placeholder?: string;
   valueMode?: ValueMode;
+  /** Free-typed names have no account behind them, so they cannot carry permissions. */
+  allowCustom?: boolean;
+  /** Also offer ClickUp members who have not signed in yet. Only for goal and rock people. */
+  includeClickUp?: boolean;
+  /** Ids to leave out, such as people already picked. */
+  excludeIds?: string[];
   className?: string;
   triggerClassName?: string;
 }
@@ -37,10 +44,18 @@ export function UserCombobox({
   onValueChange,
   placeholder = "Select person...",
   valueMode = "id",
+  allowCustom = true,
+  includeClickUp = false,
+  excludeIds,
   className,
   triggerClassName,
 }: UserComboboxProps) {
-  const { users } = useActiveUsers();
+  const { users: accounts } = useActiveUsers();
+  const { people } = useAssignablePeople();
+  const users: AssignablePerson[] = includeClickUp ? people : accounts;
+  const options = excludeIds?.length
+    ? users.filter((u) => !excludeIds.includes(u.id))
+    : users;
   const [open, setOpen] = React.useState(false);
   const [customMode, setCustomMode] = React.useState(false);
   const [customName, setCustomName] = React.useState("");
@@ -148,7 +163,7 @@ export function UserCombobox({
                   />
                   Unassigned
                 </CommandItem>
-                {users.map((user) => {
+                {options.map((user) => {
                   const matchValue =
                     valueMode === "id"
                       ? user.id
@@ -166,20 +181,29 @@ export function UserCombobox({
                         )}
                       />
                       {user.name || user.email}
+                      {user.clickupOnly && (
+                        <span className="ml-auto text-[10px] text-muted-foreground">
+                          ClickUp
+                        </span>
+                      )}
                     </CommandItem>
                   );
                 })}
               </CommandGroup>
-              <CommandSeparator />
-              <CommandGroup>
-                <CommandItem
-                  onSelect={() => setCustomMode(true)}
-                  className="text-muted-foreground"
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Type a custom name...
-                </CommandItem>
-              </CommandGroup>
+              {allowCustom && (
+                <>
+                  <CommandSeparator />
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={() => setCustomMode(true)}
+                      className="text-muted-foreground"
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Type a custom name...
+                    </CommandItem>
+                  </CommandGroup>
+                </>
+              )}
             </CommandList>
           </Command>
         )}

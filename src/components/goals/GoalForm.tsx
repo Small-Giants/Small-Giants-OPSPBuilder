@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DepartmentCombobox } from "@/components/ui/department-combobox";
-import { RaciFields } from "@/components/RaciFields";
+import { RaciFields, peopleModeForGoal } from "@/components/RaciFields";
+import { pushGoalToClickUp } from "@/lib/callables";
 import { SmartGoalFields } from "@/components/goals/SmartGoalFields";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -206,16 +207,60 @@ export function GoalForm({
       parentGoalId: null,
     }));
 
+  const pushToClickUp = async (goalId: string) => {
+    try {
+      const result = await pushGoalToClickUp({ goalId });
+      if (result.status === "skipped") {
+        if (result.reason) {
+          toast({ title: "Not sent to ClickUp", description: result.reason });
+        }
+        return;
+      }
+      toast({
+        title: result.status === "created" ? "ClickUp task created" : "ClickUp task updated",
+        description: result.warnings.length
+          ? result.warnings.join(" ")
+          : "The task, description, and RACI fields match this goal.",
+      });
+    } catch (error) {
+      toast({
+        title: "Saved, but ClickUp was not updated",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSave = async () => {
     if (!draft.title.trim()) return;
 
     setSaving(true);
+    let savedId: string | null = null;
     try {
+      // The sync owns the rest of `clickup`; writing the whole object from a
+      // draft opened earlier could undo a recap applied in the meantime.
+      const { clickup, ...fields } = draft;
       if (goal) {
-        await updateGoal(companyId, goal.id, draft, user?.uid);
+        await updateGoal(
+          companyId,
+          goal.id,
+          (clickup?.taskId || goal.clickup?.taskId
+            ? {
+                ...fields,
+                "clickup.taskId": clickup?.taskId ?? null,
+                "clickup.url": clickup?.url ?? null,
+              }
+            : fields) as Partial<Goal>,
+          user?.uid
+        );
+        savedId = goal.id;
         toast({ title: "Goal updated", description: draft.title.trim() });
       } else {
-        await createGoal(companyId, draft, user?.uid);
+        savedId = await createGoal(
+          companyId,
+          clickup?.taskId ? { ...fields, clickup: { taskId: clickup.taskId, url: clickup.url } } : fields,
+          user?.uid
+        );
         toast({ title: "Goal created", description: draft.title.trim() });
       }
       onOpenChange(false);
@@ -228,6 +273,8 @@ export function GoalForm({
     } finally {
       setSaving(false);
     }
+
+    if (savedId && draft.level === "department") await pushToClickUp(savedId);
   };
 
   const isQuantitative = draft.measurement.type === "quantitative";
@@ -306,7 +353,11 @@ export function GoalForm({
             onChange={(smart) => setDraft({ ...draft, smart })}
           />
 
-          <RaciFields value={draft} onChange={handleRaciChange} />
+          <RaciFields
+            value={draft}
+            onChange={handleRaciChange}
+            mode={peopleModeForGoal(draft.level)}
+          />
 
           <div className="space-y-1">
             <Label>Department</Label>
@@ -479,8 +530,12 @@ export function GoalForm({
               placeholder="Paste the task URL or ID"
             />
             <p className="text-xs text-muted-foreground">
-              Linking a task lets a sync pull subtask progress into the quarters
-              above. Targets you set here are never overwritten.
+              {draft.level === "department"
+                ? "Leave this empty and saving creates the task in ClickUp, with the SMART breakdown as its description and the RACI fields filled in. Paste a link only to use a task that already exists."
+                : "Paste a link to follow a ClickUp task. Only department goals get a task created for them."}{" "}
+              Once the goal owner approves the ClickUp agent&apos;s rock plan and
+              monthly recaps, they set the rocks, status, and quarter progress.
+              Targets you set here are never overwritten.
             </p>
             {draft.clickup?.lastSyncError && (
               <p className="text-xs text-destructive">

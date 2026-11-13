@@ -22,13 +22,47 @@ export interface GoalQuarter {
   updatedBy?: string;
 }
 
+/** The ClickUp agent's latest monthly recap, as last pulled by a sync. */
+export interface GoalRecap {
+  commentId: string;
+  commentUrl: string;
+  text: string;
+  author: string | null;
+  postedAt: string | null;
+  period: string | null;
+  summary: string | null;
+  status: GoalStatus | null;
+  rockCount: number;
+  /** Parser problems, shown to whoever reviews the recap. */
+  warnings: string[];
+  approvedBy?: RecapApproval | null;
+  pulledAt: string;
+}
+
+export interface RecapApproval {
+  byId: string;
+  byName: string;
+  at: string;
+  via: "clickup" | "app";
+}
+
 export interface GoalClickUpLink {
   taskId?: string;
   listId?: string;
   url?: string;
   lastSyncedAt?: string;
+  /** When the app last created or updated the ClickUp task from the goal. */
+  lastPushedAt?: string;
   /** Set when the last sync attempt failed, cleared on the next success. */
   lastSyncError?: string;
+  /** The most recent recap that was approved and applied. */
+  recap?: GoalRecap | null;
+  /** The newest recap still waiting for the goal owner's approval. */
+  pendingRecap?: GoalRecap | null;
+  /** Approvals given in the app, keyed by ClickUp comment id. */
+  approvals?: Record<string, RecapApproval>;
+  /** Every recap already applied, so none is applied twice. */
+  appliedRecapIds?: string[];
 }
 
 /**
@@ -60,6 +94,9 @@ export interface Goal extends RaciAssignment {
   id: string;
   title: string;
   description?: string;
+  smart?: Partial<
+    Record<"specific" | "measurable" | "achievable" | "relevant" | "timeBound", string>
+  >;
   level: GoalLevel;
   parentGoalId?: string | null;
   departmentId?: string | null;
@@ -90,6 +127,8 @@ export interface Rock extends RaciAssignment {
   status: RockStatus;
   quarter: Quarter;
   year?: number | null;
+  /** YYYY-MM-DD. */
+  dueDate?: string | null;
   goalId?: string;
   companyId?: string;
   createdAt?: string;
@@ -114,9 +153,13 @@ export interface SyncLogEntry {
   startedAt: string;
   finishedAt: string;
   triggeredBy: string;
+  /** The first-Friday schedule skips a month in which an admin already synced manually. */
+  trigger?: "manual" | "scheduled";
   source: "clickup";
   status: SyncLogStatus;
   goalsExamined: number;
   goalsUpdated: number;
+  /** Goals where an agent recap comment was found. */
+  recapsFound?: number;
   errors: { goalId: string; message: string }[];
 }

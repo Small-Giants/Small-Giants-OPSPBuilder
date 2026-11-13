@@ -74,7 +74,7 @@ export const SMART_FIELD_PROMPTS: Record<SmartField, string> = {
 };
 
 /** Per field, not per goal. Change here to adjust every SMART input at once. */
-export const SMART_CHAR_LIMIT = 100;
+export const SMART_CHAR_LIMIT = 300;
 
 export type SmartDescription = Record<SmartField, string>;
 
@@ -131,14 +131,72 @@ export function defaultMeasurement(): GoalMeasurement {
   return { type: "simple", unit: "", annualTarget: null, accumulation: "cumulative" };
 }
 
-/** Written by the syncClickUp function; see functions/src/clickup/sync.ts. */
+export interface RecapApproval {
+  byId: string;
+  byName: string;
+  at: string;
+  via: "clickup" | "app";
+}
+
+/**
+ * A rock plan or monthly recap the ClickUp agent posted on the goal's task.
+ * Once approved it is the source of truth for the goal's status, quarter
+ * progress, and rocks.
+ */
+export interface GoalRecap {
+  commentId: string;
+  commentUrl: string;
+  text: string;
+  author: string | null;
+  postedAt: string | null;
+  period: string | null;
+  summary: string | null;
+  status: GoalStatus | null;
+  rockCount?: number;
+  warnings?: string[];
+  approvedBy?: RecapApproval | null;
+  pulledAt: string;
+}
+
+/** Written by Cloud Functions; see functions/src/clickup/sync.ts. */
 export interface GoalClickUpLink {
   taskId?: string;
   listId?: string;
   url?: string;
   lastSyncedAt?: string;
+  lastPushedAt?: string;
   /** Set when the last attempt failed, cleared on the next success. */
   lastSyncError?: string | null;
+  /** The most recent recap that was approved and applied. */
+  recap?: GoalRecap | null;
+  /** The newest recap still waiting for approval. */
+  pendingRecap?: GoalRecap | null;
+  approvals?: Record<string, RecapApproval>;
+  appliedRecapIds?: string[];
+}
+
+export type ClickUpLocationKind = "list" | "space";
+
+/**
+ * Where the app creates goal tasks, from a ClickUp List or Space URL. Mirror
+ * of functions/src/clickup/location.ts, used here only to validate input.
+ */
+export function parseClickUpLocation(
+  url: string
+): { kind: ClickUpLocationKind; id: string } | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url.trim());
+  } catch {
+    return null;
+  }
+  if (!/(^|\.)clickup\.com$/.test(parsed.hostname)) return null;
+  const path = parsed.pathname;
+  const list = path.match(/\/v\/li\/(\d+)/) ?? path.match(/\/v\/l\/\d+-(\d+)-\d+/);
+  if (list) return { kind: "list", id: list[1] };
+  const space = path.match(/\/v\/(?:o\/)?s\/(\d+)/);
+  if (space) return { kind: "space", id: space[1] };
+  return null;
 }
 
 /**

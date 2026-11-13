@@ -243,7 +243,7 @@ export function RockForm({
             </div>
           </div>
 
-          <RaciFields value={draft} onChange={handleRaciChange} />
+          <RaciFields value={draft} onChange={handleRaciChange} mode="assignees" />
 
           <div className="rounded-md border">
             <button
@@ -291,7 +291,17 @@ export function RockForm({
                 }
               />
             </div>
-            <div className="flex items-center justify-between rounded-md border p-3">
+            <div className="space-y-1">
+              <Label>Due date</Label>
+              <Input
+                type="date"
+                value={draft.dueDate ?? ""}
+                onChange={(e) =>
+                  setDraft({ ...draft, dueDate: e.target.value || null })
+                }
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-md border p-3 md:col-span-2">
               <div>
                 <Label className="text-sm">High priority</Label>
                 <p className="text-xs text-muted-foreground">

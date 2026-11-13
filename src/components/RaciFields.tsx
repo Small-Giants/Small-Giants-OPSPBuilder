@@ -3,21 +3,35 @@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { UserCombobox } from "@/components/ui/user-combobox";
-import { useActiveUsers } from "@/hooks/use-active-users";
+import { personLabel, useAssignablePeople } from "@/hooks/use-assignable-people";
 import {
   RACI_ROLE_HINTS,
   RACI_ROLE_LABELS,
   withoutRaciMember,
+  type GoalLevel,
   type RaciAssignment,
   type RaciRole,
 } from "@/types";
 import { X } from "lucide-react";
 
+/**
+ * "full": department goals, RACI plus the Executive Sponsor.
+ * "raci": annual priorities, RACI without a sponsor.
+ * "owner": individual goals, one owner.
+ * "assignees": rocks, an owner plus anyone else doing the work.
+ */
+export type PeopleFieldsMode = "full" | "raci" | "owner" | "assignees";
+
+export function peopleModeForGoal(level: GoalLevel): PeopleFieldsMode {
+  if (level === "department") return "full";
+  if (level === "annual") return "raci";
+  return "owner";
+}
+
 interface RaciFieldsProps {
   value: RaciAssignment;
   onChange: (next: RaciAssignment) => void;
-  /** Hidden on rocks, where the sponsor is inherited from the parent goal. */
-  showSponsor?: boolean;
+  mode?: PeopleFieldsMode;
   className?: string;
 }
 
@@ -32,32 +46,24 @@ const MULTI_FIELDS: Record<MultiRole, keyof RaciAssignment> = {
 const MULTI_ORDER: MultiRole[] = ["responsible", "consulted", "informed"];
 
 /**
- * RACI pickers shared by goals and rocks. Everyone named here can edit the
- * record, which matches `canWriteGoal` in firestore.rules.
+ * People pickers shared by goals and rocks. Everyone named here can edit the
+ * record, which matches `canWriteGoal` in firestore.rules. ClickUp members
+ * who have never signed in can be picked too.
  */
-export function RaciFields({
-  value,
-  onChange,
-  showSponsor = true,
-  className,
-}: RaciFieldsProps) {
-  const { users } = useActiveUsers();
-
-  const userLabel = (userId: string) => {
-    const found = users.find((u) => u.id === userId);
-    return found?.name || found?.email || userId;
-  };
+export function RaciFields({ value, onChange, mode = "full", className }: RaciFieldsProps) {
+  const { people } = useAssignablePeople();
+  const isRaci = mode === "full" || mode === "raci";
+  const multiRoles: MultiRole[] = isRaci ? MULTI_ORDER : mode === "assignees" ? ["responsible"] : [];
 
   const idsFor = (role: MultiRole): string[] =>
     (value[MULTI_FIELDS[role]] as string[] | undefined) ?? [];
 
   const handleAccountableChange = (userId: string) => {
-    const owner = users.find((u) => u.id === userId);
     // One role per person, so taking Accountable drops them from the lists.
     onChange({
       ...withoutRaciMember(value, userId),
       ownerId: userId,
-      ownerName: owner?.name || owner?.email || "",
+      ownerName: userId ? personLabel(people, userId) : "",
     });
   };
 
@@ -82,31 +88,40 @@ export function RaciFields({
     });
   };
 
+  const heading = isRaci ? "Who is involved (RACI)" : mode === "assignees" ? "Assignees" : "Owner";
+  const ownerLabel = isRaci ? RACI_ROLE_LABELS.accountable : "Owner";
+  const multiLabel = (role: MultiRole) =>
+    mode === "assignees" ? "Also working on it" : RACI_ROLE_LABELS[role];
+
   return (
     <div className={className}>
       <div className="space-y-4 rounded-md border p-4">
         <div>
-          <Label className="text-sm font-medium">Who is involved (RACI)</Label>
+          <Label className="text-sm font-medium">{heading}</Label>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Anyone named here can edit this.
+            Anyone named here can edit this. People marked ClickUp have not signed in yet.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label className="text-xs">{RACI_ROLE_LABELS.accountable}</Label>
+            <Label className="text-xs">{ownerLabel}</Label>
             <UserCombobox
               value={value.ownerId ?? ""}
               onValueChange={handleAccountableChange}
-              placeholder="Who answers for this?"
+              placeholder={isRaci ? "Who answers for this?" : "Who owns this?"}
               valueMode="id"
+              allowCustom={false}
+              includeClickUp
             />
-            <p className="text-[11px] text-muted-foreground">
-              {RACI_ROLE_HINTS.accountable}
-            </p>
+            {isRaci && (
+              <p className="text-[11px] text-muted-foreground">
+                {RACI_ROLE_HINTS.accountable}
+              </p>
+            )}
           </div>
 
-          {showSponsor && (
+          {mode === "full" && (
             <div className="space-y-1">
               <Label className="text-xs">{RACI_ROLE_LABELS.sponsor}</Label>
               <UserCombobox
@@ -116,35 +131,40 @@ export function RaciFields({
                 }
                 placeholder="Select a sponsor"
                 valueMode="id"
+                allowCustom={false}
+                includeClickUp
               />
               <p className="text-[11px] text-muted-foreground">
-                {RACI_ROLE_HINTS.sponsor}
+                {RACI_ROLE_HINTS.sponsor} Not sent to ClickUp.
               </p>
             </div>
           )}
         </div>
 
-        {MULTI_ORDER.map((role) => {
+        {multiRoles.map((role) => {
           const ids = idsFor(role);
           return (
             <div key={role} className="space-y-1.5">
-              <Label className="text-xs">{RACI_ROLE_LABELS[role]}</Label>
+              <Label className="text-xs">{multiLabel(role)}</Label>
               <UserCombobox
                 value=""
                 onValueChange={(userId) => addTo(role, userId)}
-                placeholder={`Add ${RACI_ROLE_LABELS[role].toLowerCase()}`}
+                placeholder={`Add ${multiLabel(role).toLowerCase()}`}
                 valueMode="id"
+                allowCustom={false}
+                includeClickUp
+                excludeIds={[...ids, value.ownerId ?? ""]}
               />
               {ids.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {ids.map((id) => (
                     <Badge key={id} variant="secondary" className="gap-1">
-                      {userLabel(id)}
+                      {personLabel(people, id)}
                       <button
                         type="button"
                         onClick={() => removeFrom(role, id)}
                         className="hover:text-destructive"
-                        aria-label={`Remove ${userLabel(id)} from ${RACI_ROLE_LABELS[role]}`}
+                        aria-label={`Remove ${personLabel(people, id)} from ${multiLabel(role)}`}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -152,9 +172,11 @@ export function RaciFields({
                   ))}
                 </div>
               )}
-              <p className="text-[11px] text-muted-foreground">
-                {RACI_ROLE_HINTS[role]}
-              </p>
+              {isRaci && (
+                <p className="text-[11px] text-muted-foreground">
+                  {RACI_ROLE_HINTS[role]}
+                </p>
+              )}
             </div>
           );
         })}

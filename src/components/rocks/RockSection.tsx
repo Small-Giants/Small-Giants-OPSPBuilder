@@ -7,7 +7,7 @@ import { ActionMenu } from "@/components/ui/ActionMenu";
 import { RockForm } from "@/components/rocks/RockForm";
 import { useToast } from "@/hooks/use-toast";
 import { usePlanYear } from "@/contexts/PlanYearContext";
-import { useActiveUsers } from "@/hooks/use-active-users";
+import { personLabel, useAssignablePeople } from "@/hooks/use-assignable-people";
 import { deleteRock } from "@/lib/rocks";
 import {
   QUARTERS,
@@ -43,7 +43,7 @@ export function RockSection({
 }: RockSectionProps) {
   const { toast } = useToast();
   const { companyId } = usePlanYear();
-  const { users } = useActiveUsers();
+  const { people } = useAssignablePeople();
 
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [formOpen, setFormOpen] = useState(false);
@@ -58,13 +58,12 @@ export function RockSection({
     return map;
   }, [rocks]);
 
-  const userLabel = (userId: string) => {
-    const found = users.find((u) => u.id === userId);
-    return found?.name || found?.email || userId;
-  };
+  const userLabel = (userId: string) => personLabel(people, userId);
 
   const responsibleLabel = (rock: Rock) => {
-    const ids = rockResponsibleIds(rock);
+    const ids = Array.from(
+      new Set([rock.ownerId, ...rockResponsibleIds(rock)].filter((id): id is string => Boolean(id)))
+    );
     if (ids.length === 0) return rock.assigneeName || "";
     if (ids.length <= 2) return ids.map(userLabel).join(", ");
     return `${userLabel(ids[0])} +${ids.length - 1}`;
@@ -197,6 +196,16 @@ export function RockSection({
                         {responsibleLabel(rock) && (
                           <span>{responsibleLabel(rock)}</span>
                         )}
+                        {rock.dueDate && (
+                          <span>
+                            Due{" "}
+                            {new Date(`${rock.dueDate}T12:00:00`).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
+                        )}
+                        {rock.updatedBy === "clickup" && <span>From ClickUp</span>}
                       </div>
                     </div>
 

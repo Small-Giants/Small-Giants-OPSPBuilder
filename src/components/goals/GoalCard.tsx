@@ -14,23 +14,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ClickUpRecap } from "@/components/goals/ClickUpRecap";
 import { GoalProgressBar, GoalStatusBadge } from "@/components/goals/GoalProgress";
 import { QuarterCheckIn } from "@/components/goals/QuarterCheckIn";
 import { RockSection } from "@/components/rocks/RockSection";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { usePlanYear } from "@/contexts/PlanYearContext";
 import { useDepartments } from "@/hooks/use-departments";
 import { useGoalPermissions } from "@/hooks/use-goal-permissions";
 import { useRocks } from "@/hooks/use-rocks";
 import { deleteGoal } from "@/lib/goals";
-import { syncClickUp } from "@/lib/callables";
-import { GOAL_LEVEL_LABELS, type Goal } from "@/types";
+import { GOAL_LEVEL_LABELS, raciMembers, type Goal } from "@/types";
 import {
+  AlertCircle,
   CalendarIcon,
   ChevronDown,
   ChevronRight,
+  Clock,
+  FileText,
   PencilIcon,
-  RefreshCw,
   Trash2,
   UserIcon,
 } from "lucide-react";
@@ -56,38 +59,22 @@ export function GoalCard({
   showRocks = true,
 }: GoalCardProps) {
   const { toast } = useToast();
+  const { hasRole } = useAuth();
   const { companyId } = usePlanYear();
   const { getName } = useDepartments();
   const { canEditGoal } = useGoalPermissions();
   const { byGoal } = useRocks();
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const [syncing, setSyncing] = useState(false);
 
+  const isAdmin = hasRole("admin");
   const canEdit = canEditGoal(goal);
+  const linkedToClickUp = Boolean(goal.clickup?.taskId);
+  // Progress on a linked goal comes from the ClickUp recap. Admins keep the
+  // ability to correct it, knowing the next sync will apply the recap again.
+  const canCheckIn = canEdit && (!linkedToClickUp || isAdmin);
   const rocks = byGoal.get(goal.id) ?? [];
-
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      const result = await syncClickUp({ goalId: goal.id });
-      toast({
-        title: result.goalsUpdated > 0 ? "Pulled from ClickUp" : "Already up to date",
-        description:
-          result.warnings[0] ??
-          (result.goalsUpdated > 0
-            ? "Quarter actuals updated from the linked task."
-            : "Nothing in ClickUp has changed since the last sync."),
-      });
-    } catch (error: any) {
-      toast({
-        title: "Sync failed",
-        description: error?.message ?? "Unknown error.",
-        variant: "destructive",
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
+  const peopleCount = raciMembers(goal).length;
+  const recap = goal.clickup?.recap;
 
   const handleDelete = async () => {
     try {
@@ -147,9 +134,15 @@ export function GoalCard({
             )}
 
             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
-              <span className="flex items-center gap-1">
+              <span
+                className={`flex items-center gap-1 ${
+                  !goal.ownerName && peopleCount > 0 ? "text-amber-600" : ""
+                }`}
+                title="Accountable"
+              >
                 <UserIcon className="w-3 h-3" />
-                {goal.ownerName || "Unassigned"}
+                {goal.ownerName ||
+                  (peopleCount > 0 ? "No one accountable" : "Unassigned")}
               </span>
               {goal.departmentId && <span>{getName(goal.departmentId)}</span>}
               {goal.dueDate && (
@@ -158,9 +151,35 @@ export function GoalCard({
                   {goal.dueDate}
                 </span>
               )}
-              {(goal.contributorIds?.length ?? 0) > 0 && (
+              {peopleCount > (goal.ownerId ? 1 : 0) && (
                 <span>
-                  +{goal.contributorIds!.length} responsible
+                  {goal.ownerId ? "+" : ""}
+                  {peopleCount - (goal.ownerId ? 1 : 0)} in RACI
+                </span>
+              )}
+              {recap && (
+                <span className="flex items-center gap-1" title="Latest ClickUp recap">
+                  <FileText className="w-3 h-3" />
+                  {recap.period ?? "ClickUp recap"}
+                </span>
+              )}
+              {goal.clickup?.pendingRecap && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded(true)}
+                  className="flex items-center gap-1 text-amber-600 hover:underline"
+                >
+                  <Clock className="w-3 h-3" />
+                  Recap to approve
+                </button>
+              )}
+              {isAdmin && goal.clickup?.lastSyncError && (
+                <span
+                  className="flex items-center gap-1 text-destructive"
+                  title={goal.clickup.lastSyncError}
+                >
+                  <AlertCircle className="w-3 h-3" />
+                  Last sync failed
                 </span>
               )}
             </div>
@@ -182,25 +201,6 @@ export function GoalCard({
 
           {canEdit && (
             <div className="flex items-center gap-1 shrink-0">
-              {goal.clickup?.taskId && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleSync}
-                  disabled={syncing}
-                  title={
-                    goal.clickup.lastSyncError
-                      ? `Last sync failed: ${goal.clickup.lastSyncError}`
-                      : "Pull progress from ClickUp"
-                  }
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${syncing ? "animate-spin" : ""} ${
-                      goal.clickup.lastSyncError ? "text-destructive" : ""
-                    }`}
-                  />
-                </Button>
-              )}
               {onEdit && (
                 <Button variant="ghost" size="icon" onClick={() => onEdit(goal)}>
                   <PencilIcon className="w-4 h-4" />
@@ -241,8 +241,15 @@ export function GoalCard({
       </div>
 
       {showCheckIn && expanded && (
-        <div className="border-t p-4 bg-muted/30">
-          <QuarterCheckIn goal={goal} canEdit={canEdit} />
+        <div className="border-t p-4 bg-muted/30 space-y-3">
+          <ClickUpRecap goal={goal} />
+          <QuarterCheckIn goal={goal} canEdit={canCheckIn} />
+          {linkedToClickUp && (
+            <p className="text-[11px] text-muted-foreground">
+              Status and quarter progress come from the monthly recap on the
+              ClickUp task. Add notes and updates in ClickUp, not here.
+            </p>
+          )}
         </div>
       )}
     </div>

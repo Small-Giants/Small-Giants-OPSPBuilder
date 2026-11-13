@@ -18,32 +18,34 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { usePlanYear } from "@/contexts/PlanYearContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { syncClickUp, testClickUpConnection } from "@/lib/callables";
-import { AlertCircle, CheckCircle2, Loader2, PlugZap, RefreshCw } from "lucide-react";
+import { refreshClickUpMembers, syncClickUp, testClickUpConnection } from "@/lib/callables";
+import { AlertCircle, CheckCircle2, Loader2, PlugZap, RefreshCw, Users } from "lucide-react";
 
+/** Mirror of ClickUpSettings in functions/src/clickup/settings.ts. */
 interface ClickUpConfig {
   enabled: boolean;
-  quarterFieldName: string;
-  progressFieldName: string;
-  completeStatuses: string[];
+  recapMarkers: string[];
+  recapAuthor: string;
   updatedAt?: string;
   updatedBy?: string;
 }
 
 const DEFAULT_CONFIG: ClickUpConfig = {
   enabled: false,
-  quarterFieldName: "Quarter",
-  progressFieldName: "Actual",
-  completeStatuses: ["complete", "closed", "done"],
+  recapMarkers: ["OPSP Rock Plan", "OPSP Monthly Recap"],
+  recapAuthor: "",
 };
 
 interface SyncLog {
   id: string;
   finishedAt: string;
   triggeredBy: string;
+  trigger?: "manual" | "scheduled";
   status: "success" | "partial" | "error";
   goalsExamined: number;
   goalsUpdated: number;
+  recapsApplied?: number;
+  recapsPending?: number;
   errors: { goalId: string; message: string }[];
 }
 
@@ -57,6 +59,9 @@ export default function IntegrationSettings() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastWarnings, setLastWarnings] = useState<string[]>([]);
+  const [markersText, setMarkersText] = useState(DEFAULT_CONFIG.recapMarkers.join(", "));
 
   const isAdmin = hasRole("admin");
 
@@ -65,7 +70,14 @@ export default function IntegrationSettings() {
       doc(db, "companies", companyId, "integrations", "clickup"),
       (snap) => {
         if (snap.exists()) {
-          setConfig({ ...DEFAULT_CONFIG, ...(snap.data() as Partial<ClickUpConfig>) });
+          const data = snap.data() as Partial<ClickUpConfig> & { recapMarker?: string };
+          const recapMarkers = data.recapMarkers?.length
+            ? data.recapMarkers
+            : data.recapMarker
+              ? [data.recapMarker]
+              : DEFAULT_CONFIG.recapMarkers;
+          setConfig({ ...DEFAULT_CONFIG, ...data, recapMarkers });
+          setMarkersText(recapMarkers.join(", "));
         }
       }
     );
@@ -129,7 +141,11 @@ export default function IntegrationSettings() {
     setSyncing(true);
     try {
       const result = await syncClickUp({ planYear: selectedYear });
-      const detail = `${result.goalsUpdated} of ${result.goalsExamined} goal(s) updated.`;
+      const rocks =
+        result.rocksCreated + result.rocksUpdated > 0
+          ? ` Rocks: ${result.rocksCreated} added, ${result.rocksUpdated} updated.`
+          : "";
+      const detail = `${result.goalsExamined} linked goal(s): ${result.recapsApplied} recap(s) applied, ${result.recapsPending} waiting for approval.${rocks}`;
       toast({
         title: result.status === "success" ? "Sync complete" : "Sync finished with problems",
         description:
@@ -138,9 +154,7 @@ export default function IntegrationSettings() {
             : detail,
         variant: result.status === "error" ? "destructive" : undefined,
       });
-      result.warnings.forEach((warning) =>
-        toast({ title: "Heads up", description: warning })
-      );
+      setLastWarnings(result.warnings);
     } catch (error: any) {
       toast({
         title: "Sync failed",
@@ -150,6 +164,38 @@ export default function IntegrationSettings() {
     } finally {
       setSyncing(false);
     }
+  };
+
+  const runRefreshPeople = async () => {
+    setRefreshing(true);
+    try {
+      const result = await refreshClickUpMembers();
+      toast({
+        title: "People refreshed",
+        description: `${result.count} ClickUp member(s) can now be picked on goals and rocks.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Could not refresh people",
+        description: error?.message ?? "Unknown error.",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const saveMarkers = () => {
+    const recapMarkers = markersText
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (recapMarkers.length === 0) {
+      setMarkersText(config.recapMarkers.join(", "));
+      return;
+    }
+    if (recapMarkers.join("|") === config.recapMarkers.join("|")) return;
+    save({ ...config, recapMarkers });
   };
 
   if (!isAdmin) {
@@ -173,8 +219,12 @@ export default function IntegrationSettings() {
           Integrations
         </h2>
         <p className="text-muted-foreground text-sm">
-          ClickUp tracks the day-to-day work. This pulls task progress back into
-          the goals so the OPSP stays the record of what was committed.
+          ClickUp tracks the day-to-day work. Saving a department goal creates
+          its ClickUp task. The ClickUp agent posts a rock plan on the task, then
+          a recap each month. Once the goal&apos;s Accountable person approves a
+          recap (by replying &quot;Approved&quot; in ClickUp or in the app), the
+          next sync applies it. Syncs run automatically on the first Friday of
+          each month unless an admin already synced that month.
         </p>
       </div>
 
@@ -198,53 +248,41 @@ export default function IntegrationSettings() {
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="quarter-field">Quarter field</Label>
+              <Label htmlFor="recap-marker">Recap headings</Label>
               <Input
-                id="quarter-field"
-                value={config.quarterFieldName}
-                onChange={(e) => setConfig({ ...config, quarterFieldName: e.target.value })}
-                onBlur={() => save(config)}
+                id="recap-marker"
+                value={markersText}
+                onChange={(e) => setMarkersText(e.target.value)}
+                onBlur={saveMarkers}
               />
               <p className="text-xs text-muted-foreground">
-                ClickUp custom field naming the quarter. Falls back to the task
-                due date when it is empty.
+                Comma separated. The agent opens each rock plan or monthly recap
+                with one of these lines; other comments are ignored.
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="progress-field">Value field</Label>
+              <Label htmlFor="recap-author">Agent name (optional)</Label>
               <Input
-                id="progress-field"
-                value={config.progressFieldName}
-                onChange={(e) => setConfig({ ...config, progressFieldName: e.target.value })}
+                id="recap-author"
+                value={config.recapAuthor}
+                placeholder="Any author"
+                onChange={(e) => setConfig({ ...config, recapAuthor: e.target.value })}
                 onBlur={() => save(config)}
               />
               <p className="text-xs text-muted-foreground">
-                Numeric custom field read into the quarter actual for
-                quantitative goals.
+                Only accept recaps whose author name contains this, so a person
+                pasting the heading is ignored.
               </p>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="complete-statuses">Statuses that mean done</Label>
-            <Input
-              id="complete-statuses"
-              value={config.completeStatuses.join(", ")}
-              onChange={(e) =>
-                setConfig({
-                  ...config,
-                  completeStatuses: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                })
-              }
-              onBlur={() => save(config)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Comma separated. ClickUp&apos;s own closed columns always count,
-              regardless of what is listed here.
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            New department goals are created in the ClickUp location a superadmin
+            sets in the Admin Panel. Its tasks need People fields named
+            Accountable, Responsible, Consulted, and Informed.
+          </p>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button variant="outline" onClick={runTest} disabled={testing}>
               {testing ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -253,15 +291,34 @@ export default function IntegrationSettings() {
               )}
               Test connection
             </Button>
+            <Button variant="outline" onClick={runRefreshPeople} disabled={refreshing}>
+              {refreshing ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Users className="w-4 h-4 mr-2" />
+              )}
+              Refresh people from ClickUp
+            </Button>
             <Button onClick={runSync} disabled={syncing || !config.enabled}>
               {syncing ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <RefreshCw className="w-4 h-4 mr-2" />
               )}
-              Sync {selectedYear} goals now
+              Pull {selectedYear} recaps from ClickUp
             </Button>
           </div>
+
+          {lastWarnings.length > 0 && (
+            <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 space-y-1">
+              <p className="text-xs font-medium">From the last sync</p>
+              {lastWarnings.map((warning) => (
+                <p key={warning} className="text-xs text-muted-foreground">
+                  {warning}
+                </p>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -298,8 +355,18 @@ export default function IntegrationSettings() {
                     <Badge variant="outline" className="text-[10px]">
                       {log.goalsUpdated}/{log.goalsExamined} updated
                     </Badge>
+                    {log.recapsApplied != null && (
+                      <Badge variant="outline" className="text-[10px]">
+                        {log.recapsApplied} applied
+                      </Badge>
+                    )}
+                    {(log.recapsPending ?? 0) > 0 && (
+                      <Badge variant="outline" className="text-[10px] text-amber-700">
+                        {log.recapsPending} awaiting approval
+                      </Badge>
+                    )}
                     <span className="text-xs text-muted-foreground">
-                      {log.triggeredBy}
+                      {log.trigger === "scheduled" ? "Scheduled" : log.triggeredBy}
                     </span>
                   </div>
                   {log.errors?.length > 0 && (

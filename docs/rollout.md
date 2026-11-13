@@ -93,9 +93,23 @@ Run through this as a normal user, not as an admin, and then again as an admin.
 
 **ClickUp**
 - [ ] Test connection succeeds against the real workspace.
-- [ ] A linked task with quarterly subtasks syncs into the right quarters.
-- [ ] A subtask with no quarter field and no due date produces a warning rather
-      than landing in the wrong quarter.
+- [ ] Refresh people from ClickUp lists workspace members in the goal and rock
+      pickers, marked ClickUp.
+- [ ] With the goal location set, saving a new department goal creates its
+      task with the SMART description and the four RACI People fields filled.
+      Editing the goal updates the task.
+- [ ] An OPSP Rock Plan comment shows on the goal card as waiting for approval
+      and changes nothing yet.
+- [ ] Replying "Approved" in ClickUp as the Accountable person, then syncing,
+      creates the rocks with quarters, assignees, and due dates.
+- [ ] A monthly recap approved with the app's Approve button sets the goal's
+      status, completed quarters, and (for numeric goals) actuals on the next
+      sync, and imports a newly listed rock.
+- [ ] A Responsible person sees no Approve button, and an "Approved" reply from
+      them in ClickUp is ignored.
+- [ ] A ClickUp-only person named on a goal is switched to their account when
+      they first sign in.
+- [ ] A non-admin cannot run the sync or edit check-ins on a linked goal.
 - [ ] A hand-entered target survives a sync unchanged.
 - [ ] Revoking the token produces a clear error on the goal and in the sync log,
       and notifies admins.

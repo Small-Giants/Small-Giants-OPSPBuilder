@@ -15,7 +15,7 @@ That is deliberate: it surfaces priorities nobody has actually taken on.
 
 ## Writing a goal
 
-Every goal is described with five SMART prompts, each capped at 100 characters.
+Every goal is described with five SMART prompts, each capped at 300 characters.
 The cap is per field, not per goal, so there is room to be specific in each
 answer without writing an essay. The five answers are joined into the one-line
 description shown in list views.
@@ -44,27 +44,68 @@ the form asks explicitly rather than guessing.
 
 ## Quarterly check-ins
 
-Open a goal and expand it to record the quarter's actual value, mark it
-complete, and leave a note. The rollups above it update immediately.
+Goals linked to ClickUp are checked in by the monthly recap (see below), so
+their quarters are read-only for everyone but admins. For a goal with no
+ClickUp link, open it and expand it to record the quarter's actual value and
+mark it complete. The rollups above it update immediately.
 
 A goal is flagged **at risk** when the quarter is more than halfway through and
 the actual is tracking below target. Nobody sets that by hand.
 
 ## ClickUp
 
-ClickUp remains the place where the work actually happens: time estimates, time
-tracking, notes, documentation. The OPSP is the record of what was committed.
+ClickUp is where the work happens: time estimates, time tracking, notes,
+documentation, and progress updates. The OPSP is the record of what was
+committed. Nobody updates a linked goal's progress in the OPSP.
 
-Link a goal to a ClickUp task by pasting the task URL into the goal form. Press
-the sync button on the goal, or sync everything from Admin, Integrations, to
-pull task progress into the quarters.
+### Who is named where
 
-The sync **never overwrites a target**. It only fills in actuals and completion,
-because ClickUp reports what happened and the OPSP records what was promised.
+- **Department goals** have the full RACI plus an Executive Sponsor. They are
+  the only goals that get a ClickUp task, and the sponsor stays in the OPSP.
+- **Annual priorities** have the RACI without a sponsor.
+- **Individual goals** have one owner.
+- **Rocks** have an owner, anyone else working on them, and a due date.
 
-For the sync to place work in the right quarter, ClickUp subtasks need either a
-`Quarter` custom field or a due date. See `functions/README.md` for the field
-setup.
+People pickers list everyone with an app account plus every ClickUp workspace
+member, so a goal can name someone who has never signed in. When that person
+signs in for the first time, every goal and rock that names them switches to
+their account automatically.
+
+### The yearly cycle
+
+1. **Plan.** The team lead meets the team and leaves with a SMART breakdown of
+   each goal.
+2. **Create.** The lead creates the department goal in the OPSP. Saving it
+   creates the ClickUp task in the location a superadmin set in the Admin
+   Panel, writes the SMART breakdown as the task description, assigns the
+   Accountable and Responsible people, and fills the Accountable, Responsible,
+   Consulted, and Informed People fields. Editing the goal later updates the
+   task the same way.
+3. **Work.** The team works only in the ClickUp task: subtasks, docs,
+   comments, whatever suits them.
+4. **Rock plan.** Once the quarterly rocks are planned in the task, the ClickUp
+   agent posts an **OPSP Rock Plan** comment listing each rock with its
+   quarter, assignees, and due date.
+5. **Monthly recap.** Each month after that, the agent posts a shorter **OPSP
+   Monthly Recap** with progress, status, and the current rock list. A rock
+   added mid-year shows up in that list and is imported.
+6. **Approve.** The goal's Accountable person (or an admin) checks the comment
+   and either replies **Approved** to it in ClickUp or presses **Approve** on
+   the goal card in the OPSP. Nothing is applied until then.
+7. **Sync.** Approved recaps are applied on the first Friday of each month, or
+   sooner if an admin presses **Pull recaps from ClickUp** under Admin,
+   Integrations. A manual sync during the month skips that month's scheduled
+   run.
+
+Applying a recap sets the goal's status, which quarters are complete, and, for
+numeric goals, the quarter actuals. It adds new rocks and updates existing
+ones, matched by title or ClickUp task link. A rock the agent stops listing is
+left alone rather than deleted.
+
+The sync **never overwrites a target**, because ClickUp reports what happened
+and the OPSP records what was promised. If a recap is wrong, don't approve it.
+Fix the task and rerun the agent; the newer recap replaces it. See
+`functions/README.md` for the format the agent must follow.
 
 ## Notifications
 
