@@ -54,6 +54,22 @@ npm run verify               # typecheck, build functions, unit tests
 npm run deploy:functions
 ```
 
+### New callable functions need one extra step
+
+The Google Workspace organization enforces domain restricted sharing, so the
+deploy cannot grant `allUsers` the Cloud Run invoker role that callables rely
+on. Without it the browser gets a 403 on the CORS preflight and the app shows
+"internal". Instead, turn off Cloud Run's invoker check once per new callable;
+the setting survives later deploys, and each callable still verifies Firebase
+Auth through `requireCaller`:
+
+```
+gcloud run services update <function name, lowercase> --region us-central1 --no-invoker-iam-check
+```
+
+Or in the Cloud Console: Cloud Run, the service, Security, Authentication,
+"Allow public access". Never do this for event or scheduled functions.
+
 ## ClickUp workspace setup
 
 ### One-time setup
