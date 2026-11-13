@@ -139,8 +139,9 @@ const isBlank = (value: string | null | undefined) => !value?.trim();
  * The changes that fill an existing task's empty fields from the goal. The
  * task belongs to ClickUp once it exists: anything already set there, even if
  * the goal now says otherwise, is left alone, and the name is never touched.
- * The description is the one exception: the labelled OPSP block may be added
- * above what is there, see descriptionWithOpspBlock.
+ * Two things are added to rather than filled: the labelled OPSP block goes
+ * above an existing description (see descriptionWithOpspBlock), and people
+ * the goal names are added to the assignees without removing anyone.
  */
 export function fillEmptyTaskFields(
   task: Pick<
@@ -155,13 +156,18 @@ export function fillEmptyTaskFields(
   if (description) changes.markdown_description = description;
   if (isBlank(task.due_date) && wanted.due_date != null) changes.due_date = wanted.due_date;
   if (isBlank(task.start_date) && wanted.start_date != null) changes.start_date = wanted.start_date;
-  if ((task.assignees ?? []).length === 0 && wanted.assignees?.length) {
-    changes.assignees = { add: wanted.assignees, rem: [] };
-  }
+  const currentAssignees = (task.assignees ?? [])
+    .map((u) => u.id)
+    .filter((id): id is number => typeof id === "number");
+  const assignees = addMissingPeople(currentAssignees, wanted.assignees ?? []);
+  if (assignees.add.length > 0) changes.assignees = assignees;
   return changes;
 }
 
-/** A People field is only filled when it is empty, and never has anyone removed. */
-export function fillEmptyPeople(current: number[], wanted: number[]): { add: number[]; rem: number[] } {
-  return { add: current.length === 0 ? wanted : [], rem: [] };
+/**
+ * Adds the people the goal names that the task lacks. Nobody is ever removed,
+ * so people added in ClickUp stay.
+ */
+export function addMissingPeople(current: number[], wanted: number[]): { add: number[]; rem: number[] } {
+  return { add: wanted.filter((id) => !current.includes(id)), rem: [] };
 }

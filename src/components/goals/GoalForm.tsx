@@ -615,7 +615,7 @@ export function GoalForm({
             />
             <p className="text-xs text-muted-foreground">
               {draft.level === "department"
-                ? "Leave this empty and saving creates the task in ClickUp, with the goal statement and SMART breakdown as its description and the RACI fields filled in. Paste a link only to use a task that already exists. Saving again only fills fields that are empty in ClickUp and never overwrites them. If the task's description lacks the goal statement, it is added at the top, labelled Added by OPSP app."
+                ? "Leave this empty and saving creates the task in ClickUp, with the goal statement and SMART breakdown as its description and the RACI fields filled in. Paste a link only to use a task that already exists. Saving again adds people missing from the RACI fields and fills empty fields, but never overwrites or removes anything. If the task's description lacks the goal statement, it is added at the top, labelled Added by OPSP app."
                 : "Paste a link to follow a ClickUp task. Only department goals get a task created for them."}{" "}
               Once the goal owner approves the ClickUp agent&apos;s rock plan and
               monthly recaps, they set the rocks, status, and quarter progress.

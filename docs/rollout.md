@@ -101,7 +101,8 @@ Run through this as a normal user, not as an admin, and then again as an admin.
 - [ ] With the goal location set, saving a new department goal creates its
       task with the SMART description and the four RACI People fields filled.
       Editing the goal afterwards only fills fields that are empty in ClickUp;
-      a description, date, or person set in ClickUp is never overwritten. A
+      a description, date, or person set in ClickUp is never overwritten or
+      removed. People added on the goal are added to the RACI fields. A
       description without the goal statement gets it added on top, labelled
       Added by OPSP app, with the original text kept below.
 - [ ] An OPSP Rock Plan comment shows on the goal card as waiting for approval

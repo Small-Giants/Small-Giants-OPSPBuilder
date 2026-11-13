@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldPath } from "firebase-admin/firestore";
+import { logger } from "firebase-functions";
 import { CLICKUP_API_TOKEN, DEFAULT_COMPANY_ID } from "../config";
 import { requireCaller, type Caller } from "../auth";
 import { db } from "../firestore";
@@ -7,8 +8,8 @@ import { leadersOf } from "../notifications/triggers";
 import { raciMembers, type Goal, type RecapApproval } from "../types";
 import { ClickUpClient, ClickUpError } from "./client";
 import {
+  addMissingPeople,
   currentPeople,
-  fillEmptyPeople,
   fillEmptyTaskFields,
   findRaciFields,
   opspDescriptionBlock,
@@ -183,20 +184,40 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
       }
 
       const listFields = listId ? await client.getListFields(listId) : [];
-      const raciFields = findRaciFields(listFields);
+      // A task can carry fields its list endpoint leaves out, so check both.
+      const raciFields = findRaciFields([...(currentFields ?? []), ...listFields]);
+      const raciLog: Record<string, unknown> = {};
       for (const role of Object.keys(RACI_FIELD_NAMES) as RaciRole[]) {
         const field = raciFields[role];
         if (!field) {
           warnings.push(`The ClickUp list has no People field named "${RACI_FIELD_NAMES[role]}".`);
+          raciLog[role] = "no field";
           continue;
         }
         const current = currentPeople(currentFields?.find((f) => f.id === field.id));
-        const diff = fillEmptyPeople(current, raci.ids[role]);
-        if (diff.add.length > 0) {
+        const diff = addMissingPeople(current, raci.ids[role]);
+        raciLog[role] = { fieldId: field.id, current, wanted: raci.ids[role], add: diff.add };
+        if (diff.add.length === 0) continue;
+        try {
           await client.setPeopleField(taskId, field.id, diff);
           if (status === "updated") filled.push(RACI_FIELD_NAMES[role]);
+        } catch (error) {
+          const message = error instanceof ClickUpError ? error.message : String(error);
+          warnings.push(`Could not set the ${RACI_FIELD_NAMES[role]} field: ${message}`);
+          raciLog[role] = { ...(raciLog[role] as object), error: message };
         }
       }
+      logger.info("Pushed goal to ClickUp", {
+        goalId: goal.id,
+        taskId,
+        listId,
+        status,
+        raci: raciLog,
+        unmatched: raci.unmatched,
+        peopleFields: [...(currentFields ?? []), ...listFields]
+          .filter((f) => f.type === "users")
+          .map((f) => f.name),
+      });
 
       await db()
         .doc(`companies/${DEFAULT_COMPANY_ID}/goals/${goal.id}`)

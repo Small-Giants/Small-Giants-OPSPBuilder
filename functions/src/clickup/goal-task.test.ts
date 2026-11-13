@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  addMissingPeople,
   currentPeople,
   descriptionWithOpspBlock,
-  fillEmptyPeople,
   OPSP_MARKER,
   opspDescriptionBlock,
   fillEmptyTaskFields,
@@ -96,10 +96,11 @@ describe("RACI fields", () => {
     expect(fields.informed?.id).toBe("f3");
   });
 
-  it("fills an empty People field but never changes one that has people", () => {
+  it("adds the goal's people who are missing and never removes anyone", () => {
     const current = currentPeople({ id: "f", name: "Accountable", type: "users", value: [{ id: 1 }, { id: 2 }] });
-    expect(fillEmptyPeople(current, [2, 3])).toEqual({ add: [], rem: [] });
-    expect(fillEmptyPeople([], [2, 3])).toEqual({ add: [2, 3], rem: [] });
+    expect(addMissingPeople(current, [2, 3])).toEqual({ add: [3], rem: [] });
+    expect(addMissingPeople(current, [1])).toEqual({ add: [], rem: [] });
+    expect(addMissingPeople([], [2, 3])).toEqual({ add: [2, 3], rem: [] });
   });
 });
 
@@ -157,7 +158,7 @@ describe("fillEmptyTaskFields", () => {
     assignees: [7, 8],
   };
 
-  it("leaves every field that already has a value alone, and never sends the name", () => {
+  it("leaves set fields alone and never sends the name, but adds missing assignees", () => {
     const changes = fillEmptyTaskFields(
       {
         description: `${OPSP_MARKER} (Nov 1, 2026) Written by hand in ClickUp`,
@@ -165,6 +166,20 @@ describe("fillEmptyTaskFields", () => {
         due_date: "1780000000000",
         start_date: "1760000000000",
         assignees: [{ id: 9 }],
+      },
+      wanted
+    );
+    expect(changes).toEqual({ assignees: { add: [7, 8], rem: [] } });
+  });
+
+  it("sends nothing when the task already has everything", () => {
+    const changes = fillEmptyTaskFields(
+      {
+        description: "Notes",
+        markdown_description: `**${OPSP_MARKER}** (Nov 1, 2026)\n\nNotes`,
+        due_date: "1780000000000",
+        start_date: "1760000000000",
+        assignees: [{ id: 7 }, { id: 8 }, { id: 9 }],
       },
       wanted
     );
