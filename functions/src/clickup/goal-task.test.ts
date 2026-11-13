@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   currentPeople,
+  fillEmptyPeople,
+  fillEmptyTaskFields,
   findRaciFields,
   goalTaskDescription,
-  peopleDiff,
   raciClickUpIds,
   taskAssignees,
   toClickUpDate,
@@ -92,8 +93,52 @@ describe("RACI fields", () => {
     expect(fields.informed?.id).toBe("f3");
   });
 
-  it("diffs current and wanted people", () => {
+  it("fills an empty People field but never changes one that has people", () => {
     const current = currentPeople({ id: "f", name: "Accountable", type: "users", value: [{ id: 1 }, { id: 2 }] });
-    expect(peopleDiff(current, [2, 3])).toEqual({ add: [3], rem: [1] });
+    expect(fillEmptyPeople(current, [2, 3])).toEqual({ add: [], rem: [] });
+    expect(fillEmptyPeople([], [2, 3])).toEqual({ add: [2, 3], rem: [] });
+  });
+});
+
+describe("fillEmptyTaskFields", () => {
+  const wanted = {
+    name: "Web Goal 3",
+    markdown_description: "**Goal:** Relaunch the site.",
+    due_date: 1782820800000,
+    start_date: 1767268800000,
+    assignees: [7, 8],
+  };
+
+  it("leaves every field that already has a value alone, and never sends the name", () => {
+    const changes = fillEmptyTaskFields(
+      {
+        description: "Written by hand in ClickUp",
+        due_date: "1780000000000",
+        start_date: "1760000000000",
+        assignees: [{ id: 9 }],
+      },
+      wanted
+    );
+    expect(changes).toEqual({});
+  });
+
+  it("fills only the empty fields", () => {
+    const changes = fillEmptyTaskFields(
+      { description: "", text_content: "", due_date: null, start_date: "1760000000000", assignees: [] },
+      wanted
+    );
+    expect(changes).toEqual({
+      markdown_description: wanted.markdown_description,
+      due_date: wanted.due_date,
+      assignees: { add: [7, 8], rem: [] },
+    });
+  });
+
+  it("does not send values the goal does not have", () => {
+    const changes = fillEmptyTaskFields(
+      { description: "  ", due_date: null, assignees: [] },
+      { name: "x", markdown_description: "", due_date: null, start_date: null, assignees: [] }
+    );
+    expect(changes).toEqual({});
   });
 });

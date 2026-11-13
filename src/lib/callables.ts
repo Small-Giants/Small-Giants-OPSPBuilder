@@ -79,9 +79,14 @@ export interface PushGoalResponse {
   taskId?: string;
   url?: string;
   warnings: string[];
+  /** For an existing task, the empty fields that were filled in. */
+  filled?: string[];
 }
 
-/** Creates or updates the department goal's ClickUp task and its RACI fields. */
+/**
+ * Creates the department goal's ClickUp task. An existing task only has its
+ * empty fields filled; nothing set in ClickUp is overwritten.
+ */
 export function pushGoalToClickUp(payload: { goalId: string }): Promise<PushGoalResponse> {
   return callFunction<typeof payload, PushGoalResponse>("pushGoalToClickUp", payload);
 }

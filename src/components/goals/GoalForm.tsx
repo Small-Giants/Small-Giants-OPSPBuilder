@@ -222,11 +222,22 @@ export function GoalForm({
         }
         return;
       }
+      if (result.status === "created") {
+        toast({
+          title: "ClickUp task created",
+          description: result.warnings.length
+            ? result.warnings.join(" ")
+            : "With the goal statement, SMART breakdown, dates, and RACI fields.",
+        });
+        return;
+      }
+      const filled = result.filled ?? [];
+      if (filled.length === 0 && result.warnings.length === 0) return;
       toast({
-        title: result.status === "created" ? "ClickUp task created" : "ClickUp task updated",
-        description: result.warnings.length
-          ? result.warnings.join(" ")
-          : "The task, description, and RACI fields match this goal.",
+        title: filled.length ? "Filled empty ClickUp fields" : "ClickUp task left as is",
+        description: [filled.length ? `Added: ${filled.join(", ")}.` : "", ...result.warnings]
+          .filter(Boolean)
+          .join(" "),
       });
     } catch (error) {
       toast({
@@ -421,8 +432,8 @@ export function GoalForm({
               className="text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Shown as the goal&apos;s description and at the top of its ClickUp
-              task. If this is empty when you save, it is written for you.
+              Shown on the goal card and at the top of a new ClickUp task. If
+              this is empty when you save, it is written for you.
             </p>
           </div>
 
@@ -604,7 +615,7 @@ export function GoalForm({
             />
             <p className="text-xs text-muted-foreground">
               {draft.level === "department"
-                ? "Leave this empty and saving creates the task in ClickUp, with the SMART breakdown as its description and the RACI fields filled in. Paste a link only to use a task that already exists."
+                ? "Leave this empty and saving creates the task in ClickUp, with the goal statement and SMART breakdown as its description and the RACI fields filled in. Paste a link only to use a task that already exists. Saving again only fills fields that are empty in ClickUp; it never overwrites them."
                 : "Paste a link to follow a ClickUp task. Only department goals get a task created for them."}{" "}
               Once the goal owner approves the ClickUp agent&apos;s rock plan and
               monthly recaps, they set the rocks, status, and quarter progress.

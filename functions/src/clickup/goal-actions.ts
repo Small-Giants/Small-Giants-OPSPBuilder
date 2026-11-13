@@ -8,9 +8,10 @@ import { raciMembers, type Goal, type RecapApproval } from "../types";
 import { ClickUpClient, ClickUpError } from "./client";
 import {
   currentPeople,
+  fillEmptyPeople,
+  fillEmptyTaskFields,
   findRaciFields,
   goalTaskDescription,
-  peopleDiff,
   raciClickUpIds,
   taskAssignees,
   toClickUpDate,
@@ -88,12 +89,22 @@ export interface PushGoalResponse {
   taskId?: string;
   url?: string;
   warnings: string[];
+  /** For an existing task, the empty fields that were filled in. */
+  filled?: string[];
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  markdown_description: "description",
+  due_date: "due date",
+  start_date: "start date",
+  assignees: "assignees",
+};
+
 /**
- * Creates the ClickUp task for a department goal, or brings an existing one
- * up to date: name, SMART description, dates, assignees, and the four RACI
- * People fields. The executive sponsor stays in the app.
+ * Creates the ClickUp task for a department goal: name, statement and SMART
+ * description, dates, assignees, and the four RACI People fields. For a task
+ * that already exists it only fills fields that are empty in ClickUp and never
+ * overwrites or removes anything. The executive sponsor stays in the app.
  */
 export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalResponse>>(
   { secrets: [CLICKUP_API_TOKEN] },
@@ -133,6 +144,7 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
       let listId: string;
       let status: PushGoalResponse["status"];
       let currentFields: Awaited<ReturnType<ClickUpClient["getTask"]>>["custom_fields"] = [];
+      const filled: string[] = [];
 
       if (!taskId) {
         if (!location) {
@@ -151,13 +163,9 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
         const task = await client.getTask(taskId);
         listId = task.list?.id ?? "";
         currentFields = task.custom_fields ?? [];
-        const currentAssignees = (task.assignees ?? [])
-          .map((u) => u.id)
-          .filter((id): id is number => typeof id === "number");
-        await client.updateTask(taskId, {
-          ...details,
-          assignees: peopleDiff(currentAssignees, taskAssignees(raci)),
-        });
+        const changes = fillEmptyTaskFields(task, { ...details, assignees: taskAssignees(raci) });
+        if (Object.keys(changes).length > 0) await client.updateTask(taskId, changes);
+        filled.push(...Object.keys(changes).map((key) => FIELD_LABELS[key] ?? key));
         url = task.url ?? url;
         status = "updated";
       }
@@ -171,9 +179,10 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
           continue;
         }
         const current = currentPeople(currentFields?.find((f) => f.id === field.id));
-        const diff = peopleDiff(current, raci.ids[role]);
-        if (diff.add.length > 0 || diff.rem.length > 0) {
+        const diff = fillEmptyPeople(current, raci.ids[role]);
+        if (diff.add.length > 0) {
           await client.setPeopleField(taskId, field.id, diff);
+          if (status === "updated") filled.push(RACI_FIELD_NAMES[role]);
         }
       }
 
@@ -186,7 +195,7 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
           "clickup.lastPushedAt": new Date().toISOString(),
         });
 
-      return { status, taskId, url, warnings };
+      return { status, taskId, url, warnings, filled };
     } catch (error) {
       if (error instanceof HttpsError) throw error;
       const message = error instanceof ClickUpError ? error.message : String(error);

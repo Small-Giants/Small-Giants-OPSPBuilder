@@ -100,7 +100,8 @@ Run through this as a normal user, not as an admin, and then again as an admin.
       has the department and the goals that name them.
 - [ ] With the goal location set, saving a new department goal creates its
       task with the SMART description and the four RACI People fields filled.
-      Editing the goal updates the task.
+      Editing the goal afterwards only fills fields that are empty in ClickUp;
+      a description, date, or person set in ClickUp is never overwritten.
 - [ ] An OPSP Rock Plan comment shows on the goal card as waiting for approval
       and changes nothing yet.
 - [ ] Replying "Approved" in ClickUp as the Accountable person, then syncing,

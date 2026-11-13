@@ -118,7 +118,7 @@ appended by code.
 | Function | When it runs |
 | --- | --- |
 | `writeSmartGoal` | User presses **Write goal statement** on the goal form, or saves a goal with SMART answers and no statement. Returns one sentence the user can edit. |
-| `pushGoalToClickUp` | After a department goal is saved. Creates or updates its task: name, goal statement followed by the SMART breakdown, dates, assignees (Accountable and Responsible), and the four RACI People fields. People with no ClickUp account come back as a warning. |
+| `pushGoalToClickUp` | After a department goal is saved. Creates its task: name, goal statement followed by the SMART breakdown, dates, assignees (Accountable and Responsible), and the four RACI People fields. Once the task exists it only fills fields that are empty in ClickUp; it never overwrites or removes anything, and never renames the task. People with no ClickUp account come back as a warning. |
 | `syncClickUp` | Admin presses **Pull recaps from ClickUp**. |
 | `scheduledClickUpSync` | 7am Arizona time every Friday. It only runs on the first Friday of the month, and skips that month if an admin already synced manually. In January it also covers the previous plan year. |
 | `approveClickUpRecap` | The goal's Accountable person or an admin presses **Approve** on the goal card. |

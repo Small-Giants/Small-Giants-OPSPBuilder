@@ -21,7 +21,11 @@ export interface ClickUpTask {
   name: string;
   url?: string;
   status?: ClickUpStatus;
+  /** Plain text; ClickUp returns "" when the description is empty. */
+  description?: string | null;
+  text_content?: string | null;
   due_date?: string | null;
+  start_date?: string | null;
   date_closed?: string | null;
   custom_fields?: ClickUpCustomField[];
   subtasks?: ClickUpTask[];
@@ -171,6 +175,7 @@ export class ClickUpClient {
     });
   }
 
+  /** ClickUp replaces every field sent, so send only what should change. */
   async updateTask(
     taskId: string,
     changes: Omit<Partial<NewClickUpTask>, "assignees"> & { assignees?: PeopleFieldValue }

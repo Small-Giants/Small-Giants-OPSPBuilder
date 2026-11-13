@@ -1,4 +1,4 @@
-import type { ClickUpCustomField } from "./client";
+import type { ClickUpCustomField, ClickUpTask, NewClickUpTask } from "./client";
 import { clickUpIdFor, type Person } from "./people";
 import { RACI_FIELD_NAMES } from "./settings";
 import type { Goal } from "../types";
@@ -88,9 +88,30 @@ export function currentPeople(field: ClickUpCustomField | undefined): number[] {
     .filter((id): id is number => typeof id === "number");
 }
 
-export function peopleDiff(current: number[], wanted: number[]): { add: number[]; rem: number[] } {
-  return {
-    add: wanted.filter((id) => !current.includes(id)),
-    rem: current.filter((id) => !wanted.includes(id)),
-  };
+const isBlank = (value: string | null | undefined) => !value?.trim();
+
+/**
+ * The changes that fill an existing task's empty fields from the goal. The
+ * task belongs to ClickUp once it exists: anything already set there, even if
+ * the goal now says otherwise, is left alone, and the name is never touched.
+ */
+export function fillEmptyTaskFields(
+  task: Pick<ClickUpTask, "description" | "text_content" | "due_date" | "start_date" | "assignees">,
+  wanted: NewClickUpTask
+): Partial<Omit<NewClickUpTask, "assignees">> & { assignees?: { add: number[]; rem: number[] } } {
+  const changes: ReturnType<typeof fillEmptyTaskFields> = {};
+  if (isBlank(task.description) && isBlank(task.text_content) && wanted.markdown_description?.trim()) {
+    changes.markdown_description = wanted.markdown_description;
+  }
+  if (isBlank(task.due_date) && wanted.due_date != null) changes.due_date = wanted.due_date;
+  if (isBlank(task.start_date) && wanted.start_date != null) changes.start_date = wanted.start_date;
+  if ((task.assignees ?? []).length === 0 && wanted.assignees?.length) {
+    changes.assignees = { add: wanted.assignees, rem: [] };
+  }
+  return changes;
+}
+
+/** A People field is only filled when it is empty, and never has anyone removed. */
+export function fillEmptyPeople(current: number[], wanted: number[]): { add: number[]; rem: number[] } {
+  return { add: current.length === 0 ? wanted : [], rem: [] };
 }
