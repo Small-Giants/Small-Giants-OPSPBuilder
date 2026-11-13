@@ -9,7 +9,9 @@ let cached: Firestore | undefined;
  */
 export function db(): Firestore {
   if (!cached) {
-    if (getApps().length === 0) initializeApp();
+    // firebase-functions registers its own named app to verify callable auth,
+    // so "any app exists" does not mean the default app does.
+    if (!getApps().some((app) => app.name === "[DEFAULT]")) initializeApp();
     cached = getFirestore();
   }
   return cached;

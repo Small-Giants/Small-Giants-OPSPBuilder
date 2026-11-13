@@ -66,10 +66,12 @@ committed. Nobody updates a linked goal's progress in the OPSP.
 - **Individual goals** have one owner.
 - **Rocks** have an owner, anyone else working on them, and a due date.
 
-People pickers list everyone with an app account plus every ClickUp workspace
-member, so a goal can name someone who has never signed in. When that person
-signs in for the first time, every goal and rock that names them switches to
-their account automatically.
+**Sync people from ClickUp** in the Admin Panel adds every ClickUp member who
+has no account yet to the user list, marked "ClickUp · not signed in", so a goal
+can name someone who has never signed in. They can be given a role, department,
+and manager like anyone else. When that person signs in with the same email,
+they become that user: same role, department, manager, goals, and rocks. The
+sync never removes or duplicates people; removing someone is done by hand.
 
 ### The yearly cycle
 

@@ -80,9 +80,12 @@ Or in the Cloud Console: Cloud Run, the service, Security, Authentication,
 2. **RACI fields.** Tasks in that List need People custom fields named exactly
    `Accountable`, `Responsible`, `Consulted`, and `Informed`. There is no
    Executive Sponsor field; the sponsor lives only in the OPSP.
-3. **People.** An admin presses **Refresh people from ClickUp** under Admin,
-   Integrations. Every sync refreshes the list too. Members who leave the
-   workspace drop out of the pickers.
+3. **People.** An admin presses **Sync people from ClickUp** in the Admin
+   Panel. Every ClickUp member (guests excluded) whose email has no user record
+   yet, including deleted ones, gets a placeholder user with id
+   `clickup:<member id>`. It can be given a role, department, and manager, and
+   assigned to goals. Syncing never removes or duplicates anyone. Placeholders
+   get no notifications.
 4. **Agent.** Give the ClickUp agent the two formats below.
 
 ### What each function does
@@ -93,8 +96,8 @@ Or in the Cloud Console: Cloud Run, the service, Security, Authentication,
 | `syncClickUp` | Admin presses **Pull recaps from ClickUp**. |
 | `scheduledClickUpSync` | 7am Arizona time every Friday. It only runs on the first Friday of the month, and skips that month if an admin already synced manually. In January it also covers the previous plan year. |
 | `approveClickUpRecap` | The goal's Accountable person or an admin presses **Approve** on the goal card. |
-| `refreshClickUpMembers` | Admin presses **Refresh people from ClickUp**. |
-| `relinkClickUpPerson` | A user signs in for the first time. Replaces their `clickup:<id>` placeholder on every goal and rock with their account id. |
+| `refreshClickUpMembers` | Admin presses **Sync people from ClickUp**. |
+| `relinkClickUpPerson` | A user signs in for the first time. If a placeholder has their email, the new account takes over its role, department, manager, and deleted state, every goal, rock, manager, and department-leader reference moves to the new account, and the placeholder is deleted. |
 
 ### Approval
 

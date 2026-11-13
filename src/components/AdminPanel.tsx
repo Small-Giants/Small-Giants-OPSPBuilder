@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { AlertTriangle, Shield, User, UserCheck, Loader2, Trash2, RotateCcw, Users, UserX } from 'lucide-react';
+import { AlertTriangle, Shield, User, UserCheck, Loader2, Trash2, RotateCcw, Users, UserX, RefreshCw } from 'lucide-react';
+import { refreshClickUpMembers } from '@/lib/callables';
 import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { DepartmentCombobox } from '@/components/ui/department-combobox';
@@ -35,6 +36,7 @@ interface UserData {
   deletedBy?: string;
   departmentId?: string;
   managerId?: string;
+  source?: 'clickup';
 }
 
 export default function AdminPanel() {
@@ -42,6 +44,7 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncingPeople, setSyncingPeople] = useState(false);
 
   useEffect(() => {
     if (!hasRole('admin')) {
@@ -174,6 +177,31 @@ export default function AdminPanel() {
     }
   };
 
+  const handleSyncPeople = async () => {
+    setSyncingPeople(true);
+    try {
+      const result = await refreshClickUpMembers();
+      const skipped = [
+        result.skippedGuests > 0 && `${result.skippedGuests} guest(s)`,
+        result.skippedNoEmail > 0 && `${result.skippedNoEmail} without an email`,
+      ].filter(Boolean);
+      toast({
+        title: result.created > 0 ? `Added ${result.created} people from ClickUp` : 'Everyone is already here',
+        description: `${result.members} ClickUp member(s): ${result.alreadyHadAccount} already had an account${
+          result.updated > 0 ? `, ${result.updated} name(s) updated` : ''
+        }${skipped.length ? `; skipped ${skipped.join(' and ')}` : ''}.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Could not sync people',
+        description: error instanceof Error ? error.message : String(error),
+        variant: 'destructive',
+      });
+    } finally {
+      setSyncingPeople(false);
+    }
+  };
+
   const handleRestoreUser = async (userId: string, userEmail: string) => {
     try {
       const userRef = doc(db, 'users', userId);
@@ -259,6 +287,15 @@ export default function AdminPanel() {
                 {user.email}
                 {user.id === currentUser?.uid && (
                   <Badge variant="outline" className="ml-2">You</Badge>
+                )}
+                {user.source === 'clickup' && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 text-[10px]"
+                    title="Added from ClickUp. Becomes their account when they first sign in with this email."
+                  >
+                    ClickUp · not signed in
+                  </Badge>
                 )}
               </TableCell>
               <TableCell>{user.name || '-'}</TableCell>
@@ -439,11 +476,23 @@ export default function AdminPanel() {
   return (
     <div className="container mx-auto p-6">
       <Card>
-        <CardHeader>
-          <CardTitle>User Management</CardTitle>
-          <CardDescription>
-            Manage user accounts and permissions
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div className="space-y-1.5">
+            <CardTitle>User Management</CardTitle>
+            <CardDescription>
+              Manage user accounts and permissions. Sync people adds ClickUp
+              members who have no account yet, so they can be assigned before
+              they sign in. It never removes or duplicates anyone.
+            </CardDescription>
+          </div>
+          <Button variant="outline" onClick={handleSyncPeople} disabled={syncingPeople}>
+            {syncingPeople ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-2" />
+            )}
+            Sync people from ClickUp
+          </Button>
         </CardHeader>
         <CardContent>
           {loading ? (

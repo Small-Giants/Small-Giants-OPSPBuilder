@@ -46,6 +46,8 @@ export interface ClickUpUser {
   username?: string;
   email?: string;
   initials?: string;
+  /** Workspace role: 1 owner, 2 admin, 3 member, 4 guest. */
+  role?: number;
 }
 
 export interface ClickUpWorkspace {

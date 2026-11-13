@@ -5,6 +5,102 @@ export interface ClickUpMember {
   id: number;
   username?: string | null;
   email?: string | null;
+  role?: number | null;
+}
+
+const CLICKUP_GUEST_ROLE = 4;
+
+/**
+ * A user record standing in for a ClickUp member who has not signed in yet.
+ * Its id is the member's `clickup:<id>` person id, so goals and rocks that
+ * already name the member keep pointing at it.
+ */
+export interface PlaceholderUser {
+  name: string;
+  email: string;
+  role: "user";
+  source: "clickup";
+  clickupUserId: number;
+}
+
+export interface PeopleSyncPlan {
+  creates: { id: string; data: PlaceholderUser }[];
+  /** Name changes on placeholders this sync created earlier. */
+  updates: { id: string; data: Pick<PlaceholderUser, "name"> }[];
+  skipped: { member: ClickUpMember; reason: "guest" | "no_email" | "has_account" }[];
+}
+
+/**
+ * Decides which ClickUp members become user records. Never removes anyone,
+ * and never creates a second record for an email that already has one, even
+ * a deleted one: removing people is left to an admin.
+ */
+export function planPeopleSync(users: UserRecord[], members: ClickUpMember[]): PeopleSyncPlan {
+  const byEmail = new Map<string, UserRecord>();
+  users.forEach((u) => {
+    const email = normalizeEmail(u.email);
+    if (email && !byEmail.has(email)) byEmail.set(email, u);
+  });
+
+  const plan: PeopleSyncPlan = { creates: [], updates: [], skipped: [] };
+  for (const member of members) {
+    if (member.role === CLICKUP_GUEST_ROLE) {
+      plan.skipped.push({ member, reason: "guest" });
+      continue;
+    }
+    const email = normalizeEmail(member.email);
+    if (!email) {
+      plan.skipped.push({ member, reason: "no_email" });
+      continue;
+    }
+    const name = member.username?.trim() || email;
+    const existing = byEmail.get(email);
+    if (!existing) {
+      const id = clickUpPersonId(member.id);
+      plan.creates.push({
+        id,
+        data: { name, email, role: "user", source: "clickup", clickupUserId: member.id },
+      });
+      byEmail.set(email, { id, email, name });
+      continue;
+    }
+    if (existing.source === "clickup" && !existing.deletedAt && existing.name !== name) {
+      plan.updates.push({ id: existing.id, data: { name } });
+    } else if (existing.source !== "clickup") {
+      plan.skipped.push({ member, reason: "has_account" });
+    }
+  }
+  return plan;
+}
+
+/** Profile fields an admin may have set on a placeholder, carried to the real account. */
+export const CARRIED_PROFILE_FIELDS = [
+  "role",
+  "departmentId",
+  "managerId",
+  "deletedAt",
+  "deletedBy",
+] as const;
+
+/**
+ * What a newly signed-in account takes over from its placeholder. The
+ * client-chosen role is only replaced when it is the default, so an
+ * auto-granted superadmin keeps that role.
+ */
+export function profileFromPlaceholder(
+  placeholder: Partial<UserRecord> & Record<string, unknown>,
+  account: Partial<UserRecord> & Record<string, unknown>
+): Record<string, unknown> {
+  const changes: Record<string, unknown> = {};
+  for (const field of CARRIED_PROFILE_FIELDS) {
+    const value = placeholder[field];
+    if (value === undefined || value === null || value === "") continue;
+    if (field === "role" && (account.role ?? "user") !== "user") continue;
+    changes[field] = value;
+  }
+  if (!account.name && placeholder.name) changes.name = placeholder.name;
+  if (typeof placeholder.clickupUserId === "number") changes.clickupUserId = placeholder.clickupUserId;
+  return changes;
 }
 
 /**
@@ -53,7 +149,7 @@ export function buildDirectory(users: UserRecord[], members: ClickUpMember[]): P
       id: user.id,
       name: user.name || user.email || user.id,
       email,
-      clickupUserId: member?.id ?? null,
+      clickupUserId: member?.id ?? user.clickupUserId ?? null,
     });
   }
 

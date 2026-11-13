@@ -145,6 +145,9 @@ export interface UserRecord {
   departmentId?: string | null;
   managerId?: string | null;
   deletedAt?: string | null;
+  /** "clickup" on a placeholder for a ClickUp member who has not signed in yet. */
+  source?: "clickup";
+  clickupUserId?: number;
 }
 
 export type SyncLogStatus = "success" | "partial" | "error";

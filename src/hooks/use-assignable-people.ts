@@ -57,7 +57,10 @@ export function useAssignablePeople() {
         email: m.data.email,
         clickupOnly: true,
       }));
-    return [...users, ...clickupOnly].sort((a, b) =>
+    const accounts: AssignablePerson[] = users.map((u) =>
+      u.source === "clickup" ? { ...u, clickupOnly: true } : u
+    );
+    return [...accounts, ...clickupOnly].sort((a, b) =>
       (a.name || a.email || "").localeCompare(b.name || b.email || "")
     );
   }, [users, members]);

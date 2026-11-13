@@ -10,6 +10,8 @@ export interface ActiveUser {
   email?: string;
   departmentId?: string;
   managerId?: string;
+  /** "clickup" for a ClickUp member who has not signed in yet. */
+  source?: "clickup";
 }
 
 export function useActiveUsers() {
@@ -30,6 +32,7 @@ export function useActiveUsers() {
               email: data.email,
               departmentId: data.departmentId,
               managerId: data.managerId,
+              source: data.source,
             });
           }
         });

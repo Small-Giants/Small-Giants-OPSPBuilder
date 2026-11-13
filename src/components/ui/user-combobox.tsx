@@ -52,7 +52,9 @@ export function UserCombobox({
 }: UserComboboxProps) {
   const { users: accounts } = useActiveUsers();
   const { people } = useAssignablePeople();
-  const users: AssignablePerson[] = includeClickUp ? people : accounts;
+  const users: AssignablePerson[] = includeClickUp
+    ? people
+    : accounts.map((u) => (u.source === "clickup" ? { ...u, clickupOnly: true } : u));
   const options = excludeIds?.length
     ? users.filter((u) => !excludeIds.includes(u.id))
     : users;

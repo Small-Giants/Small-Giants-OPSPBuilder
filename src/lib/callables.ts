@@ -51,8 +51,19 @@ export function syncClickUp(
   return callFunction<typeof payload, SyncClickUpResponse>("syncClickUp", payload);
 }
 
-export function refreshClickUpMembers(): Promise<{ count: number }> {
-  return callFunction<Record<string, never>, { count: number }>("refreshClickUpMembers", {});
+export interface SyncPeopleResponse {
+  count: number;
+  members: number;
+  created: number;
+  updated: number;
+  alreadyHadAccount: number;
+  skippedGuests: number;
+  skippedNoEmail: number;
+}
+
+/** Pulls ClickUp members and adds the ones without an account as placeholder users. */
+export function refreshClickUpMembers(): Promise<SyncPeopleResponse> {
+  return callFunction<Record<string, never>, SyncPeopleResponse>("refreshClickUpMembers", {});
 }
 
 export function approveClickUpRecap(payload: {

@@ -171,8 +171,8 @@ export default function IntegrationSettings() {
     try {
       const result = await refreshClickUpMembers();
       toast({
-        title: "People refreshed",
-        description: `${result.count} ClickUp member(s) can now be picked on goals and rocks.`,
+        title: "People synced",
+        description: `${result.members} ClickUp member(s); ${result.created} added as new people, ${result.alreadyHadAccount} already had an account.`,
       });
     } catch (error: any) {
       toast({
@@ -297,7 +297,7 @@ export default function IntegrationSettings() {
               ) : (
                 <Users className="w-4 h-4 mr-2" />
               )}
-              Refresh people from ClickUp
+              Sync people from ClickUp
             </Button>
             <Button onClick={runSync} disabled={syncing || !config.enabled}>
               {syncing ? (

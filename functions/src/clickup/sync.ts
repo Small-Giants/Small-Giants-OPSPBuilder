@@ -7,7 +7,7 @@ import { requireAdmin, requireCaller } from "../auth";
 import { db } from "../firestore";
 import { planRockChanges } from "./agent-rocks";
 import { ClickUpClient, ClickUpError, type ClickUpComment } from "./client";
-import { loadDirectory, refreshMembers } from "./members";
+import { loadDirectory, refreshMembers, syncPeople } from "./members";
 import type { Person } from "./people";
 import {
   applyRecapToQuarters,
@@ -471,7 +471,11 @@ export const testClickUpConnection = onCall(
   }
 );
 
-/** Pulls the ClickUp workspace's members so they can be picked in the app. */
+/**
+ * The admin "Sync people" button: pulls the ClickUp workspace's members and
+ * gives each one without an OPSP account a placeholder user record. Never
+ * removes or duplicates anyone.
+ */
 export const refreshClickUpMembers = onCall(
   { secrets: [CLICKUP_API_TOKEN] },
   async (request) => {
@@ -482,7 +486,7 @@ export const refreshClickUpMembers = onCall(
       const client = new ClickUpClient({ token: CLICKUP_API_TOKEN.value() });
       const location = await loadGoalLocation(DEFAULT_COMPANY_ID);
       const members = await refreshMembers(client, DEFAULT_COMPANY_ID, location?.workspaceId);
-      return { count: members.length };
+      return { count: members.length, ...(await syncPeople(members)) };
     } catch (error) {
       const message = error instanceof ClickUpError ? error.message : String(error);
       throw new HttpsError("failed-precondition", message);

@@ -93,8 +93,11 @@ Run through this as a normal user, not as an admin, and then again as an admin.
 
 **ClickUp**
 - [ ] Test connection succeeds against the real workspace.
-- [ ] Refresh people from ClickUp lists workspace members in the goal and rock
-      pickers, marked ClickUp.
+- [ ] Sync people from ClickUp in the Admin Panel adds members without an
+      account as "ClickUp · not signed in" users; running it again adds no
+      duplicates. They show in the goal and rock pickers marked ClickUp.
+- [ ] Give a placeholder a department, then sign in as that person: the account
+      has the department and the goals that name them.
 - [ ] With the goal location set, saving a new department goal creates its
       task with the SMART description and the four RACI People fields filled.
       Editing the goal updates the task.

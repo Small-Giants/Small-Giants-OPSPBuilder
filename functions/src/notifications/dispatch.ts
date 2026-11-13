@@ -32,7 +32,9 @@ export async function dispatch(intents: NotificationIntent[]): Promise<number> {
       loadPreferences(recipientId),
     ]);
 
-    if (!profile || profile.deletedAt) continue;
+    // ClickUp placeholders have never signed in, so they hear about their
+    // goals in ClickUp rather than from an app they have not used.
+    if (!profile || profile.deletedAt || profile.source === "clickup") continue;
 
     for (const intent of list) {
       try {
