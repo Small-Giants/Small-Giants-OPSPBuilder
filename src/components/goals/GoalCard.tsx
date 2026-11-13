@@ -75,6 +75,9 @@ export function GoalCard({
   const rocks = byGoal.get(goal.id) ?? [];
   const peopleCount = raciMembers(goal).length;
   const recap = goal.clickup?.recap;
+  // Without a statement the description is the flattened SMART answers, too
+  // long for compact cards.
+  const summary = goal.statement?.trim() || (compact ? "" : goal.description);
 
   const handleDelete = async () => {
     try {
@@ -127,9 +130,12 @@ export function GoalCard({
               )}
             </div>
 
-            {goal.description && !compact && (
-              <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
-                {goal.description}
+            {summary && (
+              <p
+                className={`text-sm text-muted-foreground mt-1.5 ${compact ? "line-clamp-2" : "line-clamp-3"}`}
+                title={summary}
+              >
+                {summary}
               </p>
             )}
 
