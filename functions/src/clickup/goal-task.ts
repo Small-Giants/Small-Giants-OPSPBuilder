@@ -110,16 +110,28 @@ export function taskAssignees(raci: RaciClickUpIds): number[] {
   return Array.from(new Set([...raci.ids.accountable, ...raci.ids.responsible]));
 }
 
-/** Finds the People field for each RACI role by name, ignoring case. */
+/**
+ * Word stems that identify each role in a field name, so "A (Accountable)",
+ * "C (Consulting)", and "I (Inform)" are found as well as the plain names.
+ */
+const RACI_FIELD_STEMS: Record<RaciRole, RegExp> = {
+  accountable: /\baccountab/,
+  responsible: /\bresponsib/,
+  consulted: /\bconsult/,
+  informed: /\binform/,
+};
+
+/** Finds the People field for each RACI role by name, ignoring case; an exact name wins. */
 export function findRaciFields(
   fields: ClickUpCustomField[]
 ): Partial<Record<RaciRole, ClickUpCustomField>> {
+  const people = fields.filter((f) => f.type === "users");
   const found: Partial<Record<RaciRole, ClickUpCustomField>> = {};
   (Object.keys(RACI_FIELD_NAMES) as RaciRole[]).forEach((role) => {
-    const wanted = RACI_FIELD_NAMES[role].toLowerCase();
-    const field = fields.find(
-      (f) => f.name?.trim().toLowerCase() === wanted && f.type === "users"
-    );
+    const name = (f: ClickUpCustomField) => f.name?.trim().toLowerCase() ?? "";
+    const field =
+      people.find((f) => name(f) === RACI_FIELD_NAMES[role].toLowerCase()) ??
+      people.find((f) => RACI_FIELD_STEMS[role].test(name(f)));
     if (field) found[role] = field;
   });
   return found;

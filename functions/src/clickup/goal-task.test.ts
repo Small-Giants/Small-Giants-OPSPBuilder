@@ -96,6 +96,21 @@ describe("RACI fields", () => {
     expect(fields.informed?.id).toBe("f3");
   });
 
+  it("finds the workspace's lettered field names, and prefers an exact name", () => {
+    const fields = findRaciFields([
+      { id: "r", name: "R (Responsible)", type: "users" },
+      { id: "a", name: "A (Accountable)", type: "users" },
+      { id: "c", name: "C (Consulting)", type: "users" },
+      { id: "i", name: "I (Inform)", type: "users" },
+      { id: "poc", name: "SG Point of Contact", type: "users" },
+      { id: "i2", name: "Informed", type: "users" },
+    ]);
+    expect(fields.accountable?.id).toBe("a");
+    expect(fields.responsible?.id).toBe("r");
+    expect(fields.consulted?.id).toBe("c");
+    expect(fields.informed?.id).toBe("i2");
+  });
+
   it("adds the goal's people who are missing and never removes anyone", () => {
     const current = currentPeople({ id: "f", name: "Accountable", type: "users", value: [{ id: 1 }, { id: 2 }] });
     expect(addMissingPeople(current, [2, 3])).toEqual({ add: [3], rem: [] });

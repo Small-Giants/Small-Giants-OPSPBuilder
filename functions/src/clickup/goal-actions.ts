@@ -190,7 +190,7 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
       for (const role of Object.keys(RACI_FIELD_NAMES) as RaciRole[]) {
         const field = raciFields[role];
         if (!field) {
-          warnings.push(`The ClickUp list has no People field named "${RACI_FIELD_NAMES[role]}".`);
+          warnings.push(`The ClickUp list has no People field for ${RACI_FIELD_NAMES[role]}.`);
           raciLog[role] = "no field";
           continue;
         }

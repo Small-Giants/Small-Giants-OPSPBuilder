@@ -108,9 +108,12 @@ a price or `GEMINI_MODEL` changes, or those calls count as $0.
 1. **Location.** A superadmin pastes the URL of the ClickUp List for goal
    tasks into **ClickUp goal location** under Integrations. A Space URL also
    works if the Space has exactly one List.
-2. **RACI fields.** Tasks in that List need People custom fields named exactly
-   `Accountable`, `Responsible`, `Consulted`, and `Informed`. There is no
-   Executive Sponsor field; the sponsor lives only in the OPSP.
+2. **RACI fields.** Tasks in that List need a People custom field for each
+   role. A field is found by a name containing the role, ignoring case:
+   `Accountable` or `A (Accountable)`, `Responsible` or `R (Responsible)`,
+   `Consulted` or `C (Consulting)`, `Informed` or `I (Inform)`. An exact name
+   wins over a partial one. There is no Executive Sponsor field; the sponsor
+   lives only in the OPSP.
 3. **People.** An admin presses **Sync people from ClickUp** in the Admin
    Panel. Every ClickUp member (guests excluded) whose email has no user record
    yet, including deleted ones, gets a placeholder user with id

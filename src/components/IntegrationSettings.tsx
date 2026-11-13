@@ -299,8 +299,9 @@ export default function IntegrationSettings() {
 
           <p className="text-xs text-muted-foreground">
             New department goals are created in the ClickUp goal location below,
-            set by a superadmin. Its tasks need People fields named Accountable,
-            Responsible, Consulted, and Informed.
+            set by a superadmin. Its tasks need a People field for each RACI
+            role, such as &quot;A (Accountable)&quot;, &quot;R (Responsible)&quot;,
+            &quot;C (Consulting)&quot;, and &quot;I (Inform)&quot;.
           </p>
 
           <div className="flex flex-wrap gap-2 pt-2">
