@@ -80,6 +80,15 @@ gcloud run services update <function name, lowercase> --region us-central1 --no-
 Or in the Cloud Console: Cloud Run, the service, Security, Authentication,
 "Allow public access". Never do this for event or scheduled functions.
 
+### Goal statements use Vertex AI
+
+`writeSmartGoal` turns a goal's five SMART answers into one sentence with
+Vertex AI Gemini, called as the runtime account through the `global` location.
+The Vertex AI API is enabled and the runtime account holds **Vertex AI User**
+(`roles/aiplatform.user`). The model defaults to `gemini-3.8-flash`; set
+`GEMINI_MODEL` in the project's `.env` file to change it. Older models are
+not served in this project, so check a replacement works in `global` first.
+
 ## ClickUp workspace setup
 
 ### One-time setup
@@ -102,7 +111,8 @@ Or in the Cloud Console: Cloud Run, the service, Security, Authentication,
 
 | Function | When it runs |
 | --- | --- |
-| `pushGoalToClickUp` | After a department goal is saved. Creates or updates its task: name, SMART description, dates, assignees (Accountable and Responsible), and the four RACI People fields. People with no ClickUp account come back as a warning. |
+| `writeSmartGoal` | User presses **Write goal statement** on the goal form, or saves a goal with SMART answers and no statement. Returns one sentence the user can edit. |
+| `pushGoalToClickUp` | After a department goal is saved. Creates or updates its task: name, goal statement followed by the SMART breakdown, dates, assignees (Accountable and Responsible), and the four RACI People fields. People with no ClickUp account come back as a warning. |
 | `syncClickUp` | Admin presses **Pull recaps from ClickUp**. |
 | `scheduledClickUpSync` | 7am Arizona time every Friday. It only runs on the first Friday of the month, and skips that month if an admin already synced manually. In January it also covers the previous plan year. |
 | `approveClickUpRecap` | The goal's Accountable person or an admin presses **Approve** on the goal card. |

@@ -42,6 +42,15 @@ describe("goalTaskDescription", () => {
     expect(text).toBe("**Specific:** Ship the dashboard\n\n**Time-bound:** By Q3");
   });
 
+  it("leads with the goal statement when there is one", () => {
+    const text = goalTaskDescription(
+      goal({ statement: "Ship the dashboard by Q3.", smart: { specific: "Ship the dashboard" } })
+    );
+    expect(text).toBe(
+      "**Goal:** Ship the dashboard by Q3.\n\n### SMART breakdown\n\n**Specific:** Ship the dashboard"
+    );
+  });
+
   it("falls back to the plain description", () => {
     expect(goalTaskDescription(goal({ description: "Legacy text" }))).toBe("Legacy text");
   });

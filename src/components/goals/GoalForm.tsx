@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/select";
 import { DepartmentCombobox } from "@/components/ui/department-combobox";
 import { RaciFields, peopleModeForGoal } from "@/components/RaciFields";
-import { pushGoalToClickUp } from "@/lib/callables";
+import { pushGoalToClickUp, writeSmartGoal } from "@/lib/callables";
+import { Textarea } from "@/components/ui/textarea";
 import { SmartGoalFields } from "@/components/goals/SmartGoalFields";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,7 +47,11 @@ import {
   type RaciAssignment,
   type TargetAccumulation,
 } from "@/types";
-import { Loader2, SplitIcon } from "lucide-react";
+import { Loader2, Sparkles, SplitIcon } from "lucide-react";
+
+function smartAnswered(draft: Pick<GoalDraft, "smart">): number {
+  return Object.values(draft.smart ?? {}).filter((v) => v?.trim()).length;
+}
 
 interface GoalFormProps {
   open: boolean;
@@ -82,6 +87,7 @@ export function GoalForm({
     })
   );
   const [saving, setSaving] = useState(false);
+  const [writing, setWriting] = useState(false);
   const [clickUpInput, setClickUpInput] = useState("");
 
   useEffect(() => {
@@ -231,15 +237,48 @@ export function GoalForm({
     }
   };
 
+  const requestStatement = async (): Promise<string | null> => {
+    const result = await writeSmartGoal({
+      title: draft.title,
+      smart: buildSmart(draft.smart) as unknown as Record<string, string>,
+    });
+    return result.statement || null;
+  };
+
+  const handleWriteStatement = async () => {
+    setWriting(true);
+    try {
+      const statement = await requestStatement();
+      if (statement) setDraft((prev) => ({ ...prev, statement }));
+    } catch (error) {
+      toast({
+        title: "Could not write the statement",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setWriting(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!draft.title.trim()) return;
 
     setSaving(true);
     let savedId: string | null = null;
+    let toSave = draft;
+    if (!draft.statement?.trim() && smartAnswered(draft) >= 2) {
+      try {
+        const statement = await requestStatement();
+        if (statement) toSave = { ...draft, statement };
+      } catch {
+        // A missing statement must not block saving; the lead can add it later.
+      }
+    }
     try {
       // The sync owns the rest of `clickup`; writing the whole object from a
       // draft opened earlier could undo a recap applied in the meantime.
-      const { clickup, ...fields } = draft;
+      const { clickup, ...fields } = toSave;
       if (goal) {
         await updateGoal(
           companyId,
@@ -352,6 +391,40 @@ export function GoalForm({
             value={buildSmart(draft.smart)}
             onChange={(smart) => setDraft({ ...draft, smart })}
           />
+
+          <div className="space-y-1.5 rounded-md border p-4">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="goal-statement" className="text-sm font-medium">
+                Goal statement
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleWriteStatement}
+                disabled={writing || smartAnswered(draft) < 2}
+              >
+                {writing ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 mr-1" />
+                )}
+                {draft.statement?.trim() ? "Rewrite" : "Write goal statement"}
+              </Button>
+            </div>
+            <Textarea
+              id="goal-statement"
+              value={draft.statement ?? ""}
+              onChange={(e) => setDraft({ ...draft, statement: e.target.value })}
+              placeholder="One sentence written from the SMART answers above. Press Write goal statement, or type your own."
+              rows={3}
+              className="text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Shown as the goal&apos;s description and at the top of its ClickUp
+              task. If this is empty when you save, it is written for you.
+            </p>
+          </div>
 
           <RaciFields
             value={draft}

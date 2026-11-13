@@ -219,8 +219,10 @@ export function parseClickUpTaskId(input: string): string | null {
 export interface Goal extends RaciAssignment {
   id: string;
   title: string;
-  /** Flattened from `smart` on save so existing list views can read one string. */
+  /** The statement, or else `smart` flattened, so list views can read one string. */
   description?: string;
+  /** One concise goal sentence written from the SMART answers, editable by the lead. */
+  statement?: string;
   smart?: SmartDescription;
   level: GoalLevel;
   parentGoalId?: string | null;

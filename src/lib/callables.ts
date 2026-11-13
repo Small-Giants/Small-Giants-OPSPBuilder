@@ -86,6 +86,14 @@ export function pushGoalToClickUp(payload: { goalId: string }): Promise<PushGoal
   return callFunction<typeof payload, PushGoalResponse>("pushGoalToClickUp", payload);
 }
 
+/** Writes one concise goal sentence from the SMART answers. */
+export function writeSmartGoal(payload: {
+  title: string;
+  smart: Record<string, string>;
+}): Promise<{ statement: string }> {
+  return callFunction<typeof payload, { statement: string }>("writeSmartGoal", payload);
+}
+
 export function testClickUpConnection(): Promise<{ ok: boolean; connectedAs: string }> {
   return callFunction<Record<string, never>, { ok: boolean; connectedAs: string }>(
     "testClickUpConnection",

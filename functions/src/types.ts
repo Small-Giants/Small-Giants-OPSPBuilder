@@ -94,6 +94,8 @@ export interface Goal extends RaciAssignment {
   id: string;
   title: string;
   description?: string;
+  /** One sentence written from the SMART answers. */
+  statement?: string;
   smart?: Partial<
     Record<"specific" | "measurable" | "achievable" | "relevant" | "timeBound", string>
   >;

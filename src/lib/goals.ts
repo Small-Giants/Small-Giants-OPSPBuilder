@@ -80,9 +80,11 @@ export async function createGoal(
 ): Promise<string> {
   const payload = scrub({
     ...draft,
-    description: draft.smart
-      ? smartToDescription(draft.smart)
-      : draft.description ?? "",
+    description: draft.statement?.trim()
+      ? draft.statement.trim()
+      : draft.smart
+        ? smartToDescription(draft.smart)
+        : draft.description ?? "",
     companyId,
     createdBy: createdBy ?? "",
     createdAt: new Date().toISOString(),
@@ -102,7 +104,11 @@ export async function updateGoal(
   const { id: _id, ...rest } = updates as Partial<Goal> & { id?: string };
   const payload = scrub({
     ...rest,
-    ...(rest.smart ? { description: smartToDescription(rest.smart) } : {}),
+    ...(rest.statement?.trim()
+      ? { description: rest.statement.trim() }
+      : rest.smart
+        ? { description: smartToDescription(rest.smart) }
+        : {}),
     updatedAt: new Date().toISOString(),
     // Read by the notification trigger so people are not told about their own
     // edits.

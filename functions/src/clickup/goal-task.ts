@@ -11,12 +11,15 @@ const SMART_LABELS = [
   ["timeBound", "Time-bound"],
 ] as const;
 
-/** The task description: the goal's SMART breakdown, one labelled line each. */
-export function goalTaskDescription(goal: Pick<Goal, "smart" | "description">): string {
+/** The task description: the goal statement, then the SMART breakdown, one labelled line each. */
+export function goalTaskDescription(goal: Pick<Goal, "smart" | "description" | "statement">): string {
   const lines = SMART_LABELS.filter(([key]) => goal.smart?.[key]?.trim()).map(
     ([key, label]) => `**${label}:** ${goal.smart![key]!.trim()}`
   );
-  return lines.length > 0 ? lines.join("\n\n") : goal.description?.trim() ?? "";
+  const statement = goal.statement?.trim();
+  if (lines.length === 0) return statement || goal.description?.trim() || "";
+  const breakdown = lines.join("\n\n");
+  return statement ? `**Goal:** ${statement}\n\n### SMART breakdown\n\n${breakdown}` : breakdown;
 }
 
 /** ClickUp stores dates as epoch milliseconds; noon UTC keeps the day stable in US time zones. */

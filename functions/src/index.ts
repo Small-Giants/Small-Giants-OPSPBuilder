@@ -22,6 +22,7 @@ export {
 } from "./clickup/sync";
 export { approveClickUpRecap, pushGoalToClickUp } from "./clickup/goal-actions";
 export { relinkClickUpPerson } from "./clickup/relink";
+export { writeSmartGoal } from "./ai/goal-statement";
 export {
   onGoalWritten,
   quarterDeadlineReminders,

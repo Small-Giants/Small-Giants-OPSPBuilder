@@ -34,6 +34,14 @@ export const EMAIL_FROM_NAME = defineString("EMAIL_FROM_NAME", {
   description: "Display name shown alongside the from address.",
 });
 
+/**
+ * Vertex AI model that writes goal statements, called in the "global" location
+ * as the functions' runtime account (which holds roles/aiplatform.user).
+ * A plain env var rather than a param: params without a value in the project's
+ * .env file block non-interactive deploys, even with a default.
+ */
+export const geminiModel = (): string => process.env.GEMINI_MODEL || "gemini-3.8-flash";
+
 /** The app is single-tenant; every document path hangs off this company. */
 export const DEFAULT_COMPANY_ID = "default-company";
 
