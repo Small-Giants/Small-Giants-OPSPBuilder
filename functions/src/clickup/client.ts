@@ -24,6 +24,8 @@ export interface ClickUpTask {
   /** Plain text; ClickUp returns "" when the description is empty. */
   description?: string | null;
   text_content?: string | null;
+  /** Only returned when asked for with include_markdown_description. */
+  markdown_description?: string | null;
   due_date?: string | null;
   start_date?: string | null;
   date_closed?: string | null;
@@ -102,7 +104,7 @@ export class ClickUpClient {
 
   async getTask(taskId: string): Promise<ClickUpTask> {
     return this.request<ClickUpTask>(
-      `/task/${encodeURIComponent(taskId)}?include_subtasks=true`
+      `/task/${encodeURIComponent(taskId)}?include_subtasks=true&include_markdown_description=true`
     );
   }
 

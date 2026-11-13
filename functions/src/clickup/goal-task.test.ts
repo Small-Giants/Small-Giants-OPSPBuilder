@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   currentPeople,
+  descriptionWithOpspBlock,
   fillEmptyPeople,
+  OPSP_MARKER,
+  opspDescriptionBlock,
   fillEmptyTaskFields,
   findRaciFields,
   goalTaskDescription,
@@ -100,6 +103,51 @@ describe("RACI fields", () => {
   });
 });
 
+describe("opspDescriptionBlock", () => {
+  it("labels the goal's description as added by the app, dated in Arizona time", () => {
+    const block = opspDescriptionBlock(
+      goal({ statement: "Ship the dashboard by Q3.", smart: { specific: "Ship the dashboard" } }),
+      new Date("2026-11-13T05:00:00Z")
+    );
+    expect(block).toBe(
+      `**${OPSP_MARKER}** (Nov 12, 2026)\n\n**Goal:** Ship the dashboard by Q3.\n\n### SMART breakdown\n\n**Specific:** Ship the dashboard`
+    );
+  });
+
+  it("is empty when the goal has nothing to describe", () => {
+    expect(opspDescriptionBlock(goal({}))).toBe("");
+  });
+});
+
+describe("descriptionWithOpspBlock", () => {
+  const block = `**${OPSP_MARKER}** (Nov 12, 2026)\n\n**Goal:** Relaunch the site by June 30.`;
+
+  it("fills an empty description with the block", () => {
+    expect(descriptionWithOpspBlock({ description: "", markdown_description: "" }, block, "x")).toBe(block);
+  });
+
+  it("adds the block above existing text, keeping the original markdown", () => {
+    const task = { description: "Notes from the kickoff", markdown_description: "## Notes\n\n- from the kickoff" };
+    expect(descriptionWithOpspBlock(task, block, "Relaunch the site by June 30.")).toBe(
+      `${block}\n\n---\n\n## Notes\n\n- from the kickoff`
+    );
+  });
+
+  it("adds nothing when the block or the statement is already there", () => {
+    const labelled = { description: `${OPSP_MARKER} (Oct 1, 2026) Older statement`, markdown_description: "x" };
+    expect(descriptionWithOpspBlock(labelled, block, "Relaunch the site by June 30.")).toBeNull();
+    const hasStatement = {
+      description: "Goal: Relaunch the  site by June 30. More notes",
+      markdown_description: "**Goal:** Relaunch the site by June 30.\n\nMore notes",
+    };
+    expect(descriptionWithOpspBlock(hasStatement, block, "Relaunch the site by June 30.")).toBeNull();
+  });
+
+  it("adds nothing when ClickUp did not return the markdown to keep", () => {
+    expect(descriptionWithOpspBlock({ description: "Notes" }, block, "Relaunch.")).toBeNull();
+  });
+});
+
 describe("fillEmptyTaskFields", () => {
   const wanted = {
     name: "Web Goal 3",
@@ -112,7 +160,8 @@ describe("fillEmptyTaskFields", () => {
   it("leaves every field that already has a value alone, and never sends the name", () => {
     const changes = fillEmptyTaskFields(
       {
-        description: "Written by hand in ClickUp",
+        description: `${OPSP_MARKER} (Nov 1, 2026) Written by hand in ClickUp`,
+        markdown_description: `**${OPSP_MARKER}** (Nov 1, 2026)\n\nWritten by hand in ClickUp`,
         due_date: "1780000000000",
         start_date: "1760000000000",
         assignees: [{ id: 9 }],

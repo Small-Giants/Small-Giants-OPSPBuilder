@@ -11,7 +11,7 @@ import {
   fillEmptyPeople,
   fillEmptyTaskFields,
   findRaciFields,
-  goalTaskDescription,
+  opspDescriptionBlock,
   raciClickUpIds,
   taskAssignees,
   toClickUpDate,
@@ -103,7 +103,8 @@ const FIELD_LABELS: Record<string, string> = {
 /**
  * Creates the ClickUp task for a department goal: name, statement and SMART
  * description, dates, assignees, and the four RACI People fields. For a task
- * that already exists it only fills fields that are empty in ClickUp and never
+ * that already exists it only fills fields that are empty in ClickUp, and adds
+ * the labelled statement block above a description that lacks it; it never
  * overwrites or removes anything. The executive sponsor stays in the app.
  */
 export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalResponse>>(
@@ -134,7 +135,7 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
 
       const details = {
         name: goal.title.trim(),
-        markdown_description: goalTaskDescription(goal),
+        markdown_description: opspDescriptionBlock(goal),
         due_date: toClickUpDate(goal.dueDate),
         start_date: toClickUpDate(goal.startDate),
       };
@@ -163,9 +164,20 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
         const task = await client.getTask(taskId);
         listId = task.list?.id ?? "";
         currentFields = task.custom_fields ?? [];
-        const changes = fillEmptyTaskFields(task, { ...details, assignees: taskAssignees(raci) });
+        const changes = fillEmptyTaskFields(
+          task,
+          { ...details, assignees: taskAssignees(raci) },
+          goal.statement
+        );
         if (Object.keys(changes).length > 0) await client.updateTask(taskId, changes);
-        filled.push(...Object.keys(changes).map((key) => FIELD_LABELS[key] ?? key));
+        const hadDescription = Boolean(task.text_content?.trim() || task.description?.trim());
+        filled.push(
+          ...Object.keys(changes).map((key) =>
+            key === "markdown_description" && hadDescription
+              ? "goal statement and SMART breakdown above the existing description"
+              : FIELD_LABELS[key] ?? key
+          )
+        );
         url = task.url ?? url;
         status = "updated";
       }

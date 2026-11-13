@@ -22,6 +22,51 @@ export function goalTaskDescription(goal: Pick<Goal, "smart" | "description" | "
   return statement ? `**Goal:** ${statement}\n\n### SMART breakdown\n\n${breakdown}` : breakdown;
 }
 
+/** Labels what the app wrote into a task, and tells the app it already has. */
+export const OPSP_MARKER = "Added by OPSP app";
+
+/** The goal's description under the OPSP label, dated in Arizona time. */
+export function opspDescriptionBlock(
+  goal: Pick<Goal, "smart" | "description" | "statement">,
+  now = new Date()
+): string {
+  const body = goalTaskDescription(goal);
+  if (!body) return "";
+  const date = now.toLocaleDateString("en-US", {
+    timeZone: "America/Phoenix",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `**${OPSP_MARKER}** (${date})\n\n${body}`;
+}
+
+const squash = (text: string) => text.replace(/\s+/g, " ").trim().toLowerCase();
+
+/**
+ * The new description for an existing task, or null to leave it alone. An
+ * empty description gets the OPSP block; one with text gets the block added
+ * above it, unless it already has the block or the goal statement. Without
+ * the task's markdown the original formatting could not be kept, so nothing
+ * is added.
+ */
+export function descriptionWithOpspBlock(
+  task: Pick<ClickUpTask, "description" | "text_content" | "markdown_description">,
+  block: string,
+  statement: string | undefined
+): string | null {
+  if (!block.trim()) return null;
+  const plain = task.text_content?.trim() || task.description?.trim() || "";
+  const markdown = task.markdown_description?.trim() ?? "";
+  if (!plain && !markdown) return block;
+
+  const existing = squash(`${plain} ${markdown}`);
+  if (existing.includes(squash(OPSP_MARKER))) return null;
+  if (statement?.trim() && existing.includes(squash(statement))) return null;
+  if (!markdown) return null;
+  return `${block}\n\n---\n\n${markdown}`;
+}
+
 /** ClickUp stores dates as epoch milliseconds; noon UTC keeps the day stable in US time zones. */
 export function toClickUpDate(isoDate: string | undefined): number | null {
   if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
@@ -94,15 +139,20 @@ const isBlank = (value: string | null | undefined) => !value?.trim();
  * The changes that fill an existing task's empty fields from the goal. The
  * task belongs to ClickUp once it exists: anything already set there, even if
  * the goal now says otherwise, is left alone, and the name is never touched.
+ * The description is the one exception: the labelled OPSP block may be added
+ * above what is there, see descriptionWithOpspBlock.
  */
 export function fillEmptyTaskFields(
-  task: Pick<ClickUpTask, "description" | "text_content" | "due_date" | "start_date" | "assignees">,
-  wanted: NewClickUpTask
+  task: Pick<
+    ClickUpTask,
+    "description" | "text_content" | "markdown_description" | "due_date" | "start_date" | "assignees"
+  >,
+  wanted: NewClickUpTask,
+  statement?: string
 ): Partial<Omit<NewClickUpTask, "assignees">> & { assignees?: { add: number[]; rem: number[] } } {
   const changes: ReturnType<typeof fillEmptyTaskFields> = {};
-  if (isBlank(task.description) && isBlank(task.text_content) && wanted.markdown_description?.trim()) {
-    changes.markdown_description = wanted.markdown_description;
-  }
+  const description = descriptionWithOpspBlock(task, wanted.markdown_description ?? "", statement);
+  if (description) changes.markdown_description = description;
   if (isBlank(task.due_date) && wanted.due_date != null) changes.due_date = wanted.due_date;
   if (isBlank(task.start_date) && wanted.start_date != null) changes.start_date = wanted.start_date;
   if ((task.assignees ?? []).length === 0 && wanted.assignees?.length) {
