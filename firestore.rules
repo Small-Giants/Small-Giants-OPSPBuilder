@@ -271,6 +271,12 @@ service cloud.firestore {
         && request.resource.data.instructions.size() <= 4000;
     }
 
+    // Monthly AI token and cost totals. Written by Cloud Functions only.
+    match /companies/{companyId}/aiUsage/{month} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ClickUp workspace members, offered in people pickers. Written by Cloud
     // Functions only.
     match /companies/{companyId}/clickupMembers/{memberId} {

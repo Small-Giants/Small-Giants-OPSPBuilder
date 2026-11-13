@@ -95,6 +95,12 @@ call, so changes need no deploy. A blank value means the built-in prompt in
 `src/ai/statement-instructions.ts`. The goal name and answers are always
 appended by code.
 
+Each call adds its tokens and estimated cost to
+`companies/default-company/aiUsage/{YYYY-MM}` (Arizona time), shown to admins
+under **AI usage** in the Admin Panel. Cost uses the price table in
+`src/ai/usage.ts` at the time of the call; add a row there when Google changes
+a price or `GEMINI_MODEL` changes, or those calls count as $0.
+
 ## ClickUp workspace setup
 
 ### One-time setup

@@ -4,6 +4,7 @@ import { requireCaller } from "../auth";
 import { DEFAULT_COMPANY_ID, geminiModel } from "../config";
 import { db } from "../firestore";
 import { DEFAULT_STATEMENT_INSTRUCTIONS, MAX_INSTRUCTIONS_LENGTH } from "./statement-instructions";
+import { recordUsage, type GeminiUsage } from "./usage";
 
 export const SMART_LABELS = {
   specific: "Specific",
@@ -65,7 +66,7 @@ async function accessToken(): Promise<string> {
   return ((await res.json()) as { access_token: string }).access_token;
 }
 
-async function generate(prompt: string): Promise<string> {
+async function generate(prompt: string): Promise<{ text: string; usage: GeminiUsage }> {
   const project = process.env.GCLOUD_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT;
   const url = `https://aiplatform.googleapis.com/v1/projects/${project}/locations/global/publishers/google/models/${geminiModel()}:generateContent`;
   const res = await fetch(url, {
@@ -79,14 +80,17 @@ async function generate(prompt: string): Promise<string> {
   });
   const body = (await res.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
+    usageMetadata?: GeminiUsage;
     error?: { message?: string };
   };
   if (!res.ok) throw new Error(body.error?.message ?? `Vertex AI returned ${res.status}.`);
+  const usage = body.usageMetadata ?? {};
   const candidate = body.candidates?.[0];
   if (candidate?.finishReason && candidate.finishReason !== "STOP") {
-    throw new Error(`The model stopped early (${candidate.finishReason}).`);
+    // Tokens spent on a cut-off answer are still billed.
+    throw Object.assign(new Error(`The model stopped early (${candidate.finishReason}).`), { usage });
   }
-  return candidate?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+  return { text: candidate?.content?.parts?.map((p) => p.text ?? "").join("") ?? "", usage };
 }
 
 /**
@@ -97,19 +101,30 @@ async function generate(prompt: string): Promise<string> {
 export const writeSmartGoal = onCall<{ title?: string; smart?: SmartInput }>(
   { timeoutSeconds: 30 },
   async (request) => {
-    await requireCaller(request);
+    const caller = await requireCaller(request);
     const smart = request.data?.smart ?? {};
     const answered = Object.values(smart).filter((v) => typeof v === "string" && v.trim()).length;
     if (answered < 2) {
       throw new HttpsError("invalid-argument", "Fill in at least two SMART answers first.");
     }
 
+    const model = geminiModel();
+    const track = (usage: GeminiUsage | undefined) =>
+      usage
+        ? recordUsage({ feature: "goalStatement", model, uid: caller.uid, usage }).catch((error) =>
+            logger.warn("Could not record AI usage", { error: String(error) })
+          )
+        : undefined;
+
     try {
       const prompt = buildStatementPrompt(request.data?.title ?? "", smart, await savedInstructions());
-      const statement = cleanStatement(await generate(prompt));
+      const { text, usage } = await generate(prompt);
+      await track(usage);
+      const statement = cleanStatement(text);
       if (!statement) throw new Error("The model returned nothing.");
       return { statement: statement.slice(0, MAX_STATEMENT_LENGTH) };
     } catch (error) {
+      await track((error as { usage?: GeminiUsage }).usage);
       logger.error("Goal statement generation failed", { error: String(error) });
       throw new HttpsError("unavailable", "Could not write the goal statement right now. Try again, or write it by hand.");
     }

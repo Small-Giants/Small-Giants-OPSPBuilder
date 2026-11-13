@@ -450,6 +450,13 @@ describe("integrations and sync logs", () => {
     await assertFails(getDoc(prompt(BOB)));
   });
 
+  it("AI usage is readable by admins only and never client writable", async () => {
+    const month = (uid: string) => doc(db(uid), "companies", COMPANY, "aiUsage", "2026-11");
+    await assertSucceeds(getDoc(month(ADMIN)));
+    await assertFails(getDoc(month(BOB)));
+    await assertFails(setDoc(month(SUPER), { calls: 1 }));
+  });
+
   it("ClickUp members are readable by anyone signed in but never client writable", async () => {
     const member = (uid: string) => doc(db(uid), "companies", COMPANY, "clickupMembers", "33");
     await assertSucceeds(getDoc(member(BOB)));
