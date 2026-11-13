@@ -441,6 +441,15 @@ describe("integrations and sync logs", () => {
     await assertFails(getDoc(location(BOB)));
   });
 
+  it("only admins can read and edit the goal statement prompt", async () => {
+    const prompt = (uid: string) => doc(db(uid), "companies", COMPANY, "ai", "goal-statement");
+    await assertSucceeds(setDoc(prompt(ADMIN), { instructions: "Write one sentence." }));
+    await assertSucceeds(getDoc(prompt(SUPER)));
+    await assertFails(setDoc(prompt(ADMIN), { instructions: "x".repeat(4001) }));
+    await assertFails(setDoc(prompt(BOB), { instructions: "Write one sentence." }));
+    await assertFails(getDoc(prompt(BOB)));
+  });
+
   it("ClickUp members are readable by anyone signed in but never client writable", async () => {
     const member = (uid: string) => doc(db(uid), "companies", COMPANY, "clickupMembers", "33");
     await assertSucceeds(getDoc(member(BOB)));

@@ -263,6 +263,14 @@ service cloud.firestore {
       allow write: if isAdmin() && integrationId != 'clickup-location';
     }
 
+    // The prompt writeSmartGoal sends to Gemini. Blank means the built-in one.
+    match /companies/{companyId}/ai/goal-statement {
+      allow read: if isAdmin();
+      allow write: if isAdmin()
+        && request.resource.data.instructions is string
+        && request.resource.data.instructions.size() <= 4000;
+    }
+
     // ClickUp workspace members, offered in people pickers. Written by Cloud
     // Functions only.
     match /companies/{companyId}/clickupMembers/{memberId} {

@@ -25,6 +25,7 @@ import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { DepartmentCombobox } from '@/components/ui/department-combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { ClickUpLocationSetting } from '@/components/ClickUpLocationSetting';
+import { GoalStatementPromptSetting } from '@/components/GoalStatementPromptSetting';
 interface UserData {
   id: string;
   email: string;
@@ -530,6 +531,10 @@ export default function AdminPanel() {
 
       <div className="mt-6">
         <ClickUpLocationSetting />
+      </div>
+
+      <div className="mt-6">
+        <GoalStatementPromptSetting />
       </div>
     </div>
   );

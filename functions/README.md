@@ -89,6 +89,12 @@ The Vertex AI API is enabled and the runtime account holds **Vertex AI User**
 `GEMINI_MODEL` in the project's `.env` file to change it. Older models are
 not served in this project, so check a replacement works in `global` first.
 
+Admins edit the prompt under **Goal statement prompt** in the Admin Panel. It
+is stored in `companies/default-company/ai/goal-statement` and read on every
+call, so changes need no deploy. A blank value means the built-in prompt in
+`src/ai/statement-instructions.ts`. The goal name and answers are always
+appended by code.
+
 ## ClickUp workspace setup
 
 ### One-time setup

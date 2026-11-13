@@ -1,7 +1,9 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions";
 import { requireCaller } from "../auth";
-import { geminiModel } from "../config";
+import { DEFAULT_COMPANY_ID, geminiModel } from "../config";
+import { db } from "../firestore";
+import { DEFAULT_STATEMENT_INSTRUCTIONS, MAX_INSTRUCTIONS_LENGTH } from "./statement-instructions";
 
 export const SMART_LABELS = {
   specific: "Specific",
@@ -16,7 +18,11 @@ export type SmartInput = Partial<Record<keyof typeof SMART_LABELS, string>>;
 /** Long enough for one rich sentence; anything longer means the model ignored the brief. */
 export const MAX_STATEMENT_LENGTH = 400;
 
-export function buildStatementPrompt(title: string, smart: SmartInput): string {
+/**
+ * The goal name and answers are always appended by code, so an edited prompt
+ * can change the style but never lose the input.
+ */
+export function buildStatementPrompt(title: string, smart: SmartInput, instructions?: string): string {
   const answers = (Object.keys(SMART_LABELS) as (keyof typeof SMART_LABELS)[])
     .map((field) => [SMART_LABELS[field], smart[field]?.trim()] as const)
     .filter(([, value]) => Boolean(value))
@@ -24,23 +30,17 @@ export function buildStatementPrompt(title: string, smart: SmartInput): string {
     .join("\n");
 
   return [
-    "You write goal statements for a company's One-Page Strategic Plan.",
-    "Combine the goal name and SMART answers below into ONE clear, concise goal sentence.",
-    "",
-    "Rules:",
-    "- One sentence, ideally 20 to 40 words.",
-    "- Start with a strong verb (for example Increase, Launch, Reduce, Hire).",
-    "- Include every number, percentage, comparison baseline, and deadline from the answers. Never drop one, and never invent numbers, dates, or names.",
-    "- Say what will be achieved, how success is measured, and by when; add why it matters only if the Relevant answer gives a reason and it fits naturally.",
-    "- Use only information in the answers. Do not add reasons or details of your own.",
-    "- Leave out the Achievable answer unless it changes what the goal is.",
-    "- No filler such as ensuring, successfully, officially, or in order to.",
-    "- Plain business English. No quotation marks, markdown, emoji, or preamble.",
-    "- Reply with the sentence only.",
+    instructions?.trim() || DEFAULT_STATEMENT_INSTRUCTIONS,
     "",
     `Goal name: ${title.trim() || "(none)"}`,
     answers,
   ].join("\n");
+}
+
+async function savedInstructions(): Promise<string> {
+  const snap = await db().doc(`companies/${DEFAULT_COMPANY_ID}/ai/goal-statement`).get();
+  const value = snap.get("instructions");
+  return typeof value === "string" ? value.slice(0, MAX_INSTRUCTIONS_LENGTH) : "";
 }
 
 /** Models sometimes wrap the answer in quotes or a label despite the brief. */
@@ -105,7 +105,8 @@ export const writeSmartGoal = onCall<{ title?: string; smart?: SmartInput }>(
     }
 
     try {
-      const statement = cleanStatement(await generate(buildStatementPrompt(request.data?.title ?? "", smart)));
+      const prompt = buildStatementPrompt(request.data?.title ?? "", smart, await savedInstructions());
+      const statement = cleanStatement(await generate(prompt));
       if (!statement) throw new Error("The model returned nothing.");
       return { statement: statement.slice(0, MAX_STATEMENT_LENGTH) };
     } catch (error) {
