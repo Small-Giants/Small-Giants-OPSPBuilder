@@ -1,6 +1,6 @@
 import { db } from "../firestore";
 import { parseClickUpLocation, type ClickUpLocation } from "./location";
-import { DEFAULT_RECAP_MARKERS, type RecapConfig } from "./recap";
+import { DEFAULT_AGENT_MENTION, DEFAULT_RECAP_MARKERS, type RecapConfig } from "./recap";
 
 /** companies/{id}/integrations/clickup, edited by admins under Integrations. */
 export interface ClickUpSettings extends RecapConfig {
@@ -11,6 +11,7 @@ export const DEFAULT_SETTINGS: ClickUpSettings = {
   enabled: false,
   recapMarkers: DEFAULT_RECAP_MARKERS,
   recapAuthor: "",
+  agentMention: DEFAULT_AGENT_MENTION,
 };
 
 /**

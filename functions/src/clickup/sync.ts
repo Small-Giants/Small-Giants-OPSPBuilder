@@ -10,12 +10,17 @@ import { ClickUpClient, ClickUpError, type ClickUpComment } from "./client";
 import { loadDirectory, refreshMembers, syncPeople } from "./members";
 import type { Person } from "./people";
 import {
+  agentThreadCandidates,
   applyRecapToQuarters,
+  approvalCandidates,
   commentText,
   commentUrl,
   findRecaps,
+  hasRecentRecap,
   isApprovalReply,
   parseRecap,
+  recapsInThread,
+  RECENT_RECAP_DAYS,
   type ParsedRecap,
 } from "./recap";
 import { loadGoalLocation, loadSettings, type ClickUpSettings } from "./settings";
@@ -245,7 +250,22 @@ async function syncGoal(
     maxPages: 8,
     stop: (page) => page.some((c) => appliedIds.has(c.id)),
   });
-  const unapplied = findRecaps(comments, settings).filter((c) => !appliedIds.has(c.id));
+  const direct = findRecaps(comments, settings);
+
+  // People can also @mention the agent, which answers in that comment's
+  // thread. Threads cost a call each, so they are only read when there is no
+  // recent top-level recap.
+  const cutoff = Date.now() - RECENT_RECAP_DAYS * 24 * 60 * 60 * 1000;
+  const threadReplies = new Map<string, ClickUpComment[]>();
+  const threaded: ClickUpComment[] = [];
+  if (!hasRecentRecap(direct, cutoff)) {
+    for (const parent of agentThreadCandidates(comments, settings, cutoff)) {
+      const replies = await client.getCommentReplies(parent.id);
+      threadReplies.set(parent.id, replies);
+      threaded.push(...recapsInThread(parent, replies, settings, cutoff));
+    }
+  }
+  const unapplied = findRecaps([...direct, ...threaded], settings).filter((c) => !appliedIds.has(c.id));
 
   const update: Record<string, unknown> = {
     "clickup.lastSyncedAt": syncedAt,
@@ -253,7 +273,9 @@ async function syncGoal(
   };
 
   if (unapplied.length === 0 && !goal.clickup?.recap) {
-    warn(`no comment starting with ${settings.recapMarkers.map((m) => `"${m}"`).join(" or ")} on the ClickUp task yet.`);
+    warn(
+      `no comment or agent reply starting with ${settings.recapMarkers.map((m) => `"${m}"`).join(" or ")} on the ClickUp task yet.`
+    );
   }
 
   const approvers = approverIdentities(goal, directory, users);
@@ -271,7 +293,8 @@ async function syncGoal(
   for (const comment of unapplied) {
     const parsed = parseRecap(commentText(comment));
     const approval =
-      goal.clickup?.approvals?.[comment.id] ?? (await clickUpApproval(client, comment, approvers));
+      goal.clickup?.approvals?.[comment.id] ??
+      (await clickUpApproval(client, comment, approvers, threadReplies));
 
     if (!approval) {
       // Only the newest unapproved recap is worth reviewing; an older one is
@@ -347,7 +370,8 @@ function toGoalRecap(
 ): GoalRecap {
   return {
     commentId: comment.id,
-    commentUrl: commentUrl(taskId, comment.id),
+    // A reply's own id does not open its thread, so link the comment it answers.
+    commentUrl: commentUrl(taskId, comment.threadParentId ?? comment.id),
     text: parsed.text,
     author: comment.user?.username ?? null,
     postedAt: comment.date ? new Date(Number(comment.date)).toISOString() : null,
@@ -395,12 +419,18 @@ function approverIdentities(goal: Goal, directory: Person[], users: UserRecord[]
 async function clickUpApproval(
   client: ClickUpClient,
   comment: ClickUpComment,
-  approvers: Approvers
+  approvers: Approvers,
+  threadReplies: Map<string, ClickUpComment[]>
 ): Promise<RecapApproval | null> {
-  if (comment.reply_count != null && Number(comment.reply_count) === 0) return null;
+  let replies: ClickUpComment[];
+  if (comment.threadParentId) {
+    replies = threadReplies.get(comment.threadParentId) ?? [];
+  } else {
+    if (comment.reply_count != null && Number(comment.reply_count) === 0) return null;
+    replies = await client.getCommentReplies(comment.id);
+  }
 
-  const replies = await client.getCommentReplies(comment.id);
-  for (const reply of replies) {
+  for (const reply of approvalCandidates(comment, replies)) {
     if (!isApprovalReply(reply)) continue;
     const id = reply.user?.id;
     const email = reply.user?.email?.toLowerCase();

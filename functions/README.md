@@ -89,7 +89,7 @@ The Vertex AI API is enabled and the runtime account holds **Vertex AI User**
 `GEMINI_MODEL` in the project's `.env` file to change it. Older models are
 not served in this project, so check a replacement works in `global` first.
 
-Admins edit the prompt under **Goal statement prompt** in the Admin Panel. It
+Admins edit the prompt under **Goal statement prompt** under Integrations. It
 is stored in `companies/default-company/ai/goal-statement` and read on every
 call, so changes need no deploy. A blank value means the built-in prompt in
 `src/ai/statement-instructions.ts`. The goal name and answers are always
@@ -97,7 +97,7 @@ appended by code.
 
 Each call adds its tokens and estimated cost to
 `companies/default-company/aiUsage/{YYYY-MM}` (Arizona time), shown to admins
-under **AI usage** in the Admin Panel. Cost uses the price table in
+under **AI usage** under Integrations. Cost uses the price table in
 `src/ai/usage.ts` at the time of the call; add a row there when Google changes
 a price or `GEMINI_MODEL` changes, or those calls count as $0.
 
@@ -106,7 +106,7 @@ a price or `GEMINI_MODEL` changes, or those calls count as $0.
 ### One-time setup
 
 1. **Location.** A superadmin pastes the URL of the ClickUp List for goal
-   tasks into **ClickUp goal location** in the Admin Panel. A Space URL also
+   tasks into **ClickUp goal location** under Integrations. A Space URL also
    works if the Space has exactly one List.
 2. **RACI fields.** Tasks in that List need People custom fields named exactly
    `Accountable`, `Responsible`, `Consulted`, and `Informed`. There is no
@@ -130,6 +130,16 @@ a price or `GEMINI_MODEL` changes, or those calls count as $0.
 | `approveClickUpRecap` | The goal's Accountable person or an admin presses **Approve** on the goal card. |
 | `refreshClickUpMembers` | Admin presses **Sync people from ClickUp**. |
 | `relinkClickUpPerson` | A user signs in for the first time. If a placeholder has their email, the new account takes over its role, department, manager, and deleted state, every goal, rock, manager, and department-leader reference moves to the new account, and the placeholder is deleted. |
+
+### Recaps in comment threads
+
+People can also @mention the agent (**Agent @mention** under Integrations,
+default `OPSP Updater`) in a comment, and it answers in that comment's thread.
+When a task has no top-level recap from the last 31 days, the sync also reads
+the threads of up to ten recent comments that mention that name, and treats a
+reply opening with a recap heading like any other recap. Its approval is a
+later `Approved` reply in the same thread, or **Approve** in the app. Leaving
+the name blank checks every recent comment that has replies.
 
 ### Approval
 

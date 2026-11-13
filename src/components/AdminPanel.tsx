@@ -24,9 +24,6 @@ import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { DepartmentCombobox } from '@/components/ui/department-combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
-import { ClickUpLocationSetting } from '@/components/ClickUpLocationSetting';
-import { GoalStatementPromptSetting } from '@/components/GoalStatementPromptSetting';
-import { AiUsageCard } from '@/components/AiUsageCard';
 interface UserData {
   id: string;
   email: string;
@@ -529,18 +526,6 @@ export default function AdminPanel() {
           )}
         </CardContent>
       </Card>
-
-      <div className="mt-6">
-        <ClickUpLocationSetting />
-      </div>
-
-      <div className="mt-6">
-        <GoalStatementPromptSetting />
-      </div>
-
-      <div className="mt-6">
-        <AiUsageCard />
-      </div>
     </div>
   );
 }

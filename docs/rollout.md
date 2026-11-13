@@ -41,7 +41,7 @@ upgrade, the deploy pipeline, and the callable auth path all work.
    leader for each. Nothing else works properly without this: department goals
    have nowhere to live, the manager view is empty, and the leader write
    permission has nothing to match against.
-2. **User assignment.** Admin Panel. Give every active person a department and a
+2. **User assignment.** User Management page. Give every active person a department and a
    manager.
 3. **Existing OPSP data.** Dry run first, always:
    ```
@@ -93,7 +93,7 @@ Run through this as a normal user, not as an admin, and then again as an admin.
 
 **ClickUp**
 - [ ] Test connection succeeds against the real workspace.
-- [ ] Sync people from ClickUp in the Admin Panel adds members without an
+- [ ] Sync people from ClickUp on the User Management page adds members without an
       account as "ClickUp · not signed in" users; running it again adds no
       duplicates. They show in the goal and rock pickers marked ClickUp.
 - [ ] Give a placeholder a department, then sign in as that person: the account

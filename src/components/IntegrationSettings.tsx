@@ -20,12 +20,16 @@ import { usePlanYear } from "@/contexts/PlanYearContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { refreshClickUpMembers, syncClickUp, testClickUpConnection } from "@/lib/callables";
 import { AlertCircle, CheckCircle2, Loader2, PlugZap, RefreshCw, Users } from "lucide-react";
+import { AiUsageCard } from "@/components/AiUsageCard";
+import { ClickUpLocationSetting } from "@/components/ClickUpLocationSetting";
+import { GoalStatementPromptSetting } from "@/components/GoalStatementPromptSetting";
 
 /** Mirror of ClickUpSettings in functions/src/clickup/settings.ts. */
 interface ClickUpConfig {
   enabled: boolean;
   recapMarkers: string[];
   recapAuthor: string;
+  agentMention: string;
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -34,6 +38,7 @@ const DEFAULT_CONFIG: ClickUpConfig = {
   enabled: false,
   recapMarkers: ["OPSP Rock Plan", "OPSP Monthly Recap"],
   recapAuthor: "",
+  agentMention: "OPSP Updater",
 };
 
 interface SyncLog {
@@ -221,7 +226,8 @@ export default function IntegrationSettings() {
         <p className="text-muted-foreground text-sm">
           ClickUp tracks the day-to-day work. Saving a department goal creates
           its ClickUp task. The ClickUp agent posts a rock plan on the task, then
-          a recap each month. Once the goal&apos;s Accountable person approves a
+          a recap each month, or answers in a comment thread when someone
+          @mentions it. Once the goal&apos;s Accountable person approves a
           recap (by replying &quot;Approved&quot; in ClickUp or in the app), the
           next sync applies it. Syncs run automatically on the first Friday of
           each month unless an admin already synced that month.
@@ -274,12 +280,27 @@ export default function IntegrationSettings() {
                 pasting the heading is ignored.
               </p>
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="agent-mention">Agent @mention</Label>
+              <Input
+                id="agent-mention"
+                value={config.agentMention}
+                placeholder="Any comment with replies"
+                onChange={(e) => setConfig({ ...config, agentMention: e.target.value })}
+                onBlur={() => save(config)}
+              />
+              <p className="text-xs text-muted-foreground">
+                When a task has no recap comment from the last month, the sync
+                also reads the replies under recent comments that @mention this
+                name, where the agent answers.
+              </p>
+            </div>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            New department goals are created in the ClickUp location a superadmin
-            sets in the Admin Panel. Its tasks need People fields named
-            Accountable, Responsible, Consulted, and Informed.
+            New department goals are created in the ClickUp goal location below,
+            set by a superadmin. Its tasks need People fields named Accountable,
+            Responsible, Consulted, and Informed.
           </p>
 
           <div className="flex flex-wrap gap-2 pt-2">
@@ -321,6 +342,8 @@ export default function IntegrationSettings() {
           )}
         </CardContent>
       </Card>
+
+      <ClickUpLocationSetting />
 
       <Card>
         <CardHeader className="pb-3">
@@ -381,6 +404,10 @@ export default function IntegrationSettings() {
           )}
         </CardContent>
       </Card>
+
+      <GoalStatementPromptSetting />
+
+      <AiUsageCard />
     </div>
   );
 }

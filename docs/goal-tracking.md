@@ -66,7 +66,7 @@ committed. Nobody updates a linked goal's progress in the OPSP.
 - **Individual goals** have one owner.
 - **Rocks** have an owner, anyone else working on them, and a due date.
 
-**Sync people from ClickUp** in the Admin Panel adds every ClickUp member who
+**Sync people from ClickUp** on the User Management page adds every ClickUp member who
 has no account yet to the user list, marked "ClickUp · not signed in", so a goal
 can name someone who has never signed in. They can be given a role, department,
 and manager like anyone else. When that person signs in with the same email,

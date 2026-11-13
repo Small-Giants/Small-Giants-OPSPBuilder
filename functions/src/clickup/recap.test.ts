@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { ClickUpComment } from "./client";
 import {
   DEFAULT_RECAP_MARKERS,
+  agentThreadCandidates,
   applyRecapToQuarters,
+  approvalCandidates,
+  hasRecentRecap,
+  recapsInThread,
   findLatestRecap,
   findRecaps,
   isApprovalReply,
@@ -154,6 +158,49 @@ describe("findRecaps", () => {
     const monthly = comment({ id: "oct", date: "2000" });
     const found = findRecaps([monthly, plan, monthly], config);
     expect(found.map((c) => c.id)).toEqual(["plan", "oct"]);
+  });
+});
+
+describe("agent threads", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const now = Date.parse("2026-11-13T00:00:00Z");
+  const cutoff = now - 31 * DAY;
+  const threadConfig: RecapConfig = { ...config, agentMention: "OPSP Updater" };
+  const at = (daysAgo: number) => String(now - daysAgo * DAY);
+
+  it("knows when a top-level recap is recent enough", () => {
+    expect(hasRecentRecap([comment({ date: at(40) })], cutoff)).toBe(false);
+    expect(hasRecentRecap([comment({ date: at(40) }), comment({ date: at(5) })], cutoff)).toBe(true);
+  });
+
+  it("only reads recent threads that call the agent, newest first", () => {
+    const calls = [
+      comment({ id: "old", comment_text: "@OPSP Updater recap please", date: at(45), reply_count: 1 }),
+      comment({ id: "noreply", comment_text: "@OPSP Updater recap please", date: at(3), reply_count: 0 }),
+      comment({ id: "other", comment_text: "Can someone check Q3?", date: at(2), reply_count: 4 }),
+      comment({ id: "a", comment_text: "@opsp updater what's the status?", date: at(10), reply_count: "2" }),
+      comment({ id: "b", comment_text: "Hey @OPSP Updater, monthly recap", date: at(1) }),
+      comment({ id: "recap", date: at(1), reply_count: 3 }),
+    ];
+    expect(agentThreadCandidates(calls, threadConfig, cutoff).map((c) => c.id)).toEqual(["b", "a"]);
+  });
+
+  it("checks every recent thread with replies when no agent name is set", () => {
+    const calls = [comment({ id: "other", comment_text: "Can someone check Q3?", date: at(2), reply_count: 4 })];
+    expect(agentThreadCandidates(calls, { ...config, agentMention: "" }, cutoff).map((c) => c.id)).toEqual(["other"]);
+  });
+
+  it("finds recap replies and ties them and their approval to the thread", () => {
+    const parent = comment({ id: "call", comment_text: "@OPSP Updater recap", date: at(3) });
+    const replies = [
+      comment({ id: "early-ok", comment_text: "Approved", date: at(3) }),
+      comment({ id: "r1", date: at(2), user: { username: "OPSP Updater" } }),
+      comment({ id: "chat", comment_text: "thanks!", date: at(1.5) }),
+      comment({ id: "ok", comment_text: "Approved", date: at(1) }),
+    ];
+    const recaps = recapsInThread(parent, replies, config, cutoff);
+    expect(recaps.map((r) => [r.id, r.threadParentId])).toEqual([["r1", "call"]]);
+    expect(approvalCandidates(recaps[0], replies).map((r) => r.id)).toEqual(["chat", "ok"]);
   });
 });
 

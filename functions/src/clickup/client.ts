@@ -45,6 +45,8 @@ export interface ClickUpComment {
   date?: string;
   /** Number of threaded replies, as a string or number depending on endpoint. */
   reply_count?: string | number;
+  /** Set by the sync, not ClickUp: the comment this one replies to. */
+  threadParentId?: string;
 }
 
 export interface ClickUpUser {

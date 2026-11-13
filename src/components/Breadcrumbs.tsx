@@ -31,7 +31,7 @@ const viewConfig: Record<string, { label: string; section: "plan" | "goals" | "e
   "just-get-it-done": { label: "Just Get It Done", section: "execute" },
   "personal": { label: "Personal Development", section: "execute" },
   "weekly-meeting": { label: "Weekly Meeting", section: "execute" },
-  "admin": { label: "Admin Panel", section: "admin" },
+  "admin": { label: "User Management", section: "admin" },
   "departments": { label: "Departments", section: "admin" },
   "settings": { label: "Settings", section: "admin" },
 };

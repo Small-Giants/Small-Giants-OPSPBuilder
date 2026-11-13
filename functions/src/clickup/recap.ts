@@ -15,9 +15,20 @@ export interface RecapConfig {
   recapMarkers: string[];
   /** Optional: only accept recaps whose author name contains this text. */
   recapAuthor?: string;
+  /**
+   * The name people @mention to call the agent, which answers in that
+   * comment's thread. Blank means any recent comment with replies is checked.
+   */
+  agentMention?: string;
 }
 
 export const DEFAULT_RECAP_MARKERS = ["OPSP Rock Plan", "OPSP Monthly Recap"];
+export const DEFAULT_AGENT_MENTION = "OPSP Updater";
+
+/** Without a top-level recap this recent, the sync also reads agent threads. */
+export const RECENT_RECAP_DAYS = 31;
+/** Threads read per goal per sync, newest first, to stay inside ClickUp's rate limit. */
+const MAX_THREADS = 10;
 
 const DATA_START = /^opsp data$/i;
 const DATA_END = /^end opsp data$/i;
@@ -83,6 +94,57 @@ export function findLatestRecap(
 ): ClickUpComment | null {
   const recaps = findRecaps(comments, config);
   return recaps[recaps.length - 1] ?? null;
+}
+
+const postedAt = (comment: ClickUpComment) => Number(comment.date ?? 0);
+
+export function hasRecentRecap(recaps: ClickUpComment[], cutoffMs: number): boolean {
+  return recaps.some((recap) => postedAt(recap) >= cutoffMs);
+}
+
+/**
+ * Top-level comments whose threads may hold the agent's answer: recent ones
+ * with replies that call the agent. ClickUp renders an @mention as the
+ * agent's name in the text, so the name is what is matched.
+ */
+export function agentThreadCandidates(
+  comments: ClickUpComment[],
+  config: RecapConfig,
+  cutoffMs: number
+): ClickUpComment[] {
+  const name = config.agentMention?.trim().toLowerCase();
+  const seen = new Set<string>();
+  return comments
+    .filter((comment) => {
+      if (seen.has(comment.id)) return false;
+      seen.add(comment.id);
+      if (postedAt(comment) < cutoffMs) return false;
+      if (comment.reply_count != null && Number(comment.reply_count) === 0) return false;
+      if (isRecap(comment, config)) return false;
+      return !name || commentText(comment).toLowerCase().includes(name);
+    })
+    .sort((a, b) => postedAt(b) - postedAt(a))
+    .slice(0, MAX_THREADS);
+}
+
+/** Recaps the agent posted as replies in a thread, tagged with the thread they came from. */
+export function recapsInThread(
+  parent: ClickUpComment,
+  replies: ClickUpComment[],
+  config: RecapConfig,
+  cutoffMs: number
+): ClickUpComment[] {
+  return replies
+    .filter((reply) => postedAt(reply) >= cutoffMs && isRecap(reply, config))
+    .map((reply) => ({ ...reply, threadParentId: parent.id }));
+}
+
+/**
+ * Replies that may approve a recap. A threaded recap cannot have a thread of
+ * its own, so its approval is a later reply in the same thread.
+ */
+export function approvalCandidates(recap: ClickUpComment, replies: ClickUpComment[]): ClickUpComment[] {
+  return recap.threadParentId ? replies.filter((reply) => postedAt(reply) > postedAt(recap)) : replies;
 }
 
 /** A goal owner approves a recap by replying in its thread with "Approved". */

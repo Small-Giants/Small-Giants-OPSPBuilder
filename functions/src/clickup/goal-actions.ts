@@ -152,7 +152,7 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
         if (!location) {
           return {
             status: "skipped",
-            reason: "No ClickUp location is set. A superadmin can set it in the Admin Panel.",
+            reason: "No ClickUp location is set. A superadmin can set it under Integrations.",
             warnings,
           };
         }
@@ -248,7 +248,7 @@ async function resolveListId(
   throw new HttpsError(
     "failed-precondition",
     lists.length === 0
-      ? "The ClickUp space set in the Admin Panel has no lists outside folders. Paste a list link instead."
-      : `The ClickUp space set in the Admin Panel has ${lists.length} lists. Paste the link of the list goals belong in.`
+      ? "The ClickUp space set under Integrations has no lists outside folders. Paste a list link instead."
+      : `The ClickUp space set under Integrations has ${lists.length} lists. Paste the link of the list goals belong in.`
   );
 }

@@ -108,7 +108,7 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
     const adminItems: NavigationItem[] =
       currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')
         ? [
-            { id: 'admin', label: 'Admin Panel', icon: <ShieldIcon className="w-4 h-4" /> },
+            { id: 'admin', label: 'User Management', icon: <ShieldIcon className="w-4 h-4" /> },
             { id: 'departments', label: 'Departments', icon: <BuildingIcon className="w-4 h-4" /> },
             { id: 'integrations', label: 'Integrations', icon: <PlugZapIcon className="w-4 h-4" /> },
           ]
