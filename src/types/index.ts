@@ -3,6 +3,6 @@ export * from "./raci";
 export * from "./rock";
 export * from "./priority";
 export * from "./metric";
-export * from "./department";
+export * from "./team";
 export * from "./goal";
 export * from "./notification";

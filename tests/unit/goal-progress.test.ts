@@ -12,7 +12,7 @@ function makeGoal(overrides: Partial<Goal> = {}): Goal {
   return {
     id: "g1",
     title: "Test goal",
-    level: "department",
+    level: "team",
     planYear: 2026,
     measurement: {
       type: "simple",
@@ -228,7 +228,7 @@ describe("calculateAnnualRollup", () => {
       ),
     });
 
-  it("is met only when every department goal is met", () => {
+  it("is met only when every team goal is met", () => {
     const rollup = calculateAnnualRollup([met(), met()]);
     expect(rollup.met).toBe(true);
     expect(rollup.percent).toBe(100);

@@ -14,7 +14,7 @@ function goal(overrides: Partial<Goal> = {}): Goal {
   return {
     id: "g1",
     title: "Grow revenue to $10m",
-    level: "department",
+    level: "team",
     planYear: 2026,
     measurement: { type: "simple" },
     quarters: [
@@ -28,7 +28,7 @@ function goal(overrides: Partial<Goal> = {}): Goal {
 }
 
 describe("stakeholders", () => {
-  it("collects the owner, contributors, and department leader without duplicates", () => {
+  it("collects the owner, contributors, and team leader without duplicates", () => {
     const result = stakeholders(
       goal({ ownerId: "u1", contributorIds: ["u2", "u1"] }),
       ["u3"]
@@ -50,7 +50,7 @@ describe("stakeholders", () => {
     expect(result.sort()).toEqual(["u1", "u2", "u3", "u4", "u5"]);
   });
 
-  it("includes all of a department's leaders", () => {
+  it("includes all of a team's leaders", () => {
     const result = stakeholders(goal({ ownerId: "u1" }), ["u2", "u3"]);
     expect(result.sort()).toEqual(["u1", "u2", "u3"]);
   });
@@ -68,6 +68,19 @@ describe("intentsForGoalChange", () => {
     });
     expect(intents).toHaveLength(1);
     expect(intents[0]).toMatchObject({ kind: "goal_assigned", recipientId: "u2" });
+  });
+
+  it("stays quiet when the new-year rollover copies a goal forward", () => {
+    const intents = intentsForGoalChange({
+      before: null,
+      after: goal({
+        ownerId: "owner",
+        contributorIds: ["c1"],
+        status: "at_risk",
+        rolledOverFrom: { goalId: "old", planYear: 2025 },
+      }),
+    });
+    expect(intents).toEqual([]);
   });
 
   it("only notifies contributors who are newly added", () => {
@@ -100,7 +113,7 @@ describe("intentsForGoalChange", () => {
     const intents = intentsForGoalChange({
       before: goal({ ownerId: "u1", contributorIds: ["u2"], status: "in_progress" }),
       after: goal({ ownerId: "u1", contributorIds: ["u2"], status: "complete" }),
-      departmentLeaderIds: ["u3"],
+      teamLeaderIds: ["u3"],
     });
     const completed = intents.filter((i) => i.kind === "goal_completed");
     expect(completed.map((i) => i.recipientId).sort()).toEqual(["u1", "u2", "u3"]);

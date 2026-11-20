@@ -46,7 +46,7 @@ export function newGoalDraft(params: {
   companyId: string;
   ownerId?: string;
   ownerName?: string;
-  departmentId?: string | null;
+  teamId?: string | null;
   parentGoalId?: string | null;
   sortOrder?: number;
 }): GoalDraft {
@@ -56,7 +56,7 @@ export function newGoalDraft(params: {
     smart: undefined,
     level: params.level,
     parentGoalId: params.parentGoalId ?? null,
-    departmentId: params.departmentId ?? null,
+    teamId: params.teamId ?? null,
     ownerId: params.ownerId ?? "",
     ownerName: params.ownerName ?? "",
     contributorIds: [],
@@ -193,8 +193,8 @@ export function buildSmart(
 
 export function groupGoalsByLevel(goals: Goal[]): Record<GoalLevel, Goal[]> {
   return {
-    annual: goals.filter((g) => g.level === "annual"),
-    department: goals.filter((g) => g.level === "department"),
+    initiative: goals.filter((g) => g.level === "initiative"),
+    team: goals.filter((g) => g.level === "team"),
     individual: goals.filter((g) => g.level === "individual"),
   };
 }

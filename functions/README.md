@@ -113,11 +113,13 @@ a price or `GEMINI_MODEL` changes, or those calls count as $0.
    `Accountable` or `A (Accountable)`, `Responsible` or `R (Responsible)`,
    `Consulted` or `C (Consulting)`, `Informed` or `I (Inform)`. An exact name
    wins over a partial one. There is no Executive Sponsor field; the sponsor
-   lives only in the OPSP.
+   lives only in the OPSP. Optional Text fields named `Year` and
+   `Annual Priority` (or `Company Initiative`) are filled with the goal's plan
+   year and its company initiative's title when empty, and never overwritten.
 3. **People.** An admin presses **Sync people from ClickUp** in the Admin
    Panel. Every ClickUp member (guests excluded) whose email has no user record
    yet, including deleted ones, gets a placeholder user with id
-   `clickup:<member id>`. It can be given a role, department, and manager, and
+   `clickup:<member id>`. It can be given a role, team, and manager, and
    assigned to goals. Syncing never removes or duplicates anyone. Placeholders
    get no notifications.
 4. **Agent.** Give the ClickUp agent the two formats below.
@@ -127,12 +129,12 @@ a price or `GEMINI_MODEL` changes, or those calls count as $0.
 | Function | When it runs |
 | --- | --- |
 | `writeSmartGoal` | User presses **Write goal statement** on the goal form, or saves a goal with SMART answers and no statement. Returns one sentence the user can edit. |
-| `pushGoalToClickUp` | After a department goal is saved. Creates its task: name, goal statement followed by the SMART breakdown, dates, assignees (Accountable and Responsible), and the four RACI People fields. The description is labelled **Added by OPSP app** with the date. Once the task exists it only fills fields that are empty in ClickUp, and never overwrites or removes anything or renames the task. Two things are added to: if the description has neither that label nor the goal statement, the labelled block goes above the existing text; and people named on the goal who are missing from the assignees or a RACI field are added, without removing anyone. Each push logs what it found and did per RACI field. People with no ClickUp account come back as a warning. |
+| `pushGoalToClickUp` | After a team goal is saved. Creates its task: name, goal statement followed by the SMART breakdown, dates, assignees (Accountable and Responsible), and the four RACI People fields. The description is labelled **Added by OPSP app** with the date. Once the task exists it only fills fields that are empty in ClickUp, and never overwrites or removes anything or renames the task. Two things are added to: if the description has neither that label nor the goal statement, the labelled block goes above the existing text; and people named on the goal who are missing from the assignees or a RACI field are added, without removing anyone. Each push logs what it found and did per RACI field. People with no ClickUp account come back as a warning. |
 | `syncClickUp` | Admin presses **Pull recaps from ClickUp**. |
 | `scheduledClickUpSync` | 7am Arizona time every Friday. It only runs on the first Friday of the month, and skips that month if an admin already synced manually. In January it also covers the previous plan year. |
 | `approveClickUpRecap` | The goal's Accountable person or an admin presses **Approve** on the goal card. |
 | `refreshClickUpMembers` | Admin presses **Sync people from ClickUp**. |
-| `relinkClickUpPerson` | A user signs in for the first time. If a placeholder has their email, the new account takes over its role, department, manager, and deleted state, every goal, rock, manager, and department-leader reference moves to the new account, and the placeholder is deleted. |
+| `relinkClickUpPerson` | A user signs in for the first time. If a placeholder has their email, the new account takes over its role, team, manager, and deleted state, every goal, rock, manager, and team-leader reference moves to the new account, and the placeholder is deleted. |
 
 ### Recaps in comment threads
 

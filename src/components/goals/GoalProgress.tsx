@@ -52,7 +52,7 @@ export function GoalProgressBar({
 }
 
 /**
- * An annual priority is met only when every department goal beneath it is met,
+ * A company initiative is met only when every team goal beneath it is met,
  * but the averaged percentage is shown alongside so a near miss is visibly
  * different from a badly missed priority.
  */
@@ -62,7 +62,7 @@ export function AnnualRollup({ children }: { children: Goal[] }) {
   if (rollup.childCount === 0) {
     return (
       <p className="text-xs text-muted-foreground">
-        No department goals linked yet, so this priority cannot be met.
+        No team goals linked yet, so this priority cannot be met.
       </p>
     );
   }
@@ -83,7 +83,7 @@ export function AnnualRollup({ children }: { children: Goal[] }) {
             </Badge>
           )}
           <span className="text-muted-foreground">
-            {rollup.childrenMet} of {rollup.childCount} department goals met
+            {rollup.childrenMet} of {rollup.childCount} team goals met
           </span>
         </div>
         <span className="font-medium tabular-nums">{rollup.percent}%</span>

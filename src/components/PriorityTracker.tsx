@@ -62,7 +62,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
   });
 
   useEffect(() => {
-    // Annual priorities are goals now, so only capabilities are read here.
+    // Company initiatives are goals now, so only capabilities are read here.
     if (!isCapabilityView) {
       setPriorities([]);
       setLoading(false);
@@ -229,7 +229,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
           <p className="text-muted-foreground">
             {isCapabilityView 
               ? 'Track progress on your strategic capabilities' 
-              : 'Track progress on your annual priorities'}
+              : 'Track progress on your company initiatives'}
           </p>
         </div>
         {isCapabilityView ? (
@@ -241,7 +241,7 @@ export default function PriorityTracker({ isCapabilityView = false }: PriorityTr
             Add Capability
           </Button>
         ) : (
-          // Annual priorities are goals, so they are created on the
+          // Company initiatives are goals, so they are created on the
           // Priorities & Capabilities screen where the full goal form lives.
           <Button
             variant="outline"

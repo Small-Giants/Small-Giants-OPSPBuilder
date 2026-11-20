@@ -17,7 +17,7 @@ const COMPANY = "default-company";
 const ALICE = "uid-alice"; // regular user, owns a goal
 const BOB = "uid-bob"; // regular user, unrelated
 const CARLA = "uid-carla"; // contributor on Alice's goal
-const DANA = "uid-dana"; // leader of the Engineering department
+const DANA = "uid-dana"; // leader of the Engineering team
 const ADMIN = "uid-admin";
 const SUPER = "uid-super";
 
@@ -60,7 +60,7 @@ beforeEach(async () => {
     await setDoc(doc(fs, "users", ADMIN), { role: "admin", name: "Admin" });
     await setDoc(doc(fs, "users", SUPER), { role: "superadmin", name: "Super" });
 
-    await setDoc(doc(fs, "companies", COMPANY, "departments", "engineering"), {
+    await setDoc(doc(fs, "companies", COMPANY, "teams", "engineering"), {
       name: "Engineering",
       leaderIds: [DANA],
     });
@@ -70,7 +70,7 @@ beforeEach(async () => {
       level: "individual",
       ownerId: ALICE,
       contributorIds: [CARLA],
-      departmentId: "engineering",
+      teamId: "engineering",
       planYear: 2026,
     });
 
@@ -79,7 +79,7 @@ beforeEach(async () => {
       level: "individual",
       ownerId: BOB,
       contributorIds: [],
-      departmentId: "",
+      teamId: "",
       planYear: 2026,
     });
   });
@@ -149,7 +149,7 @@ describe("goal writes", () => {
         contributorIds: [],
         consultedIds: [BOB],
         informedIds: [CARLA],
-        departmentId: "",
+        teamId: "",
       });
     });
 
@@ -165,11 +165,11 @@ describe("goal writes", () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(goalRef(ctx.firestore(), "goal-sponsored"), {
         title: "Sponsored goal",
-        level: "annual",
+        level: "initiative",
         ownerId: ALICE,
         contributorIds: [],
         executiveSponsorId: BOB,
-        departmentId: "",
+        teamId: "",
       });
     });
 
@@ -178,7 +178,7 @@ describe("goal writes", () => {
     );
   });
 
-  it("department leader can update a goal in their department", async () => {
+  it("team leader can update a goal in their team", async () => {
     await assertSucceeds(
       updateDoc(goalRef(db(DANA), "goal-alice"), { title: "Leader edit" })
     );
@@ -200,7 +200,7 @@ describe("goal writes", () => {
     await assertFails(deleteDoc(goalRef(db(BOB), "goal-alice")));
   });
 
-  it("a department leader has no authority outside their department", async () => {
+  it("a team leader has no authority outside their team", async () => {
     await assertFails(
       updateDoc(goalRef(db(DANA), "goal-orphan"), { title: "Out of scope" })
     );
@@ -219,7 +219,7 @@ describe("goal writes", () => {
         level: "individual",
         ownerId: BOB,
         contributorIds: [],
-        departmentId: "",
+        teamId: "",
       })
     );
   });
@@ -231,7 +231,7 @@ describe("goal writes", () => {
         level: "individual",
         ownerId: ALICE,
         contributorIds: [],
-        departmentId: "",
+        teamId: "",
       })
     );
   });
@@ -254,25 +254,25 @@ describe("quarterly targets inherit goal permissions", () => {
   });
 });
 
-describe("departments", () => {
-  it("any authenticated user can read departments", async () => {
+describe("teams", () => {
+  it("any authenticated user can read teams", async () => {
     await assertSucceeds(
-      getDoc(doc(db(BOB), "companies", COMPANY, "departments", "engineering"))
+      getDoc(doc(db(BOB), "companies", COMPANY, "teams", "engineering"))
     );
   });
 
-  it("a regular user cannot create a department", async () => {
+  it("a regular user cannot create a team", async () => {
     await assertFails(
-      setDoc(doc(db(BOB), "companies", COMPANY, "departments", "sales"), {
+      setDoc(doc(db(BOB), "companies", COMPANY, "teams", "sales"), {
         name: "Sales",
         leaderIds: [BOB],
       })
     );
   });
 
-  it("an admin can create a department", async () => {
+  it("an admin can create a team", async () => {
     await assertSucceeds(
-      setDoc(doc(db(ADMIN), "companies", COMPANY, "departments", "sales"), {
+      setDoc(doc(db(ADMIN), "companies", COMPANY, "teams", "sales"), {
         name: "Sales",
         leaderIds: [BOB],
       })
@@ -282,23 +282,23 @@ describe("departments", () => {
   it("a leader cannot change the leadership list", async () => {
     await assertFails(
       updateDoc(
-        doc(db(DANA), "companies", COMPANY, "departments", "engineering"),
+        doc(db(DANA), "companies", COMPANY, "teams", "engineering"),
         { leaderIds: [DANA, BOB] }
       )
     );
   });
 
-  it("one of several leaders can still edit the department", async () => {
+  it("one of several leaders can still edit the team", async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(
-        doc(ctx.firestore(), "companies", COMPANY, "departments", "engineering"),
+        doc(ctx.firestore(), "companies", COMPANY, "teams", "engineering"),
         { name: "Engineering", leaderIds: [DANA, BOB] }
       );
     });
 
     await assertSucceeds(
       updateDoc(
-        doc(db(BOB), "companies", COMPANY, "departments", "engineering"),
+        doc(db(BOB), "companies", COMPANY, "teams", "engineering"),
         { name: "Engineering & Platform" }
       )
     );
@@ -307,22 +307,22 @@ describe("departments", () => {
   it("a leader named only in the pre-array field still has access", async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(
-        doc(ctx.firestore(), "companies", COMPANY, "departments", "legacy"),
+        doc(ctx.firestore(), "companies", COMPANY, "teams", "legacy"),
         { name: "Legacy", leaderId: DANA }
       );
     });
 
     await assertSucceeds(
-      updateDoc(doc(db(DANA), "companies", COMPANY, "departments", "legacy"), {
+      updateDoc(doc(db(DANA), "companies", COMPANY, "teams", "legacy"), {
         name: "Legacy Renamed",
       })
     );
   });
 
-  it("a leader can rename their own department", async () => {
+  it("a leader can rename their own team", async () => {
     await assertSucceeds(
       updateDoc(
-        doc(db(DANA), "companies", COMPANY, "departments", "engineering"),
+        doc(db(DANA), "companies", COMPANY, "teams", "engineering"),
         { name: "Engineering & Platform" }
       )
     );
@@ -336,9 +336,9 @@ describe("user profile protection", () => {
     );
   });
 
-  it("a user cannot assign their own department", async () => {
+  it("a user cannot assign their own team", async () => {
     await assertFails(
-      updateDoc(doc(db(ALICE), "users", ALICE), { departmentId: "engineering" })
+      updateDoc(doc(db(ALICE), "users", ALICE), { teamId: "engineering" })
     );
   });
 

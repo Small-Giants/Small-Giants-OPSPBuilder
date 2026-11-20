@@ -59,7 +59,7 @@ export interface PeopleSyncResult {
 
 /**
  * Gives every ClickUp member without an OPSP account a placeholder user
- * record, so they can be assigned, given a department, and so on before they
+ * record, so they can be assigned, given a team, and so on before they
  * sign in. See relinkClickUpPerson for what happens when they do.
  */
 export async function syncPeople(members: ClickUpMember[]): Promise<PeopleSyncResult> {

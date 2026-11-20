@@ -39,7 +39,7 @@ export default function OpspCanvasExample() {
     },
     {
       id: "priorities",
-      title: "Annual Priorities",
+      title: "Company Initiatives",
       content: "",
       type: "list" as const,
       items: ["Launch MVP", "Secure Series A", "Build enterprise features"]

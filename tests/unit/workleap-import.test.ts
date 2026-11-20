@@ -17,10 +17,10 @@ function context(overrides: Partial<ImportContext> = {}): ImportContext {
   return {
     planYear: 2026,
     usersByEmail: new Map([
-      ["alice@smallgiantsonline.com", { id: "u-alice", name: "Alice", departmentId: "d-sales" }],
-      ["bob@smallgiantsonline.com", { id: "u-bob", name: "Bob", departmentId: null }],
+      ["alice@smallgiantsonline.com", { id: "u-alice", name: "Alice", teamId: "d-sales" }],
+      ["bob@smallgiantsonline.com", { id: "u-bob", name: "Bob", teamId: null }],
     ]),
-    departmentsByName: new Map([
+    teamsByName: new Map([
       ["sales", "d-sales"],
       ["marketing", "d-marketing"],
     ]),
@@ -134,16 +134,16 @@ describe("planWorkleapImport", () => {
     expect(plan.missingColumns).toEqual([]);
   });
 
-  it("treats a goal with no parent as a department goal", () => {
+  it("treats a goal with no parent as a team goal", () => {
     const plan = planWorkleapImport(csv, context());
-    expect(plan.goals[0].level).toBe("department");
+    expect(plan.goals[0].level).toBe("team");
     expect(plan.goals[1].level).toBe("individual");
   });
 
-  it("resolves the owner and department", () => {
+  it("resolves the owner and team", () => {
     const [goal] = planWorkleapImport(csv, context()).goals;
     expect(goal.ownerId).toBe("u-alice");
-    expect(goal.departmentId).toBe("d-sales");
+    expect(goal.teamId).toBe("d-sales");
   });
 
   it("puts the value in the quarter the goal is due", () => {
@@ -175,12 +175,12 @@ describe("planWorkleapImport", () => {
     expect(plan.warnings[0]).toContain("ghost@smallgiantsonline.com");
   });
 
-  it("falls back to the owner's department when the team is unknown", () => {
+  it("falls back to the owner's team when the team is unknown", () => {
     const plan = planWorkleapImport(
       "Goal,Owner Email,Team\nSomething,alice@smallgiantsonline.com,Operations",
       context()
     );
-    expect(plan.goals[0].departmentId).toBe("d-sales");
+    expect(plan.goals[0].teamId).toBe("d-sales");
     expect(plan.warnings.join(" ")).toContain("Operations");
   });
 
@@ -216,7 +216,7 @@ describe("resolveParents", () => {
       id: `id-${title}`,
       title,
       parentTitle,
-      level: parentTitle ? "individual" : "department",
+      level: parentTitle ? "individual" : "team",
       parentGoalId: null,
       planYear: 2026,
       measurement: { type: "simple", accumulation: "cumulative" },
@@ -260,7 +260,7 @@ describe("summarizeImport", () => {
     );
     const summary = summarizeImport(plan);
     expect(summary).toContain("2 goal(s)");
-    expect(summary).toContain("department: 1");
+    expect(summary).toContain("team: 1");
     expect(summary).toContain("individual: 1");
   });
 });

@@ -5,13 +5,14 @@ import { CLICKUP_API_TOKEN, DEFAULT_COMPANY_ID } from "../config";
 import { requireCaller, type Caller } from "../auth";
 import { db } from "../firestore";
 import { leadersOf } from "../notifications/triggers";
-import { raciMembers, type Goal, type RecapApproval } from "../types";
+import { goalFromDoc, raciMembers, type Goal, type RecapApproval } from "../types";
 import { ClickUpClient, ClickUpError } from "./client";
 import {
   currentPeople,
   fillEmptyTaskFields,
   findRaciFields,
   opspDescriptionBlock,
+  planTextFieldChanges,
   raciFieldChange,
   raciClickUpIds,
   taskAssignees,
@@ -28,13 +29,13 @@ async function loadGoal(goalId: string | undefined): Promise<Goal> {
   if (!goalId) throw new HttpsError("invalid-argument", "goalId is required.");
   const snap = await db().doc(`companies/${DEFAULT_COMPANY_ID}/goals/${goalId}`).get();
   if (!snap.exists) throw new HttpsError("not-found", "That goal no longer exists.");
-  return { id: snap.id, ...snap.data() } as Goal;
+  return goalFromDoc(snap.id, snap.data());
 }
 
 /** Mirrors canWriteGoal in firestore.rules. */
 async function requireGoalEditor(caller: Caller, goal: Goal): Promise<void> {
   if (isAdmin(caller) || raciMembers(goal).includes(caller.uid)) return;
-  const leaders = await leadersOf(DEFAULT_COMPANY_ID, goal.departmentId);
+  const leaders = await leadersOf(DEFAULT_COMPANY_ID, goal.teamId);
   if (leaders.includes(caller.uid)) return;
   throw new HttpsError("permission-denied", "You cannot edit this goal.");
 }
@@ -102,7 +103,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 /**
- * Creates the ClickUp task for a department goal: name, statement and SMART
+ * Creates the ClickUp task for a team goal: name, statement and SMART
  * description, dates, assignees, and the four RACI People fields. For a task
  * that already exists it only fills fields that are empty in ClickUp, and adds
  * the labelled statement block above a description that lacks it; it never
@@ -115,8 +116,8 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
     const goal = await loadGoal(request.data?.goalId);
     await requireGoalEditor(caller, goal);
 
-    if (goal.level !== "department") {
-      return { status: "skipped", reason: "Only department goals get a ClickUp task.", warnings: [] };
+    if (goal.level !== "team") {
+      return { status: "skipped", reason: "Only team goals get a ClickUp task.", warnings: [] };
     }
     const settings = await loadSettings(DEFAULT_COMPANY_ID);
     if (!settings.enabled) {
@@ -212,12 +213,28 @@ export const pushGoalToClickUp = onCall<{ goalId?: string }, Promise<PushGoalRes
           raciLog[role] = { ...(raciLog[role] as object), error: message };
         }
       }
+      const initiative = goal.parentGoalId ? await loadGoal(goal.parentGoalId).catch(() => null) : null;
+      const textChanges = planTextFieldChanges([...(currentFields ?? []), ...listFields], currentFields ?? [], {
+        year: goal.planYear ? String(goal.planYear) : null,
+        initiative: initiative?.title,
+      });
+      for (const change of textChanges) {
+        try {
+          await client.setTextField(taskId, change.field.id, change.value);
+          if (status === "updated") filled.push(change.field.name);
+        } catch (error) {
+          const message = error instanceof ClickUpError ? error.message : String(error);
+          warnings.push(`Could not set the ${change.field.name} field: ${message}`);
+        }
+      }
+
       logger.info("Pushed goal to ClickUp", {
         goalId: goal.id,
         taskId,
         listId,
         status,
         raci: raciLog,
+        textFields: textChanges.map((c) => ({ name: c.field.name, value: c.value })),
         unmatched: raci.unmatched,
         peopleFields: [...(currentFields ?? []), ...listFields]
           .filter((f) => f.type === "users")

@@ -1,21 +1,35 @@
 import { QUARTERS, type Quarter } from "./common";
 import type { RaciAssignment } from "./raci";
 
-export type GoalLevel = "annual" | "department" | "individual";
+export type GoalLevel = "initiative" | "team" | "individual";
 
-export const GOAL_LEVELS: GoalLevel[] = ["annual", "department", "individual"];
+export const GOAL_LEVELS: GoalLevel[] = ["initiative", "team", "individual"];
 
 export const GOAL_LEVEL_LABELS: Record<GoalLevel, string> = {
-  annual: "Annual Priority",
-  department: "Department Goal",
+  initiative: "Company Initiative",
+  team: "Team Goal",
   individual: "Individual Goal",
 };
 
-/** Layer 1 is owned by the company, layer 2 by a department, layer 3 by a person. */
+const LEGACY_GOAL_LEVELS: Record<string, GoalLevel> = {
+  annual: "initiative",
+  department: "team",
+};
+
+/** Maps pre-rename stored levels ("annual", "department") onto current ones. */
+export function normalizeGoalLevel(level: unknown): GoalLevel {
+  if (typeof level === "string") {
+    if ((GOAL_LEVELS as string[]).includes(level)) return level as GoalLevel;
+    if (LEGACY_GOAL_LEVELS[level]) return LEGACY_GOAL_LEVELS[level];
+  }
+  return "individual";
+}
+
+/** Layer 1 is owned by the company, layer 2 by a team, layer 3 by a person. */
 export const GOAL_LEVEL_PARENT: Record<GoalLevel, GoalLevel | null> = {
-  annual: null,
-  department: "annual",
-  individual: "department",
+  initiative: null,
+  team: "initiative",
+  individual: "team",
 };
 
 export type GoalStatus = "not_started" | "in_progress" | "at_risk" | "complete";
@@ -226,7 +240,7 @@ export interface Goal extends RaciAssignment {
   smart?: SmartDescription;
   level: GoalLevel;
   parentGoalId?: string | null;
-  departmentId?: string | null;
+  teamId?: string | null;
   startDate?: string;
   dueDate?: string;
   planYear: number;
@@ -241,6 +255,8 @@ export interface Goal extends RaciAssignment {
   /** Last editor, used by the notification trigger to skip self-notifications. */
   updatedBy?: string;
   clickup?: GoalClickUpLink;
+  /** Set on the copy the new-year rollover makes of an earlier year's goal. */
+  rolledOverFrom?: { goalId: string; planYear: number } | null;
   /** Set by the migration script so converted records can be traced or rolled back. */
   migratedFrom?: { collection: string; id: string; migratedAt: string };
 }

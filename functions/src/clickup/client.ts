@@ -197,6 +197,13 @@ export class ClickUpClient {
     );
   }
 
+  async setTextField(taskId: string, fieldId: string, value: string): Promise<void> {
+    await this.request(
+      `/task/${encodeURIComponent(taskId)}/field/${encodeURIComponent(fieldId)}`,
+      { method: "POST", body: { value } }
+    );
+  }
+
   /** Cheap call used to validate a token before saving the integration. */
   async getAuthorizedUser(): Promise<{ user: { id: number; username?: string; email?: string } }> {
     return this.request("/user");

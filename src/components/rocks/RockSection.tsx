@@ -31,7 +31,7 @@ interface RockSectionProps {
 }
 
 /**
- * The quarter-grouped rock list, matching the layout the Annual Priorities
+ * The quarter-grouped rock list, matching the layout the Company Initiatives
  * screen has always used. Rendered inside every goal card.
  */
 export function RockSection({

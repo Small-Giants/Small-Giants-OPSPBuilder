@@ -156,7 +156,7 @@ export default function OneYear() {
       );
     }
 
-    // 2) Annual priorities come from the goals collection via useAnnualPriorities.
+    // 2) Company initiatives come from the goals collection via useAnnualPriorities.
 
     // 3) Rocks (year-scoped)
     const rocksById = new Map<string, any>();
@@ -513,7 +513,7 @@ export default function OneYear() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg text-foreground">
               <TrendingUpIcon className="w-5 h-5" />
-              Annual Priorities
+              Company Initiatives
               <Badge className="ml-auto bg-accent text-accent-foreground border-border">
                 {annualPriorities.length}
               </Badge>
@@ -523,7 +523,7 @@ export default function OneYear() {
             <div className="space-y-4">
               {prioritiesWithRocks.length === 0 ? (
                 <div className="text-muted-foreground text-sm py-4 text-center">
-                  No annual priorities added yet. Add priorities from the Priority Management page.
+                  No company initiatives added yet. Add them from the Initiatives & Capabilities page.
                 </div>
               ) : (
                 prioritiesWithRocks.map((priority: any, idx: number) => {

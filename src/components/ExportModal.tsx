@@ -62,7 +62,7 @@ const EXPORT_SECTIONS: ExportSection[] = [
     id: "one-year",
     label: "1-Year Strategy",
     icon: <TargetIcon className="h-4 w-4" />,
-    description: "Annual goals, priorities, and critical numbers",
+    description: "Company initiatives, priorities, and critical numbers",
   },
   {
     id: "capabilities",
@@ -80,7 +80,7 @@ const EXPORT_SECTIONS: ExportSection[] = [
     id: "goals",
     label: "Goal Tree",
     icon: <TargetIcon className="h-4 w-4" />,
-    description: "Annual priorities, department goals, and quarterly targets",
+    description: "Company initiatives, team goals, and quarterly targets",
   },
   {
     id: "kpis",
@@ -128,7 +128,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
 
   const { allGoals, childrenOf } = useGoals();
   const annualGoals = useMemo(
-    () => allGoals.filter((g) => g.level === "annual"),
+    () => allGoals.filter((g) => g.level === "initiative"),
     [allGoals]
   );
 
@@ -154,7 +154,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
       (snap) => setOneYearData(snap.exists() ? snap.data() : null)
     );
 
-    // Capabilities. Annual priorities come from annualGoals instead.
+    // Capabilities. Company initiatives come from annualGoals instead.
     const prioritiesCol = collection(db, "companies", companyId, "priorities");
     const qPriorities = query(prioritiesCol, where("planYear", "==", selectedYear));
     const unsubPriorities = onSnapshot(qPriorities, (snap) => {
@@ -631,7 +631,7 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
         annualPriorities.length > 0
           ? `
       <div style="margin-top: 16px;">
-        <div class="card-title">Annual Priorities</div>
+        <div class="card-title">Company Initiatives</div>
         ${annualPriorities
           .map(
             (p: any, idx: number) => `
@@ -725,21 +725,21 @@ export default function ExportModal({ open, onOpenChange }: ExportModalProps) {
       <div class="section-title">${selectedYear} Goal Tree</div>
       ${annualGoals
         .map((annual) => {
-          const departmentGoals = childrenOf.get(annual.id) ?? [];
-          const rollup = calculateAnnualRollup(departmentGoals);
+          const teamGoals = childrenOf.get(annual.id) ?? [];
+          const rollup = calculateAnnualRollup(teamGoals);
           return `
         <div class="card" style="margin-bottom: 16px;">
           <div class="card-title" style="display: flex; justify-content: space-between; gap: 8px;">
             <span>${esc(annual.title)}</span>
             <span style="font-size: 12px; color: ${rollup.met ? "#22c55e" : "#727272"};">
-              ${rollup.childrenMet}/${rollup.childCount} department goals met • ${rollup.percent}%
+              ${rollup.childrenMet}/${rollup.childCount} team goals met • ${rollup.percent}%
             </span>
           </div>
           ${annual.description ? `<div class="card-content">${esc(annual.description)}</div>` : ""}
           ${
-            departmentGoals.length === 0
-              ? `<div style="font-size: 12px; color: #b45309; margin-top: 8px;">No department goals linked, so this priority cannot be met.</div>`
-              : departmentGoals
+            teamGoals.length === 0
+              ? `<div style="font-size: 12px; color: #b45309; margin-top: 8px;">No team goals linked, so this priority cannot be met.</div>`
+              : teamGoals
                   .map((child) => {
                     const progress = calculateGoalProgress(child);
                     const individualGoals = childrenOf.get(child.id) ?? [];

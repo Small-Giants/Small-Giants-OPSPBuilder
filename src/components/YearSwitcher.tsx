@@ -20,8 +20,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/use-goals";
-import { createGoal, newGoalDraft } from "@/lib/goals";
+import { createGoal } from "@/lib/goals";
+import { planGoalRollover } from "@/lib/goal-rollover";
 import { db } from "@/lib/firebase";
 import {
   addDoc,
@@ -64,11 +66,13 @@ interface SwotData {
 
 export default function YearSwitcher() {
   const { companyId, selectedYear, setSelectedYear, availableYears } = usePlanYear();
-  const { goals: annualGoals } = useGoals({ level: "annual" });
+  const { user } = useAuth();
+  const { allGoals } = useGoals();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [newYear, setNewYear] = useState(String(selectedYear + 1));
   const [carryPriorities, setCarryPriorities] = useState(true);
+  const [carryUnfinished, setCarryUnfinished] = useState(true);
   const [carryKpis, setCarryKpis] = useState(true);
   const [carrySwot, setCarrySwot] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -82,6 +86,7 @@ export default function YearSwitcher() {
   const resetWizard = () => {
     setNewYear(String(selectedYear + 1));
     setCarryPriorities(true);
+    setCarryUnfinished(true);
     setCarryKpis(true);
     setCarrySwot(true);
     setIsCreating(false);
@@ -170,24 +175,21 @@ export default function YearSwitcher() {
         for (const item of toCreate) {
           await addDoc(collection(db, "companies", companyId, "priorities"), item);
         }
+      }
 
-        // Annual priorities are goals. Copy the titles forward and reset
-        // progress, leaving quarters and rocks behind with the old year.
-        for (const goal of annualGoals) {
-          await createGoal(companyId, {
-            ...newGoalDraft({ level: "annual", planYear: toYear, companyId }),
-            title: goal.title,
-            description: goal.description,
-            smart: goal.smart,
-            ownerId: goal.ownerId,
-            ownerName: goal.ownerName,
-            contributorIds: goal.contributorIds ?? [],
-            consultedIds: goal.consultedIds ?? [],
-            informedIds: goal.informedIds ?? [],
-            executiveSponsorId: goal.executiveSponsorId,
-            sortOrder: goal.sortOrder,
-          });
-        }
+      // Goals are created parents first, so each child can point at the new
+      // copy of its parent. Rocks stay behind with the old year.
+      const newIds = new Map<string, string>();
+      const rollover = planGoalRollover(allGoals, toYear, companyId, {
+        initiatives: carryPriorities,
+        unfinishedGoals: carryUnfinished,
+      });
+      for (const item of rollover) {
+        const parentGoalId = item.parentSourceId ? newIds.get(item.parentSourceId) ?? null : null;
+        newIds.set(
+          item.sourceId,
+          await createGoal(companyId, { ...item.draft, parentGoalId }, user?.uid)
+        );
       }
 
       if (carryKpis) {
@@ -323,7 +325,22 @@ export default function YearSwitcher() {
                     onCheckedChange={(v) => setCarryPriorities(Boolean(v))}
                     disabled={isCreating}
                   />
-                  Annual priorities & capabilities list
+                  Company initiatives & capabilities list
+                </label>
+
+                <label className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    checked={carryUnfinished}
+                    onCheckedChange={(v) => setCarryUnfinished(Boolean(v))}
+                    disabled={isCreating}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Unfinished team & individual goals
+                    <span className="block text-xs text-muted-foreground">
+                      Keeps their ClickUp tasks and moves them under the new initiatives.
+                    </span>
+                  </span>
                 </label>
 
                 <label className="flex items-center gap-2 text-sm">

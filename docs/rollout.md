@@ -37,11 +37,11 @@ upgrade, the deploy pipeline, and the callable auth path all work.
 
 ## Data setup
 
-1. **Departments.** Admin, Departments. Create every department and name a
-   leader for each. Nothing else works properly without this: department goals
+1. **Teams.** Admin, Teams. Create every team and name a
+   leader for each. Nothing else works properly without this: team goals
    have nowhere to live, the manager view is empty, and the leader write
    permission has nothing to match against.
-2. **User assignment.** User Management page. Give every active person a department and a
+2. **User assignment.** User Management page. Give every active person a team and a
    manager.
 3. **Existing OPSP data.** Dry run first, always:
    ```
@@ -58,8 +58,8 @@ upgrade, the deploy pipeline, and the callable auth path all work.
    Read the dry-run warnings before committing. Unmatched owner emails and
    unknown team names are reported per row.
 5. **Re-parent the imports.** Workleap has no annual layer, so imported goals
-   arrive as department and individual goals with no annual priority above
-   them. Open Annual Priorities and attach them. The "Not linked to a priority"
+   arrive as team and individual goals with no company initiative above
+   them. Open Company Initiatives and attach them. The "Not linked to a priority"
    panel at the bottom of that page lists exactly what still needs doing.
 
 ## UAT checklist
@@ -67,14 +67,14 @@ upgrade, the deploy pipeline, and the callable auth path all work.
 Run through this as a normal user, not as an admin, and then again as an admin.
 
 **Goal tree**
-- [ ] Create an annual priority, a department goal under it, and an individual
+- [ ] Create a company initiative, a team goal under it, and an individual
       goal under that.
 - [ ] The annual rollup reads `0/1 met` and the bar is empty.
-- [ ] Complete every quarter on the department goal; the annual priority flips
+- [ ] Complete every quarter on the team goal; the company initiative flips
       to met.
 - [ ] Delete a goal that has children; the children move up to its parent rather
       than disappearing.
-- [ ] The "Not linked to a priority" panel catches a department goal with no
+- [ ] The "Not linked to a priority" panel catches a team goal with no
       parent.
 
 **Measurement**
@@ -85,20 +85,20 @@ Run through this as a normal user, not as an admin, and then again as an admin.
 - [ ] A quarter past its midpoint and behind target shows as at risk.
 
 **Permissions**
-- [ ] A person who is neither owner, contributor, nor department leader sees a
+- [ ] A person who is neither owner, contributor, nor team leader sees a
       goal but has no edit or delete buttons.
 - [ ] That same person is actually blocked by the rules, not just by the UI.
       Confirm with `npm run test:rules`.
-- [ ] A non-admin cannot open Admin, Departments, or Integrations.
+- [ ] A non-admin cannot open Admin, Teams, or Integrations.
 
 **ClickUp**
 - [ ] Test connection succeeds against the real workspace.
 - [ ] Sync people from ClickUp on the User Management page adds members without an
       account as "ClickUp · not signed in" users; running it again adds no
       duplicates. They show in the goal and rock pickers marked ClickUp.
-- [ ] Give a placeholder a department, then sign in as that person: the account
-      has the department and the goals that name them.
-- [ ] With the goal location set, saving a new department goal creates its
+- [ ] Give a placeholder a team, then sign in as that person: the account
+      has the team and the goals that name them.
+- [ ] With the goal location set, saving a new team goal creates its
       task with the SMART description and the four RACI People fields filled.
       Editing the goal afterwards only fills fields that are empty in ClickUp;
       a description, date, or person set in ClickUp is never overwritten or
@@ -125,7 +125,7 @@ Run through this as a normal user, not as an admin, and then again as an admin.
 - [ ] Assigning a goal emails the new owner and lands in their in-app inbox.
 - [ ] Editing your own goal does **not** notify you.
 - [ ] Marking a goal complete notifies the owner, contributors, and the
-      department leader once each.
+      team leader once each.
 - [ ] Push works on Chrome desktop after enabling it in Notification settings.
 - [ ] Weekly digest mode suppresses immediate email but keeps the inbox.
 - [ ] A link in an email opens the app on the right view.

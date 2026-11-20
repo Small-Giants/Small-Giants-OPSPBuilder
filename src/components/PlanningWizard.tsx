@@ -65,7 +65,7 @@ const WIZARD_STEPS: WizardStep[] = [
   {
     id: "one-year-strategy",
     title: "1-Year Strategy",
-    description: "Define your one phrase strategy and annual goals",
+    description: "Define your one phrase strategy and company initiatives",
     icon: <TargetIcon className="h-5 w-5" />,
     checkFields: ["onePhraseStrategy", "oneYearGoal"],
     navigateTo: "one-year",
@@ -77,8 +77,8 @@ const WIZARD_STEPS: WizardStep[] = [
   },
   {
     id: "priorities",
-    title: "Annual Priorities",
-    description: "Set 3-5 annual priorities that will move the needle",
+    title: "Company Initiatives",
+    description: "Set 3-5 company initiatives that will move the needle",
     icon: <FlagIcon className="h-5 w-5" />,
     checkFields: ["priorities"],
     navigateTo: "priority-management",
@@ -98,7 +98,7 @@ const WIZARD_STEPS: WizardStep[] = [
     tips: [
       "Rocks are 90-day deliverables",
       "Each rock needs a clear owner",
-      "Link rocks to annual priorities",
+      "Link rocks to company initiatives",
     ],
   },
   {
@@ -123,7 +123,7 @@ interface PlanningWizardProps {
 
 export default function PlanningWizard({ onNavigate, onClose }: PlanningWizardProps) {
   const { companyId, selectedYear } = usePlanYear();
-  const { goals: annualGoals } = useGoals({ level: "annual" });
+  const { goals: annualGoals } = useGoals({ level: "initiative" });
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completionStatus, setCompletionStatus] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
@@ -131,7 +131,7 @@ export default function PlanningWizard({ onNavigate, onClose }: PlanningWizardPr
   useEffect(() => {
     setCompletionStatus((prev) => ({
       ...prev,
-      // Three or more annual priorities is the recommended minimum.
+      // Three or more company initiatives is the recommended minimum.
       priorities: annualGoals.length >= 3,
       prioritiesPartial: annualGoals.length > 0,
     }));
@@ -198,7 +198,7 @@ export default function PlanningWizard({ onNavigate, onClose }: PlanningWizardPr
       )
     );
 
-    // Annual priorities are goals now, counted in a separate effect below.
+    // Company initiatives are goals now, counted in a separate effect below.
 
     // Rocks (year-scoped)
     const rocksCol = collection(db, "companies", companyId, "rocks");

@@ -28,7 +28,7 @@ interface MetricsDashboardProps {
 export default function MetricsDashboard({ }: MetricsDashboardProps) {
   const { toast } = useToast();
   const { companyId, selectedYear } = usePlanYear();
-  const { goals: annualGoals } = useGoals({ level: "annual" });
+  const { goals: annualGoals } = useGoals({ level: "initiative" });
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [priorities, setPriorities] = useState<Priority[]>([]);
@@ -100,7 +100,7 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
     };
   }, [companyId, selectedYear]);
 
-  // Annual priorities for grouping and linking come from the goals collection.
+  // Company initiatives for grouping and linking come from the goals collection.
   useEffect(() => {
     setPriorities(
       annualGoals.map((goal) => ({
@@ -522,10 +522,10 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                   onValueChange={(value) => setNewMetric(prev => ({ ...prev, priorityId: value === "unassigned" ? "" : value }))}
                 >
                   <SelectTrigger data-testid="select-new-metric-priority">
-                    <SelectValue placeholder="Link to Priority" />
+                    <SelectValue placeholder="Link to Initiative" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unassigned">No Priority</SelectItem>
+                    <SelectItem value="unassigned">No Initiative</SelectItem>
                     {priorities.map((priority) => (
                       <SelectItem key={priority.id} value={priority.id}>
                         {priority.title}
@@ -694,10 +694,10 @@ export default function MetricsDashboard({ }: MetricsDashboardProps) {
                     onValueChange={(value) => setEditForm(prev => prev ? {...prev, priorityId: value === "unassigned" ? "" : value} : null)}
                   >
                     <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Link to Priority" />
+                      <SelectValue placeholder="Link to Initiative" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="unassigned">No Priority</SelectItem>
+                      <SelectItem value="unassigned">No Initiative</SelectItem>
                       {priorities.map((priority) => (
                         <SelectItem key={priority.id} value={priority.id}>
                           {priority.title}

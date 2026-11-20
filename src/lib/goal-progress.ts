@@ -136,7 +136,7 @@ export function calculateGoalProgress(goal: Goal): GoalProgress {
 }
 
 export interface AnnualRollup {
-  /** Hard boolean: every child department goal met its target. */
+  /** Hard boolean: every child team goal met its target. */
   met: boolean;
   /** Soft percentage so a priority at 85% reads differently from one at 20%. */
   percent: number;
@@ -146,7 +146,7 @@ export interface AnnualRollup {
 }
 
 /**
- * An annual priority is a boolean: it is met only when every department goal
+ * A company initiative is a boolean: it is met only when every team goal
  * beneath it is met. The averaged percentage is reported alongside it so
  * leadership gets early warning instead of a green light that flips red.
  */

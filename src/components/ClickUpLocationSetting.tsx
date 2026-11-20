@@ -15,7 +15,7 @@ import { Loader2 } from "lucide-react";
 const DEFAULT_COMPANY_ID = "default-company";
 
 /**
- * Where saving a department goal creates its ClickUp task. Superadmin-only,
+ * Where saving a team goal creates its ClickUp task. Superadmin-only,
  * enforced by firestore.rules; read by pushGoalToClickUp.
  */
 export function ClickUpLocationSetting() {
@@ -52,7 +52,7 @@ export function ClickUpLocationSetting() {
         updatedAt: new Date().toISOString(),
         updatedBy: user?.uid ?? "",
       });
-      toast({ title: "Saved", description: "New department goals will be created there." });
+      toast({ title: "Saved", description: "New team goals will be created there." });
     } catch (error) {
       toast({
         title: "Could not save",
@@ -69,7 +69,7 @@ export function ClickUpLocationSetting() {
       <CardHeader>
         <CardTitle>ClickUp goal location</CardTitle>
         <CardDescription>
-          Saving a department goal creates its task here. Paste the URL of a
+          Saving a team goal creates its task here. Paste the URL of a
           ClickUp List, or of a Space that has exactly one List.
         </CardDescription>
       </CardHeader>
@@ -92,7 +92,7 @@ export function ClickUpLocationSetting() {
             ? "That is not a ClickUp List or Space link. Open the List in ClickUp and copy the URL from the address bar."
             : parsed
               ? `Recognized a ClickUp ${parsed.kind} (${parsed.id}).`
-              : "Not set. Department goals are saved in the app only until this is filled in."}
+              : "Not set. Team goals are saved in the app only until this is filled in."}
         </p>
       </CardContent>
     </Card>

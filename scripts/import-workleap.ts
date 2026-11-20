@@ -11,8 +11,8 @@
  *   npx tsx scripts/import-workleap.ts --rollback
  *
  * Requires GOOGLE_APPLICATION_CREDENTIALS to point at a service account key.
- * Imported goals land as department and individual goals; somebody has to
- * attach them to annual priorities afterwards, because Workleap has no
+ * Imported goals land as team and individual goals; somebody has to
+ * attach them to company initiatives afterwards, because Workleap has no
  * equivalent layer to read that from.
  */
 import { readFileSync } from "node:fs";
@@ -135,7 +135,7 @@ async function main() {
 
   console.log(`\nImported ${withIds.length} goal(s) into ${companyId} for ${planYear}.`);
   console.log(
-    "Next: open Annual Priorities and attach the department goals to their annual priorities."
+    "Next: open Company Initiatives and attach the team goals to their company initiatives."
   );
 }
 
@@ -144,14 +144,14 @@ async function loadContext(
   companyId: string,
   planYear: number
 ): Promise<ImportContext> {
-  const [users, departments] = await Promise.all([
+  const [users, teams] = await Promise.all([
     db.collection(`companies/${companyId}/users`).get(),
-    db.collection(`companies/${companyId}/departments`).get(),
+    db.collection(`companies/${companyId}/teams`).get(),
   ]);
 
   const usersByEmail = new Map<
     string,
-    { id: string; name: string; departmentId?: string | null }
+    { id: string; name: string; teamId?: string | null }
   >();
   users.docs.forEach((doc) => {
     const data = doc.data();
@@ -161,21 +161,21 @@ async function loadContext(
     usersByEmail.set(email, {
       id: doc.id,
       name: String(data.name ?? data.email ?? ""),
-      departmentId: data.departmentId ?? null,
+      teamId: data.teamId ?? null,
     });
   });
 
-  const departmentsByName = new Map<string, string>();
-  departments.docs.forEach((doc) => {
+  const teamsByName = new Map<string, string>();
+  teams.docs.forEach((doc) => {
     const name = String(doc.data().name ?? "").toLowerCase();
-    if (name) departmentsByName.set(name, doc.id);
+    if (name) teamsByName.set(name, doc.id);
   });
 
   console.log(
-    `Matched against ${usersByEmail.size} active user(s) and ${departmentsByName.size} department(s).`
+    `Matched against ${usersByEmail.size} active user(s) and ${teamsByName.size} team(s).`
   );
 
-  return { planYear, usersByEmail, departmentsByName };
+  return { planYear, usersByEmail, teamsByName };
 }
 
 main().catch((error) => {

@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS: ClickUpSettings = {
 
 /**
  * companies/{id}/integrations/clickup-location, superadmin-only. Where the app
- * creates a ClickUp task for each new department goal.
+ * creates a ClickUp task for each new team goal.
  */
 export interface ClickUpGoalLocation {
   url: string;

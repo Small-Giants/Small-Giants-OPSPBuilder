@@ -84,7 +84,7 @@ export interface PushGoalResponse {
 }
 
 /**
- * Creates the department goal's ClickUp task. An existing task only has its
+ * Creates the team goal's ClickUp task. An existing task only has its
  * empty fields filled; nothing set in ClickUp is overwritten.
  */
 export function pushGoalToClickUp(payload: { goalId: string }): Promise<PushGoalResponse> {

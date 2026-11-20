@@ -389,6 +389,22 @@ export interface QuarterMerge {
 }
 
 /**
+ * Whether a recap reports on a year before `planYear`. A goal carried into a
+ * new year keeps its ClickUp task, so last year's recaps are still there. The
+ * year named in the period wins; without one, the posting date decides.
+ */
+export function recapPredatesYear(
+  postedAt: string | number | undefined,
+  period: string | null,
+  planYear: number
+): boolean {
+  const named = period?.match(/\b(?:19|20)\d{2}\b/g);
+  if (named?.length) return Math.max(...named.map(Number)) < planYear;
+  const posted = Number(postedAt);
+  return Number.isFinite(posted) && posted > 0 && new Date(posted).getUTCFullYear() < planYear;
+}
+
+/**
  * Applies a recap onto the goal's quarters. Targets are never touched: the
  * recap reports what happened, it does not get to redefine the plan. Quarters
  * the recap says nothing about keep whatever they had.

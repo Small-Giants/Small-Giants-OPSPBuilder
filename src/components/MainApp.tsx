@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUpIcon, FileTextIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import AdminPanel from "@/components/AdminPanel";
-import DepartmentManagement from "@/components/DepartmentManagement";
+import TeamManagement from "@/components/TeamManagement";
 import IndividualRocks from "@/components/IndividualRocks";
 import YearSwitcher from "@/components/YearSwitcher";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -31,12 +31,21 @@ import WeeklyMeeting from "@/components/WeeklyMeeting";
 import PlanningWizard from "@/components/PlanningWizard";
 import ExportModal from "@/components/ExportModal";
 import GoalTree from "@/components/GoalTree";
-import DepartmentGoals from "@/components/DepartmentGoals";
-import MyGoals from "@/components/MyGoals";
 import TeamGoals from "@/components/TeamGoals";
+import MyGoals from "@/components/MyGoals";
+import MyTeamGoals from "@/components/MyTeamGoals";
 import IntegrationSettings from "@/components/IntegrationSettings";
 import NotificationCenter from "@/components/NotificationCenter";
 import NotificationSettings from "@/components/NotificationSettings";
+
+const ADMIN_ONLY_VIEWS = new Set([
+  'admin',
+  'teams',
+  'integrations',
+  'metrics',
+  'weekly-meeting',
+  'priorities',
+]);
 
 export default function MainApp() {
   const { user, logout } = useAuth();
@@ -89,7 +98,17 @@ export default function MainApp() {
     setShowExportModal(true);
   };
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
   const renderMainContent = () => {
+    if (ADMIN_ONLY_VIEWS.has(currentView) && !isAdmin) {
+      return (
+        <div className="p-8 text-sm text-muted-foreground">
+          This page is only available to admins.
+        </div>
+      );
+    }
+
     switch (currentView) {
       case 'exec-summary':
         return <ExecutiveSummary onNavigate={handleNavigate} />;
@@ -134,12 +153,12 @@ export default function MainApp() {
         return <IndividualRocks />;
       case 'goals':
         return <GoalTree />;
-      case 'department-goals':
-        return <DepartmentGoals />;
-      case 'my-goals':
-        return <MyGoals />;
       case 'team-goals':
         return <TeamGoals />;
+      case 'my-goals':
+        return <MyGoals />;
+      case 'my-team':
+        return <MyTeamGoals />;
       case 'integrations':
         return <IntegrationSettings />;
       case 'notification-settings':
@@ -152,8 +171,8 @@ export default function MainApp() {
         );
       case 'admin':
         return <AdminPanel />;
-      case 'departments':
-        return <DepartmentManagement />;
+      case 'teams':
+        return <TeamManagement />;
       case 'settings':
         return <Settings />;
       case 'weekly-meeting':

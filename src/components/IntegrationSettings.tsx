@@ -224,7 +224,7 @@ export default function IntegrationSettings() {
           Integrations
         </h2>
         <p className="text-muted-foreground text-sm">
-          ClickUp tracks the day-to-day work. Saving a department goal creates
+          ClickUp tracks the day-to-day work. Saving a team goal creates
           its ClickUp task. The ClickUp agent posts a rock plan on the task, then
           a recap each month, or answers in a comment thread when someone
           @mentions it. Once the goal&apos;s Accountable person approves a
@@ -298,7 +298,7 @@ export default function IntegrationSettings() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            New department goals are created in the ClickUp goal location below,
+            New team goals are created in the ClickUp goal location below,
             set by a superadmin. Its tasks need a People field for each RACI
             role, such as &quot;A (Accountable)&quot;, &quot;R (Responsible)&quot;,
             &quot;C (Consulting)&quot;, and &quot;I (Inform)&quot;.

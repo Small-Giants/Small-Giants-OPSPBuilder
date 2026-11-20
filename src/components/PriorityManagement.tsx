@@ -110,7 +110,7 @@ const emptyCapabilityForm = {
 };
 
 /**
- * Two columns from two sources. Annual priorities are goals at the annual
+ * Two columns from two sources. Company initiatives are goals at the initiative
  * level; capabilities never moved and still live in the priorities collection.
  */
 export default function PriorityManagement() {
@@ -118,7 +118,7 @@ export default function PriorityManagement() {
   const { user } = useAuth();
   const { companyId, selectedYear } = usePlanYear();
   const { goals: annualGoals, loading: goalsLoading } = useGoals({
-    level: "annual",
+    level: "initiative",
   });
   const { byGoal } = useRocks();
 
@@ -224,7 +224,7 @@ export default function PriorityManagement() {
     } catch {
       toast({
         title: "Error",
-        description: "Failed to reorder annual priorities.",
+        description: "Failed to reorder company initiatives.",
         variant: "destructive",
       });
     }
@@ -336,16 +336,16 @@ export default function PriorityManagement() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle>Priorities & Capabilities</CardTitle>
+            <CardTitle>Initiatives & Capabilities</CardTitle>
             <CardDescription>
-              Annual priorities are goals, so they carry RACI, quarterly
+              Company initiatives are goals, so they carry RACI, quarterly
               targets, and rocks. Capabilities stay a lighter planning list.
             </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button onClick={openNewGoal} size="sm" data-testid="button-add-priority">
               <PlusIcon className="h-4 w-4 mr-1" />
-              Add Annual Priority
+              Add Company Initiative
             </Button>
             <Button
               onClick={() => {
@@ -472,7 +472,7 @@ export default function PriorityManagement() {
             <div>
               <h3 className="text-lg font-semibold mb-3 flex items-center">
                 <TargetIcon className="h-5 w-5 mr-2 text-primary" />
-                Annual Priorities
+                Company Initiatives
                 <span className="ml-2 text-xs text-muted-foreground font-normal">
                   (drag to reorder)
                 </span>
@@ -489,7 +489,7 @@ export default function PriorityManagement() {
                   <div className="space-y-3">
                     {annualGoals.length === 0 ? (
                       <div className="text-muted-foreground text-sm py-4 text-center">
-                        No annual priorities yet. Click "Add Annual Priority" to
+                        No company initiatives yet. Click "Add Company Initiative" to
                         create one.
                       </div>
                     ) : (
@@ -618,7 +618,7 @@ export default function PriorityManagement() {
         open={goalFormOpen}
         onOpenChange={setGoalFormOpen}
         goal={editingGoal}
-        defaultLevel="annual"
+        defaultLevel="initiative"
       />
     </div>
   );

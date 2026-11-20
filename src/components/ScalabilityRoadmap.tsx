@@ -95,7 +95,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
     quarterlyRocks: {
       capabilities: { Q1: [], Q2: [], Q3: [], Q4: [] },
       priorities: { Q1: [], Q2: [], Q3: [], Q4: [] },
-      department: { Q1: [], Q2: [], Q3: [], Q4: [] }
+      team: { Q1: [], Q2: [], Q3: [], Q4: [] }
     },
     
     teamMembers: [] as any[]
@@ -106,7 +106,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
   const annualGoalRollups = useMemo(
     () =>
       allGoals
-        .filter((g) => g.level === "annual")
+        .filter((g) => g.level === "initiative")
         .map((goal) => ({
           goal,
           rollup: calculateAnnualRollup(childrenOf.get(goal.id) ?? []),
@@ -204,7 +204,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
     let unsubPrioritiesLegacy: Unsubscribe | undefined;
     const prioritiesById = new Map<string, any>();
     const applyPriorities = () => {
-      // Only capabilities still live here; annual priorities are goals now.
+      // Only capabilities still live here; company initiatives are goals now.
       const capabilities = Array.from(prioritiesById.values())
         .filter((p) => p.type === "capability")
         .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
@@ -479,7 +479,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
       const quarterlyRocks: any = {
         capabilities: { Q1: [], Q2: [], Q3: [], Q4: [] },
         priorities: { Q1: [], Q2: [], Q3: [], Q4: [] },
-        department: { Q1: [], Q2: [], Q3: [], Q4: [] }
+        team: { Q1: [], Q2: [], Q3: [], Q4: [] }
       };
 
       rawRocks.forEach(rock => {
@@ -512,7 +512,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
 
   }, [rawRocks, rawCapabilities, annualPriorities]);
 
-  // Annual priorities are goals, mirrored into the one-year panel.
+  // Company initiatives are goals, mirrored into the one-year panel.
   useEffect(() => {
     setRoadmapData((prev) => ({
       ...prev,
@@ -743,7 +743,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
-            <CardHeader className="bg-muted border-b border-border"><CardTitle className="text-sm text-foreground font-semibold">Annual Priorities</CardTitle></CardHeader>
+            <CardHeader className="bg-muted border-b border-border"><CardTitle className="text-sm text-foreground font-semibold">Company Initiatives</CardTitle></CardHeader>
             <CardContent className="pt-4">{renderList(roadmapData.oneYear.annualPriorities, true)}{renderQuarterlyRocks('priorities')}</CardContent>
           </Card>
           <Card className="bg-card border-border hover:border-accent/40 transition-all cursor-pointer group" onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'goals' }))}>
@@ -755,7 +755,7 @@ export default function ScalabilityRoadmap({ data }: ScalabilityRoadmapProps) {
             </CardHeader>
             <CardContent className="pt-4">
               {annualGoalRollups.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">No annual goals yet.</p>
+                <p className="text-sm text-muted-foreground italic">No company initiatives yet.</p>
               ) : (
                 <div className="space-y-3">
                   {annualGoalRollups.map(({ goal, rollup }) => (

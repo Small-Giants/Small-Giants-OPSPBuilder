@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DepartmentCombobox } from "@/components/ui/department-combobox";
+import { TeamCombobox } from "@/components/ui/team-combobox";
 import { RaciFields, peopleModeForGoal } from "@/components/RaciFields";
 import { pushGoalToClickUp, writeSmartGoal } from "@/lib/callables";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,16 +60,16 @@ interface GoalFormProps {
   goal?: Goal | null;
   defaultLevel?: GoalLevel;
   defaultParentGoalId?: string | null;
-  defaultDepartmentId?: string | null;
+  defaultTeamId?: string | null;
 }
 
 export function GoalForm({
   open,
   onOpenChange,
   goal,
-  defaultLevel = "annual",
+  defaultLevel = "initiative",
   defaultParentGoalId = null,
-  defaultDepartmentId = null,
+  defaultTeamId = null,
 }: GoalFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -83,7 +83,7 @@ export function GoalForm({
       planYear: selectedYear,
       companyId,
       parentGoalId: defaultParentGoalId,
-      departmentId: defaultDepartmentId,
+      teamId: defaultTeamId,
     })
   );
   const [saving, setSaving] = useState(false);
@@ -107,7 +107,7 @@ export function GoalForm({
         planYear: selectedYear,
         companyId,
         parentGoalId: defaultParentGoalId,
-        departmentId: defaultDepartmentId,
+        teamId: defaultTeamId,
         ownerId: defaultLevel === "individual" ? user?.uid : "",
         ownerName: defaultLevel === "individual" ? user?.name ?? "" : "",
       }),
@@ -118,7 +118,7 @@ export function GoalForm({
     goal,
     defaultLevel,
     defaultParentGoalId,
-    defaultDepartmentId,
+    defaultTeamId,
     selectedYear,
     companyId,
     user?.uid,
@@ -170,11 +170,11 @@ export function GoalForm({
       return {
         ...prev,
         ...next,
-        // An individual goal inherits the department of whoever owns it.
-        departmentId:
+        // An individual goal inherits the team of whoever owns it.
+        teamId:
           ownerChanged && prev.level === "individual"
-            ? owner?.departmentId ?? prev.departmentId ?? null
-            : prev.departmentId ?? null,
+            ? owner?.teamId ?? prev.teamId ?? null
+            : prev.teamId ?? null,
       };
     });
 
@@ -324,7 +324,7 @@ export function GoalForm({
       setSaving(false);
     }
 
-    if (savedId && draft.level === "department") await pushToClickUp(savedId);
+    if (savedId && draft.level === "team") await pushToClickUp(savedId);
   };
 
   const isQuantitative = draft.measurement.type === "quantitative";
@@ -444,11 +444,11 @@ export function GoalForm({
           />
 
           <div className="space-y-1">
-            <Label>Department</Label>
-            <DepartmentCombobox
-              value={draft.departmentId ?? ""}
+            <Label>Team</Label>
+            <TeamCombobox
+              value={draft.teamId ?? ""}
               onValueChange={(v) =>
-                setDraft({ ...draft, departmentId: v || null })
+                setDraft({ ...draft, teamId: v || null })
               }
             />
           </div>
@@ -614,9 +614,9 @@ export function GoalForm({
               placeholder="Paste the task URL or ID"
             />
             <p className="text-xs text-muted-foreground">
-              {draft.level === "department"
+              {draft.level === "team"
                 ? "Leave this empty and saving creates the task in ClickUp, with the goal statement and SMART breakdown as its description and the RACI fields filled in. Paste a link only to use a task that already exists. Saving again adds people missing from the RACI fields and fills empty fields, but never overwrites or removes anything. If the task's description lacks the goal statement, it is added at the top, labelled Added by OPSP app."
-                : "Paste a link to follow a ClickUp task. Only department goals get a task created for them."}{" "}
+                : "Paste a link to follow a ClickUp task. Only team goals get a task created for them."}{" "}
               Once the goal owner approves the ClickUp agent&apos;s rock plan and
               monthly recaps, they set the rocks, status, and quarter progress.
               Targets you set here are never overwritten.

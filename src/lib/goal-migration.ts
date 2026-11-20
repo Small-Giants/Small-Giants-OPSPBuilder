@@ -55,8 +55,8 @@ export interface MigrationInput {
   legacyPlanYear: number;
   priorities: LegacyPriority[];
   rocks: LegacyRock[];
-  /** Maps a user id to their department, used to backfill departmentId. */
-  departmentByUserId?: Record<string, string | undefined>;
+  /** Maps a user id to their team, used to backfill teamId. */
+  teamByUserId?: Record<string, string | undefined>;
   /** Resolves a free-text owner name to a user id where possible. */
   userIdByName?: Record<string, string | undefined>;
 }
@@ -131,9 +131,9 @@ export function quartersFromRocks(rocks: LegacyRock[]): GoalQuarter[] {
  * Builds the full set of writes, without touching Firestore, so the result can
  * be inspected in a dry run and asserted in tests.
  *
- * Annual priorities become layer 1 goals. Capabilities stay in the priorities
+ * Company initiatives become layer 1 goals. Capabilities stay in the priorities
  * collection untouched. Rocks stay rocks and are only repointed onto the goal
- * their priority became. Layer 2 department goals are authored by hand
+ * their priority became. Layer 2 team goals are authored by hand
  * afterwards.
  */
 export function planMigration(input: MigrationInput): MigrationPlan {
@@ -169,7 +169,7 @@ export function planMigration(input: MigrationInput): MigrationPlan {
       skipped.push({
         collection: "priorities",
         id: priority.id,
-        reason: "Capability, not an annual priority. Left in place.",
+        reason: "Capability, not a company initiative. Left in place.",
       });
       return;
     }
@@ -214,9 +214,9 @@ export function planMigration(input: MigrationInput): MigrationPlan {
         title: priority.title.trim(),
         description:
           priority.description?.trim() || priority.successStatement?.trim() || "",
-        level: "annual",
+        level: "initiative",
         parentGoalId: null,
-        departmentId: null,
+        teamId: null,
         ownerId,
         ownerName,
         contributorIds: [],
@@ -288,7 +288,7 @@ export function planMigration(input: MigrationInput): MigrationPlan {
 
   if (goals.length > 0) {
     warnings.push(
-      "Legacy data has no department layer. Layer 2 department goals must be created by hand, then the annual priorities' children re-parented onto them."
+      "Legacy data has no team layer. Layer 2 team goals must be created by hand, then the company initiatives' children re-parented onto them."
     );
   }
 
@@ -297,7 +297,7 @@ export function planMigration(input: MigrationInput): MigrationPlan {
 
 export interface MigrationSummary {
   annual: number;
-  department: number;
+  team: number;
   individual: number;
   total: number;
   rocksRepointed: number;
@@ -310,8 +310,8 @@ export function summarizePlan(plan: MigrationPlan): MigrationSummary {
     plan.goals.filter((g) => g.draft.level === level).length;
 
   return {
-    annual: count("annual"),
-    department: count("department"),
+    annual: count("initiative"),
+    team: count("team"),
     individual: count("individual"),
     total: plan.goals.length,
     rocksRepointed: plan.rockUpdates.length,

@@ -76,7 +76,7 @@ export function planPeopleSync(users: UserRecord[], members: ClickUpMember[]): P
 /** Profile fields an admin may have set on a placeholder, carried to the real account. */
 export const CARRIED_PROFILE_FIELDS = [
   "role",
-  "departmentId",
+  "teamId",
   "managerId",
   "deletedAt",
   "deletedBy",

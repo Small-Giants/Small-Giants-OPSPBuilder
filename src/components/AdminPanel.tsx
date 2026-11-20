@@ -22,7 +22,7 @@ import { AlertTriangle, Shield, User, UserCheck, Loader2, Trash2, RotateCcw, Use
 import { refreshClickUpMembers } from '@/lib/callables';
 import { db } from "@/lib/firebase";
 import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
-import { DepartmentCombobox } from '@/components/ui/department-combobox';
+import { TeamCombobox } from '@/components/ui/team-combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
 interface UserData {
   id: string;
@@ -33,7 +33,7 @@ interface UserData {
   lastLogin?: string;
   deletedAt?: string;
   deletedBy?: string;
-  departmentId?: string;
+  teamId?: string;
   managerId?: string;
   source?: 'clickup';
 }
@@ -107,19 +107,19 @@ export default function AdminPanel() {
 
   const handleAssignmentChange = async (
     userId: string,
-    field: 'departmentId' | 'managerId',
+    field: 'teamId' | 'managerId',
     value: string
   ) => {
     try {
       await updateDoc(doc(db, 'users', userId), { [field]: value || null });
       toast({
-        title: field === 'departmentId' ? "Department Updated" : "Manager Updated",
+        title: field === 'teamId' ? "Team Updated" : "Manager Updated",
         description: "The change is live for everyone.",
       });
     } catch {
       toast({
         title: "Error",
-        description: `Failed to update ${field === 'departmentId' ? 'department' : 'manager'}.`,
+        description: `Failed to update ${field === 'teamId' ? 'team' : 'manager'}.`,
         variant: "destructive",
       });
     }
@@ -266,7 +266,7 @@ export default function AdminPanel() {
           <TableHead>Email</TableHead>
           <TableHead>Name</TableHead>
           <TableHead>Role</TableHead>
-          <TableHead className="min-w-[180px]">Department</TableHead>
+          <TableHead className="min-w-[180px]">Team</TableHead>
           <TableHead className="min-w-[180px]">Manager</TableHead>
           <TableHead>Last Login</TableHead>
           <TableHead>Actions</TableHead>
@@ -307,10 +307,10 @@ export default function AdminPanel() {
                 </div>
               </TableCell>
               <TableCell>
-                <DepartmentCombobox
-                  value={user.departmentId || ''}
+                <TeamCombobox
+                  value={user.teamId || ''}
                   onValueChange={(value) =>
-                    handleAssignmentChange(user.id, 'departmentId', value)
+                    handleAssignmentChange(user.id, 'teamId', value)
                   }
                   placeholder="Unassigned"
                   triggerClassName="h-9"

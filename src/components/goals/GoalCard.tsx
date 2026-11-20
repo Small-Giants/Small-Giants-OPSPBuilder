@@ -21,7 +21,7 @@ import { RockSection } from "@/components/rocks/RockSection";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanYear } from "@/contexts/PlanYearContext";
-import { useDepartments } from "@/hooks/use-departments";
+import { useTeams } from "@/hooks/use-teams";
 import { useGoalPermissions } from "@/hooks/use-goal-permissions";
 import { useRocks } from "@/hooks/use-rocks";
 import { deleteGoal } from "@/lib/goals";
@@ -61,7 +61,7 @@ export function GoalCard({
   const { toast } = useToast();
   const { hasRole } = useAuth();
   const { companyId } = usePlanYear();
-  const { getName } = useDepartments();
+  const { getName } = useTeams();
   const { canEditGoal } = useGoalPermissions();
   const { byGoal } = useRocks();
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -150,7 +150,7 @@ export function GoalCard({
                 {goal.ownerName ||
                   (peopleCount > 0 ? "No one accountable" : "Unassigned")}
               </span>
-              {goal.departmentId && <span>{getName(goal.departmentId)}</span>}
+              {goal.teamId && <span>{getName(goal.teamId)}</span>}
               {goal.dueDate && (
                 <span className="flex items-center gap-1">
                   <CalendarIcon className="w-3 h-3" />

@@ -169,7 +169,7 @@ export default function ExecutiveSummary({
       );
     }
 
-    // Annual priorities come from the goals collection through
+    // Company initiatives come from the goals collection through
     // useAnnualPriorities, so nothing subscribes to `priorities` here.
 
     // Rocks (year + legacy for 2025)
@@ -271,14 +271,14 @@ export default function ExecutiveSummary({
   }, [foundation, oneYear, roadmapMain, priorities, metrics.length]);
 
   const goalSummary = useMemo(() => {
-    const annual = allGoals.filter((g) => g.level === "annual");
+    const annual = allGoals.filter((g) => g.level === "initiative");
     const rollups = annual.map((goal) => ({
       goal,
       rollup: calculateAnnualRollup(childrenOf.get(goal.id) ?? []),
     }));
     return {
       rollups,
-      departmentCount: allGoals.filter((g) => g.level === "department").length,
+      teamCount: allGoals.filter((g) => g.level === "team").length,
       individualCount: allGoals.filter((g) => g.level === "individual").length,
       atRisk: rollups.filter((r) => !r.rollup.met && r.rollup.childCount > 0).length,
     };
@@ -326,7 +326,7 @@ export default function ExecutiveSummary({
       `Core Customer: ${exec.coreCustomer || "-"}`,
       `Brand Promise: ${exec.brandPromise || "-"}`,
       "",
-      `Annual Priorities (${exec.prioritiesTop.length} shown):`,
+      `Company Initiatives (${exec.prioritiesTop.length} shown):`,
       ...exec.prioritiesTop.map((p, idx) => `${idx + 1}. ${p.title || "-"}`),
       "",
       `This Quarter (${currentQuarter}) rocks: ${quarterRocks.length} total, ${quarterComplete} complete (${quarterProgress}%)`,
@@ -429,13 +429,13 @@ export default function ExecutiveSummary({
           {/* Quick Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
             <div className="bg-white/10 rounded-lg p-3">
-              <div className="text-xs text-white/70 mb-1">Annual Priorities</div>
+              <div className="text-xs text-white/70 mb-1">Company Initiatives</div>
               <div className="text-2xl font-bold">{priorities.length}</div>
             </div>
             <div className="bg-white/10 rounded-lg p-3">
               <div className="text-xs text-white/70 mb-1">Goals Tracked</div>
               <div className="text-2xl font-bold">
-                {goalSummary.departmentCount + goalSummary.individualCount}
+                {goalSummary.teamCount + goalSummary.individualCount}
               </div>
             </div>
             <div className="bg-white/10 rounded-lg p-3">
@@ -591,13 +591,13 @@ export default function ExecutiveSummary({
 
             <div className="rounded-lg border border-border p-4">
               <div className="flex items-center justify-between">
-                <div className="font-medium text-foreground">Top annual priorities</div>
+                <div className="font-medium text-foreground">Top company initiatives</div>
                 <Badge variant="secondary">{priorities.length}</Badge>
               </div>
               <div className="mt-3 space-y-2">
                 {exec.prioritiesTop.length === 0 ? (
                   <div className="text-sm text-muted-foreground italic">
-                    No annual priorities yet. Add them in Priority Management.
+                    No company initiatives yet. Add them in Initiatives & Capabilities.
                   </div>
                 ) : (
                   exec.prioritiesTop.map((p, idx) => (
@@ -635,13 +635,13 @@ export default function ExecutiveSummary({
                 )}
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
-                An annual priority only counts as met when every department goal
+                A company initiative only counts as met when every team goal
                 under it is met.
               </div>
               <div className="mt-3 space-y-3">
                 {goalSummary.rollups.length === 0 ? (
                   <div className="text-sm text-muted-foreground italic">
-                    No annual goals yet. Build the tree under Annual Priorities.
+                    No company initiatives yet. Build the tree under Company Initiatives.
                   </div>
                 ) : (
                   goalSummary.rollups.map(({ goal, rollup }) => (
@@ -665,7 +665,7 @@ export default function ExecutiveSummary({
               </div>
               <div className="mt-4">
                 <Button variant="outline" size="sm" onClick={() => onNavigate("goals")}>
-                  Open Annual Priorities
+                  Open Company Initiatives
                   <ArrowRightIcon className="h-4 w-4 ml-2" />
                 </Button>
               </div>
@@ -725,7 +725,7 @@ export default function ExecutiveSummary({
                 ))}
                 {quarterRocks.length === 0 && (
                   <div className="text-xs text-muted-foreground italic">
-                    No rocks yet for {currentQuarter}. Add rocks under your priorities/capabilities.
+                    No rocks yet for {currentQuarter}. Add rocks under your initiatives/capabilities.
                   </div>
                 )}
               </div>

@@ -73,7 +73,7 @@ const HEADER_ALIASES: Record<string, string[]> = {
   title: ["goal", "goal name", "objective", "title", "name"],
   description: ["description", "details", "notes"],
   ownerEmail: ["owner email", "owner", "assignee email", "assignee", "email"],
-  departmentName: ["team", "department", "group"],
+  teamName: ["team", "department", "group"],
   parentTitle: ["parent goal", "parent", "aligns to", "contributes to"],
   status: ["status", "state"],
   progress: ["progress", "completion", "percent complete", "% complete"],
@@ -153,9 +153,9 @@ export function quarterFromDate(iso: string | undefined): Quarter | null {
 export interface ImportContext {
   planYear: number;
   /** Lowercased email to Firestore user id. */
-  usersByEmail: Map<string, { id: string; name: string; departmentId?: string | null }>;
-  /** Lowercased department name to id. */
-  departmentsByName: Map<string, string>;
+  usersByEmail: Map<string, { id: string; name: string; teamId?: string | null }>;
+  /** Lowercased team name to id. */
+  teamsByName: Map<string, string>;
 }
 
 export interface ImportedGoal extends Omit<Goal, "id"> {
@@ -225,19 +225,19 @@ export function planWorkleapImport(csv: string, context: ImportContext): ImportP
       );
     }
 
-    const departmentName = read(row, "departmentName")?.toLowerCase() ?? "";
-    const departmentId =
-      context.departmentsByName.get(departmentName) ?? owner?.departmentId ?? null;
-    if (departmentName && !context.departmentsByName.has(departmentName)) {
+    const teamName = read(row, "teamName")?.toLowerCase() ?? "";
+    const teamId =
+      context.teamsByName.get(teamName) ?? owner?.teamId ?? null;
+    if (teamName && !context.teamsByName.has(teamName)) {
       warnings.push(
-        `Row ${rowNumber} (${title}): no department named "${read(row, "departmentName")}", using the owner's department.`
+        `Row ${rowNumber} (${title}): no team named "${read(row, "teamName")}", using the owner's team.`
       );
     }
 
     const parentTitle = read(row, "parentTitle");
     // Workleap has no annual layer, so a goal with a parent is individual and
-    // one without becomes a department goal for a human to re-parent later.
-    const level: GoalLevel = parentTitle ? "individual" : "department";
+    // one without becomes a team goal for a human to re-parent later.
+    const level: GoalLevel = parentTitle ? "individual" : "team";
 
     const startDate = parseDate(read(row, "startDate"));
     const dueDate = parseDate(read(row, "dueDate"));
@@ -254,7 +254,7 @@ export function planWorkleapImport(csv: string, context: ImportContext): ImportP
       level,
       parentGoalId: null,
       parentTitle,
-      departmentId,
+      teamId,
       ownerId: owner?.id ?? "",
       ownerName: owner?.name ?? "",
       contributorIds: [],

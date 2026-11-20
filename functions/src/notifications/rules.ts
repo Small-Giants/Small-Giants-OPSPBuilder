@@ -3,15 +3,15 @@ import type { NotificationIntent } from "./types";
 
 /**
  * Everyone with a stake in a goal: everybody named in its RACI, plus whoever
- * leads the department it belongs to.
+ * leads the team it belongs to.
  */
 export function stakeholders(
   goal: Goal,
-  departmentLeaderIds?: string | string[] | null
+  teamLeaderIds?: string | string[] | null
 ): string[] {
-  const leaders = Array.isArray(departmentLeaderIds)
-    ? departmentLeaderIds
-    : [departmentLeaderIds];
+  const leaders = Array.isArray(teamLeaderIds)
+    ? teamLeaderIds
+    : [teamLeaderIds];
   const ids = [...raciMembers(goal), ...leaders];
   return Array.from(new Set(ids.filter((id): id is string => Boolean(id))));
 }
@@ -19,7 +19,7 @@ export function stakeholders(
 export interface GoalChangeContext {
   before: Goal | null;
   after: Goal | null;
-  departmentLeaderIds?: string[] | null;
+  teamLeaderIds?: string[] | null;
   /** Who made the change; they do not need to be told about their own edit. */
   actorId?: string;
 }
@@ -32,10 +32,12 @@ export interface GoalChangeContext {
 export function intentsForGoalChange({
   before,
   after,
-  departmentLeaderIds,
+  teamLeaderIds,
   actorId,
 }: GoalChangeContext): NotificationIntent[] {
   if (!after) return [];
+  // A copy made by the new-year rollover is the same goal, not a new assignment.
+  if (!before && after.rolledOverFrom) return [];
 
   const intents: NotificationIntent[] = [];
   const goalRef = { view: "goals", goalId: after.id };
@@ -65,7 +67,7 @@ export function intentsForGoalChange({
     });
   }
 
-  const recipients = stakeholders(after, departmentLeaderIds);
+  const recipients = stakeholders(after, teamLeaderIds);
 
   if (before?.status !== "at_risk" && after.status === "at_risk") {
     for (const id of recipients) {

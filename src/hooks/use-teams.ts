@@ -4,18 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot } from "firebase/firestore";
 import { usePlanYear } from "@/contexts/PlanYearContext";
-import { departmentLeaderIds, type Department } from "@/types";
+import { teamLeaderIds, type Team } from "@/types";
 
-export function useDepartments() {
+export function useTeams() {
   const { companyId } = usePlanYear();
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
-      collection(db, "companies", companyId, "departments"),
+      collection(db, "companies", companyId, "teams"),
       (snapshot) => {
-        const items: Department[] = [];
+        const items: Team[] = [];
         snapshot.forEach((docSnap) => {
           items.push({ id: docSnap.id, ...(docSnap.data() as any) });
         });
@@ -24,7 +24,7 @@ export function useDepartments() {
             (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
             (a.name || "").localeCompare(b.name || "")
         );
-        setDepartments(items);
+        setTeams(items);
         setLoading(false);
       },
       () => {
@@ -36,33 +36,33 @@ export function useDepartments() {
   }, [companyId]);
 
   const byId = useMemo(
-    () => new Map(departments.map((d) => [d.id, d])),
-    [departments]
+    () => new Map(teams.map((d) => [d.id, d])),
+    [teams]
   );
 
   const getName = useCallback(
-    (departmentId?: string | null) =>
-      departmentId ? byId.get(departmentId)?.name ?? "Unassigned" : "Unassigned",
+    (teamId?: string | null) =>
+      teamId ? byId.get(teamId)?.name ?? "Unassigned" : "Unassigned",
     [byId]
   );
 
   const isLeaderOf = useCallback(
-    (userId: string | undefined, departmentId?: string | null) =>
+    (userId: string | undefined, teamId?: string | null) =>
       Boolean(
         userId &&
-          departmentId &&
-          departmentLeaderIds(byId.get(departmentId)).includes(userId)
+          teamId &&
+          teamLeaderIds(byId.get(teamId)).includes(userId)
       ),
     [byId]
   );
 
-  const departmentsLedBy = useCallback(
+  const teamsLedBy = useCallback(
     (userId?: string) =>
       userId
-        ? departments.filter((d) => departmentLeaderIds(d).includes(userId))
+        ? teams.filter((d) => teamLeaderIds(d).includes(userId))
         : [],
-    [departments]
+    [teams]
   );
 
-  return { departments, loading, byId, getName, isLeaderOf, departmentsLedBy };
+  return { teams, loading, byId, getName, isLeaderOf, teamsLedBy };
 }

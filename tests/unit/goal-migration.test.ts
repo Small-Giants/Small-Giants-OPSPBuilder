@@ -49,14 +49,14 @@ describe("quartersFromRocks", () => {
 });
 
 describe("planMigration", () => {
-  it("converts an annual priority into a layer 1 goal", () => {
+  it("converts a company initiative into a layer 1 goal", () => {
     const plan = run(
       [{ id: "p1", title: "Grow revenue", type: "priority", planYear: 2026 }],
       []
     );
 
     expect(plan.goals).toHaveLength(1);
-    expect(plan.goals[0].draft.level).toBe("annual");
+    expect(plan.goals[0].draft.level).toBe("initiative");
     expect(plan.goals[0].draft.title).toBe("Grow revenue");
     expect(plan.goals[0].draft.planYear).toBe(2026);
     expect(plan.goals[0].draft.migratedFrom?.id).toBe("p1");
@@ -119,7 +119,7 @@ describe("planMigration", () => {
     );
 
     expect(plan.goals).toHaveLength(1);
-    expect(plan.goals[0].draft.level).toBe("annual");
+    expect(plan.goals[0].draft.level).toBe("initiative");
     expect(plan.rockUpdates).toEqual([
       {
         rockId: "r1",
@@ -217,12 +217,12 @@ describe("planMigration", () => {
     expect(plan.warnings.some((w) => w.includes("missing"))).toBe(true);
   });
 
-  it("always warns that the department layer has to be built by hand", () => {
+  it("always warns that the team layer has to be built by hand", () => {
     const plan = run(
       [{ id: "p1", title: "Grow", type: "priority", planYear: 2026 }],
       []
     );
-    expect(plan.warnings.some((w) => w.includes("department"))).toBe(true);
+    expect(plan.warnings.some((w) => w.includes("team"))).toBe(true);
   });
 
   it("derives annual quarter completion from the priority's rocks", () => {
@@ -234,7 +234,7 @@ describe("planMigration", () => {
       ]
     );
 
-    const annual = plan.goals.find((g) => g.draft.level === "annual");
+    const annual = plan.goals.find((g) => g.draft.level === "initiative");
     expect(annual?.draft.quarters.find((q) => q.quarter === "Q1")?.complete).toBe(true);
     expect(annual?.draft.quarters.find((q) => q.quarter === "Q2")?.complete).toBe(false);
   });

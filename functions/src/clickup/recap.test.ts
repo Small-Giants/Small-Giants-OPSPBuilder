@@ -15,6 +15,7 @@ import {
   parseRecap,
   parseRockLine,
   parseStatus,
+  recapPredatesYear,
   type RecapConfig,
 } from "./recap";
 import type { GoalQuarter } from "../types";
@@ -345,5 +346,24 @@ describe("applyRecapToQuarters", () => {
       { quantitative: false, syncedAt: STAMP }
     );
     expect(quarters.map((q) => q.quarter)).toEqual(["Q1", "Q2", "Q3", "Q4"]);
+  });
+});
+
+describe("recapPredatesYear", () => {
+  const dec2026 = String(Date.UTC(2026, 11, 3));
+  const jan2027 = String(Date.UTC(2027, 0, 8));
+
+  it("goes by the year the period names", () => {
+    expect(recapPredatesYear(jan2027, "December 2026", 2027)).toBe(true);
+    expect(recapPredatesYear(dec2026, "January 2027", 2027)).toBe(false);
+  });
+
+  it("falls back to when the recap was posted", () => {
+    expect(recapPredatesYear(dec2026, "November", 2027)).toBe(true);
+    expect(recapPredatesYear(jan2027, null, 2027)).toBe(false);
+  });
+
+  it("keeps a recap with no usable date", () => {
+    expect(recapPredatesYear(undefined, null, 2027)).toBe(false);
   });
 });

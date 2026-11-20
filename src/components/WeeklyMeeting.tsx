@@ -238,7 +238,7 @@ export default function WeeklyMeeting() {
   );
 
   const annualGoals = useMemo(
-    () => allGoals.filter((g) => g.level === "annual"),
+    () => allGoals.filter((g) => g.level === "initiative"),
     [allGoals]
   );
 
@@ -519,7 +519,7 @@ export default function WeeklyMeeting() {
         <Badge variant="outline">{currentQuarter}</Badge>
       </div>
       <p className="text-sm text-muted-foreground">
-        Annual priorities and how their department goals are tracking. Update a
+        Company initiatives and how their team goals are tracking. Update a
         quarter directly from here.
       </p>
 
@@ -538,7 +538,7 @@ export default function WeeklyMeeting() {
                 <AnnualRollup children={children} />
                 {children.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">
-                    No department goals linked, so this priority cannot be met.
+                    No team goals linked, so this priority cannot be met.
                   </p>
                 ) : (
                   <div className="space-y-2">

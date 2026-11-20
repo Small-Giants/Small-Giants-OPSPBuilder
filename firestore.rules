@@ -7,7 +7,7 @@ service cloud.firestore {
     //
     // Rules are OR'd together across matches, so there are deliberately no
     // `{path=**}` wildcards below. A single broad match would silently grant
-    // everything the specific goal and department rules are trying to
+    // everything the specific goal and team rules are trying to
     // restrict.
     // ---------------------------------------------------------------------
 
@@ -31,23 +31,23 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function departmentPath(companyId, departmentId) {
-      return /databases/$(database)/documents/companies/$(companyId)/departments/$(departmentId);
+    function teamPath(companyId, teamId) {
+      return /databases/$(database)/documents/companies/$(companyId)/teams/$(teamId);
     }
 
-    // Departments can have several leaders. `leaderId` is the pre-array
+    // Teams can have several leaders. `leaderId` is the pre-array
     // field, still honoured for documents written before the change.
-    function departmentLeaderIds(department) {
-      return department.get('leaderIds', [])
-        .concat(department.get('leaderId', '') == '' ? [] : [department.get('leaderId', '')]);
+    function teamLeaderIds(team) {
+      return team.get('leaderIds', [])
+        .concat(team.get('leaderId', '') == '' ? [] : [team.get('leaderId', '')]);
     }
 
-    function isDepartmentLeader(companyId, departmentId) {
+    function isTeamLeader(companyId, teamId) {
       return isAuthenticated()
-        && departmentId is string
-        && departmentId != ''
-        && exists(departmentPath(companyId, departmentId))
-        && request.auth.uid in departmentLeaderIds(get(departmentPath(companyId, departmentId)).data);
+        && teamId is string
+        && teamId != ''
+        && exists(teamPath(companyId, teamId))
+        && request.auth.uid in teamLeaderIds(get(teamPath(companyId, teamId)).data);
     }
 
     // Anyone named in a RACI role may write. `ownerId` is Accountable and
@@ -61,11 +61,11 @@ service cloud.firestore {
     }
 
     // A goal may be written by anyone in its RACI, the leader of the owning
-    // department, or an admin.
+    // team, or an admin.
     function canWriteGoal(companyId, data) {
       return isAdmin()
         || isRaciMember(data)
-        || isDepartmentLeader(companyId, data.get('departmentId', ''));
+        || isTeamLeader(companyId, data.get('teamId', ''));
     }
 
     // Recap state written by the ClickUp sync. Approvals go through the
@@ -93,11 +93,11 @@ service cloud.firestore {
 
       allow create: if isSelf(userId);
 
-      // Users may edit their own profile but never their role, department
+      // Users may edit their own profile but never their role, team
       // assignment, reporting line, or soft-delete state.
       allow update: if isSelf(userId)
           && !request.resource.data.diff(resource.data).affectedKeys()
-               .hasAny(['role', 'deletedAt', 'deletedBy', 'departmentId', 'managerId'])
+               .hasAny(['role', 'deletedAt', 'deletedBy', 'teamId', 'departmentId', 'managerId'])
         || isAdmin()
           && !request.resource.data.diff(resource.data).affectedKeys()
                .hasAny(['role', 'deletedAt', 'deletedBy'])
@@ -197,17 +197,17 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
-    // Departments
+    // Teams
     // ---------------------------------------------------------------------
 
-    match /companies/{companyId}/departments/{departmentId} {
+    match /companies/{companyId}/teams/{teamId} {
       allow read: if isAuthenticated();
       allow create, delete: if isAdmin();
-      // Leaders may maintain their own department; only admins can reassign
-      // leadership or create/remove departments.
+      // Leaders may maintain their own team; only admins can reassign
+      // leadership or create/remove teams.
       allow update: if isAdmin()
         || (isAuthenticated()
-            && request.auth.uid in departmentLeaderIds(resource.data)
+            && request.auth.uid in teamLeaderIds(resource.data)
             && !request.resource.data.diff(resource.data).affectedKeys()
                  .hasAny(['leaderIds', 'leaderId']));
     }
@@ -249,7 +249,7 @@ service cloud.firestore {
     // Integrations
     // ---------------------------------------------------------------------
 
-    // Where new department goals get their ClickUp task. Superadmin-only.
+    // Where new team goals get their ClickUp task. Superadmin-only.
     match /companies/{companyId}/integrations/clickup-location {
       allow read: if isAdmin();
       allow write: if isSuperadmin();

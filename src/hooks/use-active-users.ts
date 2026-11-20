@@ -8,7 +8,7 @@ export interface ActiveUser {
   id: string;
   name?: string;
   email?: string;
-  departmentId?: string;
+  teamId?: string;
   managerId?: string;
   /** "clickup" for a ClickUp member who has not signed in yet. */
   source?: "clickup";
@@ -30,7 +30,7 @@ export function useActiveUsers() {
               id: docSnap.id,
               name: data.name,
               email: data.email,
-              departmentId: data.departmentId,
+              teamId: data.teamId ?? data.departmentId,
               managerId: data.managerId,
               source: data.source,
             });

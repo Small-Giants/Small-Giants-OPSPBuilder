@@ -27,9 +27,9 @@ import { UserCombobox } from "@/components/ui/user-combobox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanYear } from "@/contexts/PlanYearContext";
-import { useDepartments } from "@/hooks/use-departments";
+import { useTeams } from "@/hooks/use-teams";
 import { useActiveUsers } from "@/hooks/use-active-users";
-import { departmentLeaderIds } from "@/types";
+import { teamLeaderIds } from "@/types";
 import { db } from "@/lib/firebase";
 import {
   addDoc,
@@ -49,46 +49,46 @@ import {
   XIcon,
 } from "lucide-react";
 
-interface DepartmentForm {
+interface TeamForm {
   name: string;
   description: string;
   leaderIds: string[];
   memberIds: string[];
 }
 
-const emptyForm: DepartmentForm = {
+const emptyForm: TeamForm = {
   name: "",
   description: "",
   leaderIds: [],
   memberIds: [],
 };
 
-export default function DepartmentManagement() {
+export default function TeamManagement() {
   const { toast } = useToast();
   const { hasRole } = useAuth();
   const { companyId } = usePlanYear();
-  const { departments, loading } = useDepartments();
+  const { teams, loading } = useTeams();
   const { users } = useActiveUsers();
 
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<DepartmentForm>(emptyForm);
+  const [form, setForm] = useState<TeamForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
   const isAdmin = hasRole("admin");
 
-  const membersByDepartment = useMemo(() => {
+  const membersByTeam = useMemo(() => {
     const map = new Map<string, typeof users>();
     users.forEach((user) => {
-      if (!user.departmentId) return;
-      const existing = map.get(user.departmentId) ?? [];
+      if (!user.teamId) return;
+      const existing = map.get(user.teamId) ?? [];
       existing.push(user);
-      map.set(user.departmentId, existing);
+      map.set(user.teamId, existing);
     });
     return map;
   }, [users]);
 
-  const unassignedCount = users.filter((u) => !u.departmentId).length;
+  const unassignedCount = users.filter((u) => !u.teamId).length;
 
   const userName = (userId?: string) => {
     if (!userId) return null;
@@ -104,29 +104,29 @@ export default function DepartmentManagement() {
 
   /**
    * Membership lives on the user document, so assigning people is a write per
-   * user rather than a field on the department.
+   * user rather than a field on the team.
    */
-  const applyMembership = async (departmentId: string, memberIds: string[]) => {
+  const applyMembership = async (teamId: string, memberIds: string[]) => {
     const desired = new Set(memberIds);
     const current = new Set(
-      (membersByDepartment.get(departmentId) ?? []).map((m) => m.id)
+      (membersByTeam.get(teamId) ?? []).map((m) => m.id)
     );
 
     const writes: Promise<unknown>[] = [];
     desired.forEach((userId) => {
       if (!current.has(userId)) {
-        writes.push(updateDoc(doc(db, "users", userId), { departmentId }));
+        writes.push(updateDoc(doc(db, "users", userId), { teamId }));
       }
     });
     current.forEach((userId) => {
       if (!desired.has(userId)) {
-        writes.push(updateDoc(doc(db, "users", userId), { departmentId: "" }));
+        writes.push(updateDoc(doc(db, "users", userId), { teamId: "" }));
       }
     });
     await Promise.all(writes);
   };
 
-  /** Leaders are members of the department they lead. */
+  /** Leaders are members of the team they lead. */
   const formMemberIds = () =>
     Array.from(new Set([...form.leaderIds, ...form.memberIds]));
 
@@ -135,23 +135,23 @@ export default function DepartmentManagement() {
     setSaving(true);
     try {
       const created = await addDoc(
-        collection(db, "companies", companyId, "departments"),
+        collection(db, "companies", companyId, "teams"),
         {
           name: form.name.trim(),
           description: form.description.trim(),
           leaderIds: form.leaderIds,
-          sortOrder: departments.length,
+          sortOrder: teams.length,
           companyId,
           createdAt: new Date().toISOString(),
         }
       );
       await applyMembership(created.id, formMemberIds());
-      toast({ title: "Department created", description: form.name.trim() });
+      toast({ title: "Team created", description: form.name.trim() });
       resetForm();
     } catch {
       toast({
         title: "Error",
-        description: "Failed to create department.",
+        description: "Failed to create team.",
         variant: "destructive",
       });
     } finally {
@@ -159,12 +159,12 @@ export default function DepartmentManagement() {
     }
   };
 
-  const handleUpdate = async (departmentId: string) => {
+  const handleUpdate = async (teamId: string) => {
     if (!form.name.trim()) return;
     setSaving(true);
     try {
       await updateDoc(
-        doc(db, "companies", companyId, "departments", departmentId),
+        doc(db, "companies", companyId, "teams", teamId),
         {
           name: form.name.trim(),
           description: form.description.trim(),
@@ -172,13 +172,13 @@ export default function DepartmentManagement() {
           updatedAt: new Date().toISOString(),
         }
       );
-      await applyMembership(departmentId, formMemberIds());
-      toast({ title: "Department updated" });
+      await applyMembership(teamId, formMemberIds());
+      toast({ title: "Team updated" });
       resetForm();
     } catch {
       toast({
         title: "Error",
-        description: "Failed to update department.",
+        description: "Failed to update team.",
         variant: "destructive",
       });
     } finally {
@@ -186,35 +186,35 @@ export default function DepartmentManagement() {
     }
   };
 
-  const handleDelete = async (departmentId: string, name: string) => {
+  const handleDelete = async (teamId: string, name: string) => {
     try {
       await deleteDoc(
-        doc(db, "companies", companyId, "departments", departmentId)
+        doc(db, "companies", companyId, "teams", teamId)
       );
       toast({
-        title: "Department deleted",
+        title: "Team deleted",
         description: `${name} was removed. People previously in it are now unassigned.`,
       });
     } catch {
       toast({
         title: "Error",
-        description: "Failed to delete department.",
+        description: "Failed to delete team.",
         variant: "destructive",
       });
     }
   };
 
-  const startEdit = (departmentId: string) => {
-    const department = departments.find((d) => d.id === departmentId);
-    if (!department) return;
+  const startEdit = (teamId: string) => {
+    const team = teams.find((d) => d.id === teamId);
+    if (!team) return;
     setForm({
-      name: department.name ?? "",
-      description: department.description ?? "",
-      leaderIds: departmentLeaderIds(department),
-      memberIds: (membersByDepartment.get(departmentId) ?? []).map((m) => m.id),
+      name: team.name ?? "",
+      description: team.description ?? "",
+      leaderIds: teamLeaderIds(team),
+      memberIds: (membersByTeam.get(teamId) ?? []).map((m) => m.id),
     });
     setAdding(false);
-    setEditingId(departmentId);
+    setEditingId(teamId);
   };
 
   if (!isAdmin) {
@@ -229,7 +229,7 @@ export default function DepartmentManagement() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              You need admin privileges to manage departments.
+              You need admin privileges to manage teams.
             </p>
           </CardContent>
         </Card>
@@ -275,20 +275,20 @@ export default function DepartmentManagement() {
   const renderForm = (onSave: () => void, saveLabel: string) => (
     <div className="space-y-3 rounded-md border border-dashed p-4">
       <Input
-        placeholder="Department name"
+        placeholder="Team name"
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
         autoFocus
       />
       <Textarea
-        placeholder="What this department is accountable for (optional)"
+        placeholder="What this team is accountable for (optional)"
         value={form.description}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
         rows={2}
       />
       <div>
         <label className="text-sm font-medium mb-1 block">
-          Department leaders
+          Team leaders
         </label>
         {renderChips(form.leaderIds, (id) =>
           setForm({ ...form, leaderIds: form.leaderIds.filter((x) => x !== id) })
@@ -300,7 +300,7 @@ export default function DepartmentManagement() {
           valueMode="id"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Leaders can edit any goal owned by someone in their department, and
+          Leaders can edit any goal owned by someone in their team, and
           are counted as members of it.
         </p>
       </div>
@@ -321,7 +321,7 @@ export default function DepartmentManagement() {
           valueMode="id"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Someone already in another department moves here when you add them.
+          Someone already in another team moves here when you add them.
         </p>
       </div>
       <div className="flex gap-2">
@@ -344,44 +344,44 @@ export default function DepartmentManagement() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="w-5 h-5" />
-              Departments
+              Teams
             </CardTitle>
             <CardDescription>
-              Departments group people and own the second layer of the goal
+              Teams group people and own the second layer of the goal
               hierarchy.
             </CardDescription>
           </div>
           {!adding && !editingId && (
             <Button onClick={() => { setForm(emptyForm); setAdding(true); }}>
               <PlusIcon className="w-4 h-4 mr-2" />
-              Add Department
+              Add Team
             </Button>
           )}
         </CardHeader>
         <CardContent className="space-y-4">
-          {adding && renderForm(handleCreate, "Create Department")}
+          {adding && renderForm(handleCreate, "Create Team")}
 
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : departments.length === 0 && !adding ? (
+          ) : teams.length === 0 && !adding ? (
             <p className="text-sm text-muted-foreground py-8 text-center">
-              No departments yet. Add one to start building department goals.
+              No teams yet. Add one to start building team goals.
             </p>
           ) : (
             <div className="space-y-3">
-              {departments.map((department) => {
-                const members = membersByDepartment.get(department.id) ?? [];
-                const leaders = departmentLeaderIds(department)
+              {teams.map((team) => {
+                const members = membersByTeam.get(team.id) ?? [];
+                const leaders = teamLeaderIds(team)
                   .map(userName)
                   .filter(Boolean);
 
-                if (editingId === department.id) {
+                if (editingId === team.id) {
                   return (
-                    <div key={department.id}>
+                    <div key={team.id}>
                       {renderForm(
-                        () => handleUpdate(department.id),
+                        () => handleUpdate(team.id),
                         "Save Changes"
                       )}
                     </div>
@@ -390,12 +390,12 @@ export default function DepartmentManagement() {
 
                 return (
                   <div
-                    key={department.id}
+                    key={team.id}
                     className="flex items-start justify-between rounded-md border p-4"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium">{department.name}</span>
+                        <span className="font-medium">{team.name}</span>
                         <Badge variant="secondary" className="gap-1">
                           <Users className="w-3 h-3" />
                           {members.length}
@@ -410,9 +410,9 @@ export default function DepartmentManagement() {
                           </Badge>
                         )}
                       </div>
-                      {department.description && (
+                      {team.description && (
                         <p className="text-sm text-muted-foreground mt-1">
-                          {department.description}
+                          {team.description}
                         </p>
                       )}
                       {members.length > 0 && (
@@ -428,7 +428,7 @@ export default function DepartmentManagement() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => startEdit(department.id)}
+                        onClick={() => startEdit(team.id)}
                       >
                         <PencilIcon className="w-4 h-4" />
                       </Button>
@@ -445,19 +445,19 @@ export default function DepartmentManagement() {
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>
-                              Delete {department.name}?
+                              Delete {team.name}?
                             </AlertDialogTitle>
                             <AlertDialogDescription>
                               {members.length > 0
-                                ? `${members.length} ${members.length === 1 ? "person is" : "people are"} assigned to this department and will become unassigned. Goals owned by this department will keep their data but lose their department link.`
-                                : "Goals owned by this department will keep their data but lose their department link."}
+                                ? `${members.length} ${members.length === 1 ? "person is" : "people are"} assigned to this team and will become unassigned. Goals owned by this team will keep their data but lose their team link.`
+                                : "Goals owned by this team will keep their data but lose their team link."}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() =>
-                                handleDelete(department.id, department.name)
+                                handleDelete(team.id, team.name)
                               }
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
@@ -477,7 +477,7 @@ export default function DepartmentManagement() {
             <p className="text-xs text-muted-foreground">
               {unassignedCount}{" "}
               {unassignedCount === 1 ? "person is" : "people are"} not assigned
-              to a department. Assign them from User Management.
+              to a team. Assign them from User Management.
             </p>
           )}
         </CardContent>

@@ -8,7 +8,27 @@ export type Quarter = "Q1" | "Q2" | "Q3" | "Q4";
 
 export const QUARTERS: Quarter[] = ["Q1", "Q2", "Q3", "Q4"];
 
-export type GoalLevel = "annual" | "department" | "individual";
+export type GoalLevel = "initiative" | "team" | "individual";
+
+const LEGACY_GOAL_LEVELS: Record<string, GoalLevel> = {
+  annual: "initiative",
+  department: "team",
+};
+
+/**
+ * Builds a Goal from a Firestore document, mapping pre-rename fields
+ * (level "annual"/"department", departmentId) onto current ones.
+ */
+export function goalFromDoc(id: string, data: Record<string, unknown> | undefined): Goal {
+  const raw = { ...(data ?? {}) } as Record<string, unknown>;
+  const level = typeof raw.level === "string" ? raw.level : "";
+  return {
+    ...raw,
+    id,
+    level: LEGACY_GOAL_LEVELS[level] ?? ((level || "individual") as GoalLevel),
+    teamId: (raw.teamId ?? raw.departmentId ?? null) as string | null,
+  } as Goal;
+}
 
 export type GoalStatus = "not_started" | "in_progress" | "at_risk" | "complete";
 
@@ -101,7 +121,9 @@ export interface Goal extends RaciAssignment {
   >;
   level: GoalLevel;
   parentGoalId?: string | null;
-  departmentId?: string | null;
+  teamId?: string | null;
+  /** Set on the copy the new-year rollover makes of an earlier year's goal. */
+  rolledOverFrom?: { goalId: string; planYear: number } | null;
   startDate?: string;
   dueDate?: string;
   planYear: number;
@@ -144,7 +166,7 @@ export interface UserRecord {
   email?: string;
   name?: string;
   role?: "superadmin" | "admin" | "user";
-  departmentId?: string | null;
+  teamId?: string | null;
   managerId?: string | null;
   deletedAt?: string | null;
   /** "clickup" on a placeholder for a ClickUp member who has not signed in yet. */

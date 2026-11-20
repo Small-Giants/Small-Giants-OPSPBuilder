@@ -13,7 +13,7 @@ const STATUS_MAP: Record<GoalStatus, PriorityStatus> = {
   complete: "completed",
 };
 
-/** An annual priority goal, shaped like the Priority record screens expect. */
+/** A company initiative goal, shaped like the Priority record screens expect. */
 export interface AnnualPriority extends Priority {
   /** The underlying goal, for screens that want quarters or RACI. */
   goal: Goal;
@@ -43,12 +43,12 @@ export function toAnnualPriority(goal: Goal, rocks: Rock[]): AnnualPriority {
 }
 
 /**
- * Annual priorities now live in the goals collection. This presents them in
+ * Company initiatives now live in the goals collection. This presents them in
  * the shape the older planning and execution screens already render, so those
  * screens did not have to be rebuilt around the goal model.
  */
 export function useAnnualPriorities() {
-  const { goals, loading } = useGoals({ level: "annual" });
+  const { goals, loading } = useGoals({ level: "initiative" });
   const { byGoal, loading: rocksLoading } = useRocks();
 
   const priorities = useMemo(

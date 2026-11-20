@@ -33,7 +33,8 @@ import {
   MailIcon,
   CopyIcon,
   LogOutIcon,
-  UsersIcon
+  UsersIcon,
+  BellIcon
 } from "lucide-react";
 
 interface NavigationItem {
@@ -47,6 +48,8 @@ interface NavigationItem {
 interface NavigationSection {
   title: string;
   items: NavigationItem[];
+  /** Rendered as a sub-section of the section above it. */
+  nested?: boolean;
 }
 
 interface NavigationSidebarProps {
@@ -84,41 +87,57 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
       { id: 'foundation', label: 'Foundation', icon: <BuildingIcon className="w-4 h-4" /> },
       { id: 'three-year', label: 'Three Year', icon: <CalendarIcon className="w-4 h-4" /> },
       { id: 'one-year', label: 'One Year', icon: <Clock3Icon className="w-4 h-4" /> },
-      { id: 'priority-management', label: 'Priorities & Capabilities', icon: <ActivityIcon className="w-4 h-4" /> },
+      { id: 'priority-management', label: 'Initiatives & Capabilities', icon: <ActivityIcon className="w-4 h-4" /> },
       { id: 'swot', label: 'SWOT Analysis', icon: <TrendingUpIcon className="w-4 h-4" /> },
     ];
 
     const goalItems: NavigationItem[] = [
-      { id: 'goals', label: 'Annual Priorities', icon: <TargetIcon className="w-4 h-4" /> },
-      { id: 'department-goals', label: 'Department Goals', icon: <BuildingIcon className="w-4 h-4" /> },
+      { id: 'goals', label: 'Company Initiatives', icon: <TargetIcon className="w-4 h-4" /> },
+      { id: 'team-goals', label: 'Team Goals', icon: <BuildingIcon className="w-4 h-4" /> },
+    ];
+
+    const userItems: NavigationItem[] = [
       { id: 'my-goals', label: 'My Goals', icon: <UserIcon className="w-4 h-4" /> },
-      { id: 'team-goals', label: 'My Team', icon: <UsersIcon className="w-4 h-4" /> },
+      { id: 'rocks', label: 'My Rocks', icon: <TargetIcon className="w-4 h-4" /> },
+      { id: 'my-team', label: 'My Team', icon: <UsersIcon className="w-4 h-4" /> },
+      { id: 'notification-settings', label: 'Notification Settings', icon: <BellIcon className="w-4 h-4" /> },
     ];
 
     const executeItems: NavigationItem[] = [
-      { id: 'weekly-meeting', label: 'Weekly Meeting', icon: <UsersIcon className="w-4 h-4" /> },
-      { id: 'priorities', label: 'Priority Execution', icon: <ClipboardListIcon className="w-4 h-4" /> },
-      { id: 'metrics', label: 'KPI Dashboard', icon: <BarChart3Icon className="w-4 h-4" /> },
-      { id: 'rocks', label: 'My Rocks', icon: <TargetIcon className="w-4 h-4" /> },
       { id: 'assessments', label: 'Agile Growth Checklist', icon: <ClipboardListIcon className="w-4 h-4" /> },
       { id: 'just-get-it-done', label: 'Just Get It Done', icon: <ClipboardListIcon className="w-4 h-4" /> },
       { id: 'personal', label: 'Personal Development', icon: <BookOpenIcon className="w-4 h-4" />, disabled: true },
     ];
 
-    const adminItems: NavigationItem[] =
-      currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')
-        ? [
-            { id: 'admin', label: 'User Management', icon: <ShieldIcon className="w-4 h-4" /> },
-            { id: 'departments', label: 'Departments', icon: <BuildingIcon className="w-4 h-4" /> },
-            { id: 'integrations', label: 'Integrations', icon: <PlugZapIcon className="w-4 h-4" /> },
-          ]
-        : [];
+    const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
+    const adminSections: NavigationSection[] = isAdmin
+      ? [
+          {
+            title: 'Admin',
+            items: [
+              { id: 'admin', label: 'User Management', icon: <ShieldIcon className="w-4 h-4" /> },
+              { id: 'teams', label: 'Teams', icon: <BuildingIcon className="w-4 h-4" /> },
+              { id: 'integrations', label: 'Integrations', icon: <PlugZapIcon className="w-4 h-4" /> },
+              { id: 'metrics', label: 'KPI Dashboard', icon: <BarChart3Icon className="w-4 h-4" /> },
+            ],
+          },
+          {
+            title: 'Hidden from users',
+            nested: true,
+            items: [
+              { id: 'weekly-meeting', label: 'Weekly Meeting', icon: <UsersIcon className="w-4 h-4" /> },
+              { id: 'priorities', label: 'Priority Execution', icon: <ClipboardListIcon className="w-4 h-4" /> },
+            ],
+          },
+        ]
+      : [];
 
     return [
       { title: 'Plan', items: planItems },
       { title: 'Goals', items: goalItems },
+      { title: 'User', items: userItems },
       { title: 'Execute', items: executeItems },
-      ...(adminItems.length ? [{ title: 'Admin', items: adminItems }] : []),
+      ...adminSections,
     ];
   }, [currentUser]);
 
@@ -176,9 +195,18 @@ export default function NavigationSidebar({ currentUser, activeItemId, onNavigat
       {/* Navigation Items */}
       <div className="flex-1 p-2 space-y-4 overflow-auto">
         {navigationSections.map((section) => (
-          <div key={section.title} className="space-y-1">
+          <div
+            key={section.title}
+            className={`space-y-1 ${section.nested && !isCollapsed ? '-mt-2 ml-3 pl-2 border-l border-sidebar-border' : ''}`}
+          >
             {!isCollapsed && (
-              <div className="px-2 pt-1 pb-1 text-[11px] font-semibold tracking-wide text-sidebar-foreground/60 uppercase">
+              <div
+                className={
+                  section.nested
+                    ? 'px-2 pt-1 pb-1 text-[10px] font-medium tracking-wide text-sidebar-foreground/50'
+                    : 'px-2 pt-1 pb-1 text-[11px] font-semibold tracking-wide text-sidebar-foreground/60 uppercase'
+                }
+              >
                 {section.title}
               </div>
             )}

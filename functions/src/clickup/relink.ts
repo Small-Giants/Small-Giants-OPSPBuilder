@@ -12,7 +12,7 @@ const LIST_FIELDS = ["contributorIds", "consultedIds", "informedIds"] as const;
  * People who only used ClickUp are named as `clickup:<member id>`, and the
  * people sync gives them a placeholder user record under that id. When one of
  * them signs in to the OPSP for the first time, their new account takes over
- * the placeholder's role, department, and manager, every reference to the
+ * the placeholder's role, team, and manager, every reference to the
  * placeholder moves to the new account, and the placeholder is deleted.
  */
 export const relinkClickUpPerson = onDocumentCreated("users/{uid}", async (event) => {
@@ -74,16 +74,16 @@ async function moveReferences(from: string, to: string): Promise<number> {
     moved += docs.size;
   }
 
-  const departmentsRef = db().collection(`companies/${DEFAULT_COMPANY_ID}/departments`);
+  const teamsRef = db().collection(`companies/${DEFAULT_COMPANY_ID}/teams`);
   const [reports, ledByList, ledBySingle] = await Promise.all([
     db().collection("users").where("managerId", "==", from).get(),
-    departmentsRef.where("leaderIds", "array-contains", from).get(),
-    departmentsRef.where("leaderId", "==", from).get(),
+    teamsRef.where("leaderIds", "array-contains", from).get(),
+    teamsRef.where("leaderId", "==", from).get(),
   ]);
-  const departments = new Map([...ledByList.docs, ...ledBySingle.docs].map((doc) => [doc.id, doc]));
+  const teams = new Map([...ledByList.docs, ...ledBySingle.docs].map((doc) => [doc.id, doc]));
   const batch = db().batch();
   reports.docs.forEach((doc) => batch.update(doc.ref, { managerId: to }));
-  departments.forEach((doc) => {
+  teams.forEach((doc) => {
     const data = doc.data();
     const changes: Record<string, string | string[]> = {};
     if (Array.isArray(data.leaderIds) && data.leaderIds.includes(from)) {
@@ -92,7 +92,7 @@ async function moveReferences(from: string, to: string): Promise<number> {
     if (data.leaderId === from) changes.leaderId = to;
     batch.update(doc.ref, changes);
   });
-  if (!reports.empty || departments.size > 0) await batch.commit();
+  if (!reports.empty || teams.size > 0) await batch.commit();
 
-  return moved + reports.size + departments.size;
+  return moved + reports.size + teams.size;
 }

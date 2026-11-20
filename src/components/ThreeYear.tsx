@@ -385,7 +385,7 @@ export default function ThreeYear() {
              <div className="space-y-4">
               {capabilitiesWithRocks.length === 0 ? (
                 <div className="text-muted-foreground text-sm py-4 text-center">
-                  No capabilities added yet. Add capabilities from the Priority Management page.
+                  No capabilities added yet. Add capabilities from the Initiatives & Capabilities page.
                 </div>
               ) : (
                  capabilitiesWithRocks.map((capability: any, idx: number) => {

@@ -19,21 +19,23 @@ import {
   hasRecentRecap,
   isApprovalReply,
   parseRecap,
+  recapPredatesYear,
   recapsInThread,
   RECENT_RECAP_DAYS,
   type ParsedRecap,
 } from "./recap";
 import { loadGoalLocation, loadSettings, type ClickUpSettings } from "./settings";
-import type {
-  Goal,
-  GoalQuarter,
-  GoalRecap,
-  GoalStatus,
-  RecapApproval,
-  Rock,
-  SyncLogEntry,
-  SyncLogStatus,
-  UserRecord,
+import {
+  goalFromDoc,
+  type Goal,
+  type GoalQuarter,
+  type GoalRecap,
+  type GoalStatus,
+  type RecapApproval,
+  type Rock,
+  type SyncLogEntry,
+  type SyncLogStatus,
+  type UserRecord,
 } from "../types";
 
 interface SyncRequest {
@@ -144,7 +146,7 @@ export async function runSync(options: {
   if (goals.length === 0) {
     throw new HttpsError(
       "not-found",
-      "No goals are linked to a ClickUp task yet. Create a department goal or add a task link first."
+      "No goals are linked to a ClickUp task yet. Create a team goal or add a task link first."
     );
   }
 
@@ -292,6 +294,10 @@ async function syncGoal(
 
   for (const comment of unapplied) {
     const parsed = parseRecap(commentText(comment));
+    if (goal.rolledOverFrom && recapPredatesYear(comment.date, parsed.period, goal.planYear)) {
+      nowApplied.push(comment.id);
+      continue;
+    }
     const approval =
       goal.clickup?.approvals?.[comment.id] ??
       (await clickUpApproval(client, comment, approvers, threadReplies));
@@ -558,7 +564,7 @@ async function loadLinkedGoals(
   if (goalId) {
     const snap = await goals.doc(goalId).get();
     if (!snap.exists) throw new HttpsError("not-found", "That goal no longer exists.");
-    const goal = { id: snap.id, ...snap.data() } as Goal;
+    const goal = goalFromDoc(snap.id, snap.data());
     if (!goal.clickup?.taskId) {
       throw new HttpsError("failed-precondition", "That goal is not linked to a ClickUp task.");
     }
@@ -572,6 +578,6 @@ async function loadLinkedGoals(
     : await goals.get();
 
   return snap.docs
-    .map((d) => ({ id: d.id, ...d.data() }) as Goal)
+    .map((d) => goalFromDoc(d.id, d.data()))
     .filter((g) => Boolean(g.clickup?.taskId));
 }

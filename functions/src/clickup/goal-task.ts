@@ -145,6 +145,48 @@ export function currentPeople(field: ClickUpCustomField | undefined): number[] {
     .filter((id): id is number => typeof id === "number");
 }
 
+/** Text fields the push fills from the plan, matched by name (case-insensitive). */
+export const PLAN_TEXT_FIELD_NAMES = {
+  year: ["year", "plan year"],
+  initiative: ["annual priority", "company initiative"],
+} as const;
+
+export type PlanTextField = keyof typeof PLAN_TEXT_FIELD_NAMES;
+
+// ClickUp calls a one-line Text field "short_text" and a Text Area "text".
+const TEXT_FIELD_TYPES = new Set(["short_text", "text"]);
+
+export interface TextFieldChange {
+  key: PlanTextField;
+  field: ClickUpCustomField;
+  value: string;
+}
+
+/**
+ * The plan text fields that are empty on the task and can be filled. Like the
+ * rest of the push, a value already in ClickUp is never overwritten.
+ */
+export function planTextFieldChanges(
+  available: ClickUpCustomField[],
+  current: ClickUpCustomField[],
+  wanted: Record<PlanTextField, string | null | undefined>
+): TextFieldChange[] {
+  const changes: TextFieldChange[] = [];
+  (Object.keys(PLAN_TEXT_FIELD_NAMES) as PlanTextField[]).forEach((key) => {
+    const value = wanted[key]?.trim();
+    if (!value) return;
+    const names: readonly string[] = PLAN_TEXT_FIELD_NAMES[key];
+    const field = available.find(
+      (f) => TEXT_FIELD_TYPES.has(f.type) && names.includes(f.name?.trim().toLowerCase() ?? "")
+    );
+    if (!field) return;
+    const existing = current.find((f) => f.id === field.id)?.value;
+    if (typeof existing === "string" ? existing.trim() : existing != null) return;
+    changes.push({ key, field, value });
+  });
+  return changes;
+}
+
 const isBlank = (value: string | null | undefined) => !value?.trim();
 
 /**

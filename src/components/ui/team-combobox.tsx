@@ -17,9 +17,9 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useDepartments } from "@/hooks/use-departments";
+import { useTeams } from "@/hooks/use-teams";
 
-interface DepartmentComboboxProps {
+interface TeamComboboxProps {
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
@@ -28,24 +28,24 @@ interface DepartmentComboboxProps {
   triggerClassName?: string;
 }
 
-export function DepartmentCombobox({
+export function TeamCombobox({
   value,
   onValueChange,
-  placeholder = "Select department...",
+  placeholder = "Select team...",
   allowUnassigned = true,
   className,
   triggerClassName,
-}: DepartmentComboboxProps) {
-  const { departments } = useDepartments();
+}: TeamComboboxProps) {
+  const { teams } = useTeams();
   const [open, setOpen] = React.useState(false);
 
   const displayValue = React.useMemo(() => {
     if (!value) return "";
-    return departments.find((d) => d.id === value)?.name ?? "";
-  }, [value, departments]);
+    return teams.find((d) => d.id === value)?.name ?? "";
+  }, [value, teams]);
 
-  const handleSelect = (departmentId: string) => {
-    onValueChange(departmentId);
+  const handleSelect = (teamId: string) => {
+    onValueChange(teamId);
     setOpen(false);
   };
 
@@ -68,9 +68,9 @@ export function DepartmentCombobox({
       </PopoverTrigger>
       <PopoverContent className={cn("p-0", className)} align="start">
         <Command>
-          <CommandInput placeholder="Search departments..." />
+          <CommandInput placeholder="Search teams..." />
           <CommandList>
-            <CommandEmpty>No departments found.</CommandEmpty>
+            <CommandEmpty>No teams found.</CommandEmpty>
             <CommandGroup>
               {allowUnassigned && (
                 <CommandItem value="__unassigned__" onSelect={() => handleSelect("")}>
@@ -83,19 +83,19 @@ export function DepartmentCombobox({
                   Unassigned
                 </CommandItem>
               )}
-              {departments.map((department) => (
+              {teams.map((team) => (
                 <CommandItem
-                  key={department.id}
-                  value={department.name}
-                  onSelect={() => handleSelect(department.id)}
+                  key={team.id}
+                  value={team.name}
+                  onSelect={() => handleSelect(team.id)}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === department.id ? "opacity-100" : "opacity-0"
+                      value === team.id ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {department.name}
+                  {team.name}
                 </CommandItem>
               ))}
             </CommandGroup>

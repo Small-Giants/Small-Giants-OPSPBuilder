@@ -11,7 +11,7 @@ import {
   type DigestLine,
 } from "./rules";
 import { currentQuarter } from "./rules";
-import type { Goal } from "../types";
+import { goalFromDoc, type Goal } from "../types";
 import type { NotificationIntent } from "./types";
 
 export const onGoalWritten = onDocumentWritten(
@@ -21,20 +21,20 @@ export const onGoalWritten = onDocumentWritten(
   },
   async (event) => {
     const before = event.data?.before.exists
-      ? ({ id: event.params.goalId, ...event.data.before.data() } as Goal)
+      ? goalFromDoc(event.params.goalId, event.data.before.data())
       : null;
     const after = event.data?.after.exists
-      ? ({ id: event.params.goalId, ...event.data.after.data() } as Goal)
+      ? goalFromDoc(event.params.goalId, event.data.after.data())
       : null;
 
     if (!after) return;
 
-    const departmentLeaderIds = await leadersOf(event.params.companyId, after.departmentId);
+    const teamLeaderIds = await leadersOf(event.params.companyId, after.teamId);
 
     const intents = intentsForGoalChange({
       before,
       after,
-      departmentLeaderIds,
+      teamLeaderIds,
       // Goal writes carry the last editor, so self-edits stay quiet.
       actorId: (after as Goal & { updatedBy?: string }).updatedBy,
     });
@@ -124,15 +124,15 @@ async function loadGoals(companyId: string, planYear: number): Promise<Goal[]> {
     .collection(`companies/${companyId}/goals`)
     .where("planYear", "==", planYear)
     .get();
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Goal);
+  return snap.docs.map((d) => goalFromDoc(d.id, d.data()));
 }
 
 export async function leadersOf(
   companyId: string,
-  departmentId: string | null | undefined
+  teamId: string | null | undefined
 ): Promise<string[]> {
-  if (!departmentId) return [];
-  const snap = await db().doc(`companies/${companyId}/departments/${departmentId}`).get();
+  if (!teamId) return [];
+  const snap = await db().doc(`companies/${companyId}/teams/${teamId}`).get();
   const data = snap.data();
   const ids = (data?.leaderIds as string[] | undefined) ?? [];
   if (ids.length > 0) return ids;

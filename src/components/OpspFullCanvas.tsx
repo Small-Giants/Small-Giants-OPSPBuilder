@@ -87,7 +87,7 @@ export default function OpspFullCanvas({ data }: OpspFullCanvasProps) {
       setRocks(items);
     });
 
-    // Annual priorities, used to label rocks, come from useAnnualPriorities.
+    // Company initiatives, used to label rocks, come from useAnnualPriorities.
 
     return () => {
       unsubFoundation();

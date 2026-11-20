@@ -7,6 +7,7 @@ import { goalsCollection } from "@/lib/goals";
 import {
   defaultMeasurement,
   emptyQuarters,
+  normalizeGoalLevel,
   QUARTERS,
   type Goal,
   type GoalLevel,
@@ -28,9 +29,9 @@ function hydrate(id: string, data: any): Goal {
   return {
     ...data,
     id,
-    level: (data.level ?? "individual") as GoalLevel,
+    level: normalizeGoalLevel(data.level),
     parentGoalId: data.parentGoalId ?? null,
-    departmentId: data.departmentId ?? null,
+    teamId: data.teamId ?? data.departmentId ?? null,
     contributorIds: Array.isArray(data.contributorIds) ? data.contributorIds : [],
     measurement: { ...defaultMeasurement(), ...(data.measurement ?? {}) },
     quarters,

@@ -5,6 +5,7 @@ import {
   descriptionWithOpspBlock,
   OPSP_MARKER,
   opspDescriptionBlock,
+  planTextFieldChanges,
   raciFieldChange,
   fillEmptyTaskFields,
   findRaciFields,
@@ -31,7 +32,7 @@ function goal(overrides: Partial<Goal> = {}): Goal {
   return {
     id: "g1",
     title: "Web Goal 3",
-    level: "department",
+    level: "team",
     planYear: 2026,
     measurement: { type: "simple" },
     quarters: [],
@@ -162,6 +163,40 @@ describe("descriptionWithOpspBlock", () => {
 
   it("adds nothing when ClickUp did not return the markdown to keep", () => {
     expect(descriptionWithOpspBlock({ description: "Notes" }, block, "Relaunch.")).toBeNull();
+  });
+});
+
+describe("planTextFieldChanges", () => {
+  const year = { id: "y", name: "Year", type: "short_text" };
+  const priority = { id: "p", name: "Annual Priority ", type: "text" };
+  const wanted = { year: "2027", initiative: "Grow recurring revenue" };
+
+  it("fills both fields on a task that has neither", () => {
+    const changes = planTextFieldChanges([year, priority], [], wanted);
+    expect(changes.map((c) => [c.field.id, c.value])).toEqual([
+      ["y", "2027"],
+      ["p", "Grow recurring revenue"],
+    ]);
+  });
+
+  it("never overwrites a value already in ClickUp", () => {
+    const changes = planTextFieldChanges(
+      [year, priority],
+      [{ ...year, value: "2026" }, { ...priority, value: "  " }],
+      wanted
+    );
+    expect(changes.map((c) => c.key)).toEqual(["initiative"]);
+  });
+
+  it("skips fields that are missing, not text, or have nothing to write", () => {
+    const people = { id: "x", name: "Year", type: "users" };
+    expect(planTextFieldChanges([people], [], wanted)).toEqual([]);
+    expect(planTextFieldChanges([year, priority], [], { year: null, initiative: "" })).toEqual([]);
+  });
+
+  it("also accepts a field named Company Initiative", () => {
+    const field = { id: "c", name: "company initiative", type: "short_text" };
+    expect(planTextFieldChanges([field], [], wanted)[0]?.field.id).toBe("c");
   });
 });
 

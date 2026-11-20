@@ -14,16 +14,16 @@ import {
 import { X } from "lucide-react";
 
 /**
- * "full": department goals, RACI plus the Executive Sponsor.
- * "raci": annual priorities, RACI without a sponsor.
+ * "full": team goals, RACI plus the Executive Sponsor.
+ * "raci": company initiatives, RACI without a sponsor.
  * "owner": individual goals, one owner.
  * "assignees": rocks, an owner plus anyone else doing the work.
  */
 export type PeopleFieldsMode = "full" | "raci" | "owner" | "assignees";
 
 export function peopleModeForGoal(level: GoalLevel): PeopleFieldsMode {
-  if (level === "department") return "full";
-  if (level === "annual") return "raci";
+  if (level === "team") return "full";
+  if (level === "initiative") return "raci";
   return "owner";
 }
 

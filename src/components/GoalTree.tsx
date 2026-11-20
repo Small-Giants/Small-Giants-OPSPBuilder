@@ -15,7 +15,7 @@ import { GoalCard } from "@/components/goals/GoalCard";
 import { GoalForm } from "@/components/goals/GoalForm";
 import { AnnualRollup } from "@/components/goals/GoalProgress";
 import { useGoals } from "@/hooks/use-goals";
-import { useDepartments } from "@/hooks/use-departments";
+import { useTeams } from "@/hooks/use-teams";
 import { usePlanYear } from "@/contexts/PlanYearContext";
 import { GOAL_LEVEL_LABELS, type Goal, type GoalLevel } from "@/types";
 import {
@@ -30,17 +30,17 @@ import {
 export default function GoalTree() {
   const { selectedYear } = usePlanYear();
   const { allGoals, loading, childrenOf } = useGoals();
-  const { getName } = useDepartments();
+  const { getName } = useTeams();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Goal | null>(null);
-  const [formLevel, setFormLevel] = useState<GoalLevel>("annual");
+  const [formLevel, setFormLevel] = useState<GoalLevel>("initiative");
   const [formParent, setFormParent] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
 
   const annualGoals = useMemo(
-    () => allGoals.filter((g) => g.level === "annual"),
+    () => allGoals.filter((g) => g.level === "initiative"),
     [allGoals]
   );
 
@@ -48,7 +48,7 @@ export default function GoalTree() {
     () =>
       allGoals.filter(
         (g) =>
-          g.level !== "annual" &&
+          g.level !== "initiative" &&
           (!g.parentGoalId || !allGoals.some((p) => p.id === g.parentGoalId))
       ),
     [allGoals]
@@ -90,7 +90,7 @@ export default function GoalTree() {
           <div key={child.id}>
             <GoalCard goal={child} onEdit={openEdit} showLevel compact />
             {renderChildren(child, depth + 1)}
-            {child.level === "department" && (
+            {child.level === "team" && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -121,10 +121,10 @@ export default function GoalTree() {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <TargetIcon className="w-6 h-6" />
-            Annual Priorities
+            Company Initiatives
           </h2>
           <p className="text-muted-foreground text-sm">
-            Annual priorities, the department goals beneath them, and individual
+            Company initiatives, the team goals beneath them, and individual
             goals, for {selectedYear}.
           </p>
         </div>
@@ -138,9 +138,9 @@ export default function GoalTree() {
               className="pl-8 w-56"
             />
           </div>
-          <Button onClick={() => openCreate("annual", null)}>
+          <Button onClick={() => openCreate("initiative", null)}>
             <PlusIcon className="w-4 h-4 mr-2" />
-            Annual Priority
+            Company Initiative
           </Button>
         </div>
       </div>
@@ -149,9 +149,9 @@ export default function GoalTree() {
         <Card>
           <CardContent className="py-12 text-center space-y-3">
             <p className="text-muted-foreground">
-              No annual priorities yet for {selectedYear}.
+              No company initiatives yet for {selectedYear}.
             </p>
-            <Button onClick={() => openCreate("annual", null)}>
+            <Button onClick={() => openCreate("initiative", null)}>
               <PlusIcon className="w-4 h-4 mr-2" />
               Create the first one
             </Button>
@@ -160,7 +160,7 @@ export default function GoalTree() {
       ) : (
         <div className="space-y-4">
           {annualGoals.filter(matches).map((annual) => {
-            const departmentGoals = childrenOf.get(annual.id) ?? [];
+            const teamGoals = childrenOf.get(annual.id) ?? [];
 
             return (
               <Card key={annual.id}>
@@ -182,7 +182,7 @@ export default function GoalTree() {
                         </button>
                         <CardTitle className="text-lg">{annual.title}</CardTitle>
                         <Badge variant="outline" className="text-[10px]">
-                          {GOAL_LEVEL_LABELS.annual}
+                          {GOAL_LEVEL_LABELS.initiative}
                         </Badge>
                       </div>
                       {annual.description && (
@@ -202,20 +202,20 @@ export default function GoalTree() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openCreate("department", annual.id)}
+                        onClick={() => openCreate("team", annual.id)}
                       >
                         <PlusIcon className="w-3.5 h-3.5 mr-1" />
-                        Department Goal
+                        Team Goal
                       </Button>
                     </div>
                   </div>
 
                   <div className="pt-2">
-                    <AnnualRollup children={departmentGoals} />
+                    <AnnualRollup children={teamGoals} />
                   </div>
                 </CardHeader>
 
-                {!collapsed[annual.id] && departmentGoals.length > 0 && (
+                {!collapsed[annual.id] && teamGoals.length > 0 && (
                   <CardContent className="pt-0">
                     {renderChildren(annual, 0)}
                   </CardContent>
@@ -229,7 +229,7 @@ export default function GoalTree() {
       {orphans.length > 0 && (
         <Card className="border-amber-500/40">
           <CardHeader>
-            <CardTitle className="text-base">Not linked to a priority</CardTitle>
+            <CardTitle className="text-base">Not linked to an initiative</CardTitle>
             <CardDescription>
               These goals do not roll up anywhere, so they are invisible to
               leadership reporting. Edit each one to give it a parent.

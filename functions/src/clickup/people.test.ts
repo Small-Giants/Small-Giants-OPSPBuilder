@@ -105,13 +105,13 @@ describe("profileFromPlaceholder", () => {
     const placeholder = {
       name: "James Richardson",
       role: "admin" as const,
-      departmentId: "web",
+      teamId: "web",
       managerId: "uid-pat",
       clickupUserId: 33,
     };
     expect(profileFromPlaceholder(placeholder, { role: "user", name: "" })).toEqual({
       role: "admin",
-      departmentId: "web",
+      teamId: "web",
       managerId: "uid-pat",
       name: "James Richardson",
       clickupUserId: 33,

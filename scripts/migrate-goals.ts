@@ -115,12 +115,12 @@ async function main() {
     ...(d.data() as any),
   }));
 
-  const departmentByUserId: Record<string, string | undefined> = {};
+  const teamByUserId: Record<string, string | undefined> = {};
   const userIdByName: Record<string, string | undefined> = {};
   usersSnap.docs.forEach((d) => {
     const data = d.data() as any;
     if (data.deletedAt) return;
-    departmentByUserId[d.id] = data.departmentId ?? undefined;
+    teamByUserId[d.id] = data.teamId ?? undefined;
     if (data.name) userIdByName[data.name] = d.id;
     if (data.email) userIdByName[data.email] = d.id;
   });
@@ -131,7 +131,7 @@ async function main() {
     legacyPlanYear: LEGACY_PLAN_YEAR,
     priorities,
     rocks,
-    departmentByUserId,
+    teamByUserId,
     userIdByName,
   });
 
@@ -143,7 +143,7 @@ async function main() {
   console.log(`Mode:       ${commit ? "COMMIT" : "DRY RUN (no writes)"}`);
   console.log("");
   console.log(`Source: ${priorities.length} priorities, ${rocks.length} rocks`);
-  console.log(`Planned annual priority goals: ${summary.annual}`);
+  console.log(`Planned company initiative goals: ${summary.annual}`);
   console.log(`Rocks to repoint:              ${summary.rocksRepointed}`);
   console.log(`Skipped:                       ${summary.skipped}`);
   console.log("");

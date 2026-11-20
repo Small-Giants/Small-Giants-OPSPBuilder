@@ -6,11 +6,11 @@ How the three-layer goal system works, for the people using it.
 
 | Layer | What it is | Who owns it | How it is scored |
 | --- | --- | --- | --- |
-| Annual Priority | The handful of things the company must achieve this year | Leadership | Boolean. Met only when **every** department goal beneath it is met. |
-| Department Goal | What a department commits to in service of a priority | The department | Percentage, from quarterly check-ins. |
-| Individual Goal | What one person commits to | The person | Percentage. Visible to their manager, but does not change the department number. |
+| Company Initiative | The handful of things the company must achieve this year | Leadership | Boolean. Met only when **every** team goal beneath it is met. |
+| Team Goal | What a team commits to in service of a priority | The team | Percentage, from quarterly check-ins. |
+| Individual Goal | What one person commits to | The person | Percentage. Visible to their manager, but does not change the team number. |
 
-An annual priority with no department goals underneath it can never be met.
+A company initiative with no team goals underneath it can never be met.
 That is deliberate: it surfaces priorities nobody has actually taken on.
 
 ## Writing a goal
@@ -60,24 +60,24 @@ committed. Nobody updates a linked goal's progress in the OPSP.
 
 ### Who is named where
 
-- **Department goals** have the full RACI plus an Executive Sponsor. They are
+- **Team goals** have the full RACI plus an Executive Sponsor. They are
   the only goals that get a ClickUp task, and the sponsor stays in the OPSP.
-- **Annual priorities** have the RACI without a sponsor.
+- **Company initiatives** have the RACI without a sponsor.
 - **Individual goals** have one owner.
 - **Rocks** have an owner, anyone else working on them, and a due date.
 
 **Sync people from ClickUp** on the User Management page adds every ClickUp member who
 has no account yet to the user list, marked "ClickUp · not signed in", so a goal
-can name someone who has never signed in. They can be given a role, department,
+can name someone who has never signed in. They can be given a role, team,
 and manager like anyone else. When that person signs in with the same email,
-they become that user: same role, department, manager, goals, and rocks. The
+they become that user: same role, team, manager, goals, and rocks. The
 sync never removes or duplicates people; removing someone is done by hand.
 
 ### The yearly cycle
 
 1. **Plan.** The team lead meets the team and leaves with a SMART breakdown of
    each goal.
-2. **Create.** The lead creates the department goal in the OPSP. Saving it
+2. **Create.** The lead creates the team goal in the OPSP. Saving it
    creates the ClickUp task in the location a superadmin set in the Admin
    Panel, writes the SMART breakdown as the task description, assigns the
    Accountable and Responsible people, and fills the Accountable, Responsible,
@@ -108,6 +108,21 @@ The sync **never overwrites a target**, because ClickUp reports what happened
 and the OPSP records what was promised. If a recap is wrong, don't approve it.
 Fix the task and rerun the agent; the newer recap replaces it. See
 `functions/README.md` for the format the agent must follow.
+
+### Starting a new year
+
+**New Year** in the header creates the next plan year. With **Unfinished team
+& individual goals** ticked, every team and individual goal that is not
+complete is copied into the new year. Each copy:
+
+- sits under the new year's copy of its company initiative (or team goal),
+  or is left unlinked if that parent was not carried;
+- keeps its ClickUp task, so the same task keeps syncing;
+- starts with empty quarters, and ignores recaps on the task that report on
+  the earlier year.
+
+The earlier year's goals stay as they were. Copies don't send assignment
+notifications.
 
 ## Notifications
 
